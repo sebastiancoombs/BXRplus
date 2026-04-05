@@ -11,7 +11,7 @@ import { PrintableClientCard, PrintableRewardTicket } from "@/components/Printab
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/types/database";
 
-type Tab = "dashboard" | "rewards" | "team" | "printables";
+type Tab = "dashboard" | "rewards" | "data" | "printables" | "team";
 
 // Keep tab state outside the component so it survives re-renders from context refreshes
 let persistedTab: Tab = "dashboard";
@@ -42,6 +42,7 @@ export default function ClientPage() {
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "dashboard", label: "Dashboard", icon: "📊" },
     { key: "rewards", label: "Rewards & Behaviors", icon: "🎁" },
+    { key: "data", label: "Data", icon: "📈" },
     { key: "printables", label: "Printables", icon: "🖨️" },
     { key: "team", label: "Team", icon: "👥" },
   ];
@@ -82,6 +83,7 @@ export default function ClientPage() {
       <div className="max-w-5xl mx-auto px-6 py-6">
         {tab === "dashboard" && <DashboardTab clientId={activeClient.id} />}
         {tab === "rewards" && <RewardsTab clientId={activeClient.id} />}
+        {tab === "data" && <DataTab clientId={activeClient.id} clientName={activeClient.full_name} />}
         {tab === "printables" && <PrintablesTab clientId={activeClient.id} client={activeClient} />}
         {tab === "team" && <TeamTab clientId={activeClient.id} isOwner={activeClient.isOwner} />}
       </div>
@@ -365,6 +367,317 @@ function AddItemForm({ type, clientId, onAdded }: { type: "behavior" | "reward";
       </div>
       <Button type="submit" size="sm" className="h-9" disabled={busy}>Add</Button>
     </form>
+  );
+}
+
+// ═══════════════════════════════════════
+// DATA TAB
+// ═══════════════════════════════════════
+
+import {
+  BarChart, Bar, PieChart, Pie, Cell, LineChart, Line,
+  XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer,
+} from "recharts";
+
+const CHART_COLORS = ["#6366f1", "#8b5cf6", "#a855f7", "#d946ef", "#ec4899", "#f43f5e", "#f97316", "#eab308", "#22c55e", "#14b8a6", "#06b6d4", "#3b82f6"];
+
+type DateRange = "7d" | "30d" | "90d" | "all";
+
+function DataTab({ clientId, clientName }: { clientId: string; clientName: string }) {
+  const { behaviors, transactions, loading } = useClientDetail(clientId);
+  const [range, setRange] = useState<DateRange>("30d");
+  const [filterBehavior, setFilterBehavior] = useState<string>("all");
+
+  if (loading) return <p className="text-muted-foreground">Loading data...</p>;
+
+  // Filter transactions by date range
+  const now = Date.now();
+  const rangeMs: Record<DateRange, number> = { "7d": 7 * 86400000, "30d": 30 * 86400000, "90d": 90 * 86400000, "all": Infinity };
+  const filtered = transactions.filter((t) => now - new Date(t.created_at).getTime() < rangeMs[range]);
+
+  // Further filter by behavior if selected
+  const behaviorFiltered = filterBehavior === "all"
+    ? filtered
+    : filtered.filter((t) => t.behavior_id === filterBehavior || (filterBehavior === "debits" && t.type === "debit"));
+
+  // ── Summary stats ──
+  const totalCredits = filtered.filter((t) => t.type === "credit").reduce((s, t) => s + t.amount, 0);
+  const totalDebits = filtered.filter((t) => t.type === "debit").reduce((s, t) => s + t.amount, 0);
+  const creditCount = filtered.filter((t) => t.type === "credit").length;
+  const debitCount = filtered.filter((t) => t.type === "debit").length;
+
+  // ── Bar chart: points per behavior ──
+  const behaviorTotals = new Map<string, { name: string; icon: string; points: number; count: number }>();
+  filtered.filter((t) => t.type === "credit" && t.behavior).forEach((t) => {
+    const key = t.behavior_id ?? "unknown";
+    const prev = behaviorTotals.get(key) ?? { name: t.behavior?.name ?? "Unknown", icon: t.behavior?.icon ?? "⭐", points: 0, count: 0 };
+    prev.points += t.amount;
+    prev.count += 1;
+    behaviorTotals.set(key, prev);
+  });
+  const barData = Array.from(behaviorTotals.values()).sort((a, b) => b.points - a.points);
+
+  // ── Pie chart: reward redemptions ──
+  const rewardTotals = new Map<string, { name: string; icon: string; count: number; points: number }>();
+  filtered.filter((t) => t.type === "debit" && t.reward).forEach((t) => {
+    const key = t.reward_id ?? "unknown";
+    const prev = rewardTotals.get(key) ?? { name: t.reward?.name ?? "Unknown", icon: t.reward?.icon ?? "🎁", count: 0, points: 0 };
+    prev.count += 1;
+    prev.points += t.amount;
+    rewardTotals.set(key, prev);
+  });
+  const pieData = Array.from(rewardTotals.values());
+
+  // ── Timeline: daily points earned ──
+  const dailyMap = new Map<string, { date: string; earned: number; spent: number }>();
+  filtered.forEach((t) => {
+    const day = new Date(t.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const prev = dailyMap.get(day) ?? { date: day, earned: 0, spent: 0 };
+    if (t.type === "credit") prev.earned += t.amount;
+    else prev.spent += t.amount;
+    dailyMap.set(day, prev);
+  });
+  const timelineData = Array.from(dailyMap.values()).reverse();
+
+  // ── CSV export ──
+  function exportCSV() {
+    const rows = behaviorFiltered
+      .sort((a, b) => new Date(a.created_at).getTime() - new Date(b.created_at).getTime())
+      .map((t) => ({
+        Date: new Date(t.created_at).toISOString(),
+        Type: t.type,
+        Description: t.type === "credit" ? (t.behavior?.name ?? "Points awarded") : (t.reward?.name ?? "Reward redeemed"),
+        Amount: t.type === "credit" ? t.amount : -t.amount,
+        Balance: t.balance_after,
+        Note: t.note ?? "",
+      }));
+
+    const headers = Object.keys(rows[0] ?? {});
+    const csv = [
+      headers.join(","),
+      ...rows.map((r) => headers.map((h) => {
+        const val = (r as any)[h];
+        return typeof val === "string" && (val.includes(",") || val.includes('"'))
+          ? `"${val.replace(/"/g, '""')}"`
+          : val;
+      }).join(","))
+    ].join("\n");
+
+    const blob = new Blob([csv], { type: "text/csv" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${clientName.replace(/\s+/g, "_")}_data_${range}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
+  return (
+    <div className="space-y-6">
+      {/* Controls */}
+      <div className="flex flex-wrap items-center gap-3">
+        <div className="flex rounded-lg border overflow-hidden">
+          {(["7d", "30d", "90d", "all"] as DateRange[]).map((r) => (
+            <button
+              key={r}
+              onClick={() => setRange(r)}
+              className={cn(
+                "px-3 py-1.5 text-xs font-medium transition-colors",
+                range === r ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+              )}
+            >
+              {r === "all" ? "All Time" : r === "7d" ? "7 Days" : r === "30d" ? "30 Days" : "90 Days"}
+            </button>
+          ))}
+        </div>
+        <select
+          value={filterBehavior}
+          onChange={(e) => setFilterBehavior(e.target.value)}
+          className="rounded-md border border-input bg-background px-2 py-1.5 text-xs h-8"
+        >
+          <option value="all">All transactions</option>
+          <option value="debits">Redemptions only</option>
+          {behaviors.map((b) => (
+            <option key={b.id} value={b.id}>{b.icon} {b.name}</option>
+          ))}
+        </select>
+        <div className="flex-1" />
+        <Button variant="outline" size="sm" onClick={exportCSV} disabled={behaviorFiltered.length === 0}>
+          📥 Export CSV
+        </Button>
+      </div>
+
+      {/* Summary Cards */}
+      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
+        <Card><CardContent className="py-4 text-center">
+          <p className="text-2xl font-bold text-green-600">+{totalCredits}</p>
+          <p className="text-xs text-muted-foreground">Points Earned</p>
+        </CardContent></Card>
+        <Card><CardContent className="py-4 text-center">
+          <p className="text-2xl font-bold text-red-500">−{totalDebits}</p>
+          <p className="text-xs text-muted-foreground">Points Spent</p>
+        </CardContent></Card>
+        <Card><CardContent className="py-4 text-center">
+          <p className="text-2xl font-bold">{creditCount}</p>
+          <p className="text-xs text-muted-foreground">Awards Given</p>
+        </CardContent></Card>
+        <Card><CardContent className="py-4 text-center">
+          <p className="text-2xl font-bold">{debitCount}</p>
+          <p className="text-xs text-muted-foreground">Rewards Redeemed</p>
+        </CardContent></Card>
+      </div>
+
+      {/* Timeline Chart */}
+      {timelineData.length > 1 && (
+        <Card>
+          <CardContent className="py-5">
+            <p className="text-sm font-medium text-muted-foreground mb-4">Points Over Time</p>
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={timelineData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="earned" stroke="#22c55e" strokeWidth={2} name="Earned" dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="spent" stroke="#ef4444" strokeWidth={2} name="Spent" dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-6 md:grid-cols-2">
+        {/* Bar Chart: Points by Behavior */}
+        {barData.length > 0 && (
+          <Card>
+            <CardContent className="py-5">
+              <p className="text-sm font-medium text-muted-foreground mb-4">Points by Behavior</p>
+              <ResponsiveContainer width="100%" height={250}>
+                <BarChart data={barData} layout="vertical">
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis type="number" tick={{ fontSize: 11 }} />
+                  <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={120} />
+                  <Tooltip formatter={(val: number) => [`${val} pts`, "Points"]} />
+                  <Bar dataKey="points" radius={[0, 4, 4, 0]}>
+                    {barData.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Bar>
+                </BarChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+
+        {/* Pie Chart: Reward Redemptions */}
+        {pieData.length > 0 && (
+          <Card>
+            <CardContent className="py-5">
+              <p className="text-sm font-medium text-muted-foreground mb-4">Reward Redemptions</p>
+              <ResponsiveContainer width="100%" height={250}>
+                <PieChart>
+                  <Pie data={pieData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={90} label={({ name, count }) => `${name} (${count})`}>
+                    {pieData.map((_, i) => (
+                      <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />
+                    ))}
+                  </Pie>
+                  <Tooltip formatter={(val: number, name: string) => [`${val} times`, name]} />
+                </PieChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        )}
+      </div>
+
+      {/* Frequency Table */}
+      {barData.length > 0 && (
+        <Card>
+          <CardContent className="py-5">
+            <p className="text-sm font-medium text-muted-foreground mb-4">Behavior Frequency</p>
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="pb-2 pr-4 font-medium">Behavior</th>
+                    <th className="pb-2 pr-4 font-medium text-right">Times Awarded</th>
+                    <th className="pb-2 pr-4 font-medium text-right">Total Points</th>
+                    <th className="pb-2 font-medium text-right">Avg / Day</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {barData.map((b, i) => {
+                    const days = range === "7d" ? 7 : range === "30d" ? 30 : range === "90d" ? 90 : Math.max(1, Math.ceil((now - new Date(transactions[transactions.length - 1]?.created_at ?? now).getTime()) / 86400000));
+                    return (
+                      <tr key={i} className="border-b last:border-0">
+                        <td className="py-2.5 pr-4">{b.icon} {b.name}</td>
+                        <td className="py-2.5 pr-4 text-right font-medium">{b.count}</td>
+                        <td className="py-2.5 pr-4 text-right text-green-600 font-medium">+{b.points}</td>
+                        <td className="py-2.5 text-right text-muted-foreground">{(b.count / days).toFixed(1)}</td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Export Table Preview */}
+      <Card>
+        <CardContent className="py-5">
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-muted-foreground">
+              Transaction Log ({behaviorFiltered.length} records)
+            </p>
+            <Button variant="outline" size="sm" onClick={exportCSV} disabled={behaviorFiltered.length === 0}>
+              📥 Export CSV
+            </Button>
+          </div>
+          {behaviorFiltered.length === 0 ? (
+            <p className="text-sm text-muted-foreground text-center py-4">No data for this period.</p>
+          ) : (
+            <div className="overflow-x-auto max-h-80 overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="sticky top-0 bg-card">
+                  <tr className="border-b text-left text-muted-foreground">
+                    <th className="pb-2 pr-4 font-medium">Date & Time</th>
+                    <th className="pb-2 pr-4 font-medium">Type</th>
+                    <th className="pb-2 pr-4 font-medium">Description</th>
+                    <th className="pb-2 pr-4 font-medium text-right">Amount</th>
+                    <th className="pb-2 font-medium text-right">Balance</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {behaviorFiltered.map((txn) => (
+                    <tr key={txn.id} className="border-b last:border-0 hover:bg-muted/50">
+                      <td className="py-2 pr-4 whitespace-nowrap text-muted-foreground text-xs">
+                        {new Date(txn.created_at).toLocaleString("en-US", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })}
+                      </td>
+                      <td className="py-2 pr-4">
+                        <span className={`text-xs font-medium px-1.5 py-0.5 rounded ${txn.type === "credit" ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+                          {txn.type === "credit" ? "Credit" : "Debit"}
+                        </span>
+                      </td>
+                      <td className="py-2 pr-4 text-xs">
+                        {txn.type === "credit" ? txn.behavior?.name ?? "Points" : txn.reward?.name ?? "Reward"}
+                      </td>
+                      <td className="py-2 pr-4 text-right font-medium">
+                        <span className={txn.type === "credit" ? "text-green-600" : "text-red-500"}>
+                          {txn.type === "credit" ? "+" : "−"}{txn.amount}
+                        </span>
+                      </td>
+                      <td className="py-2 text-right font-mono text-xs">{txn.balance_after}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
   );
 }
 
