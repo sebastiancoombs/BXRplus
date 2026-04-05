@@ -159,7 +159,30 @@ function DashboardTab({ clientId }: { clientId: string }) {
           {transactions.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">No transactions yet.</p>
           ) : (
-            <div className="overflow-x-auto">
+            <>
+            <div className="md:hidden space-y-2">
+              {transactions.map((txn) => (
+                <div key={txn.id} className="flex items-center justify-between py-2 border-b last:border-0">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">
+                      {txn.type === "credit" ? txn.behavior?.name ?? "Points" : txn.reward?.name ?? "Reward"}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">
+                      {new Date(txn.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+                      {" · "}
+                      {new Date(txn.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+                    </p>
+                  </div>
+                  <div className="text-right flex-shrink-0 ml-3">
+                    <p className={`text-sm font-bold ${txn.type === "credit" ? "text-green-600" : "text-red-500"}`}>
+                      {txn.type === "credit" ? "+" : "−"}{txn.amount}
+                    </p>
+                    <p className="text-[11px] text-muted-foreground">bal: {txn.balance_after}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+            <div className="hidden md:block overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
                   <tr className="border-b text-left text-muted-foreground">
@@ -196,6 +219,7 @@ function DashboardTab({ clientId }: { clientId: string }) {
                 </tbody>
               </table>
             </div>
+            </>
           )}
         </CardContent>
       </Card>
@@ -279,18 +303,21 @@ function EditableItemCard({ item, type, onUpdate }: {
       <Card className="border-primary/30">
         <CardContent className="py-3 space-y-2">
           <div className="flex gap-2">
-            <Input value={icon} onChange={(e) => setIcon(e.target.value)} className="w-12 text-center text-lg h-8" />
-            <Input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 h-8 text-sm" />
+            <Input value={icon} onChange={(e) => setIcon(e.target.value)} className="w-12 text-center text-lg h-8 flex-shrink-0" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 min-w-0 h-8 text-sm" />
           </div>
-          <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">{type === "behavior" ? "+" : ""}</span>
-            <Input type="number" min={1} value={value} onChange={(e) => setValue(+e.target.value)} className="w-20 h-8 text-sm" />
-            <span className="text-xs text-muted-foreground">pts</span>
-            <div className="flex-1" />
-            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEditing(false)}>Cancel</Button>
-            <Button size="sm" className="h-7 text-xs" onClick={save} disabled={busy}>
-              {busy ? "..." : "Save"}
-            </Button>
+          <div className="flex flex-wrap items-center gap-2">
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground">{type === "behavior" ? "+" : ""}</span>
+              <Input type="number" min={1} value={value} onChange={(e) => setValue(+e.target.value)} className="w-20 h-8 text-sm" />
+              <span className="text-xs text-muted-foreground">pts</span>
+            </div>
+            <div className="flex gap-1 ml-auto">
+              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEditing(false)}>Cancel</Button>
+              <Button size="sm" className="h-7 text-xs" onClick={save} disabled={busy}>
+                {busy ? "..." : "Save"}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
@@ -310,7 +337,7 @@ function EditableItemCard({ item, type, onUpdate }: {
               </Badge>
             </div>
           </div>
-          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+          <div className="flex gap-0.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
             <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
               onClick={() => setEditing(true)} title="Edit">
               ✏️
@@ -356,17 +383,21 @@ function AddItemForm({ type, clientId, onAdded }: { type: "behavior" | "reward";
   }
 
   return (
-    <form onSubmit={submit} className="flex gap-2 items-center">
-      <Input value={icon} onChange={(e) => setIcon(e.target.value)} className="w-12 text-center text-lg h-9" />
-      <Input value={name} onChange={(e) => setName(e.target.value)}
-        placeholder={type === "behavior" ? "e.g. Followed instructions" : "e.g. iPad time"}
-        className="flex-1 h-9" required />
-      <div className="flex items-center gap-1">
-        <span className="text-xs text-muted-foreground">{type === "behavior" ? "+" : ""}</span>
-        <Input type="number" min={1} value={value} onChange={(e) => setValue(+e.target.value)} className="w-16 h-9" />
-        <span className="text-xs text-muted-foreground">pts</span>
+    <form onSubmit={submit} className="space-y-2">
+      <div className="flex gap-2">
+        <Input value={icon} onChange={(e) => setIcon(e.target.value)} className="w-12 text-center text-lg h-9 flex-shrink-0" />
+        <Input value={name} onChange={(e) => setName(e.target.value)}
+          placeholder={type === "behavior" ? "e.g. Followed instructions" : "e.g. iPad time"}
+          className="flex-1 min-w-0 h-9" required />
       </div>
-      <Button type="submit" size="sm" className="h-9" disabled={busy}>Add</Button>
+      <div className="flex gap-2 items-center">
+        <div className="flex items-center gap-1">
+          <span className="text-xs text-muted-foreground">{type === "behavior" ? "+" : ""}</span>
+          <Input type="number" min={1} value={value} onChange={(e) => setValue(+e.target.value)} className="w-16 h-9" />
+          <span className="text-xs text-muted-foreground">pts</span>
+        </div>
+        <Button type="submit" size="sm" className="h-9 ml-auto" disabled={busy}>Add</Button>
+      </div>
     </form>
   );
 }
@@ -476,55 +507,57 @@ function DataTab({ clientId, clientName }: { clientId: string; clientName: strin
   return (
     <div className="space-y-6">
       {/* Controls */}
-      <div className="flex flex-wrap items-center gap-3">
-        <div className="flex rounded-lg border overflow-hidden">
-          {(["7d", "30d", "90d", "all"] as DateRange[]).map((r) => (
-            <button
-              key={r}
-              onClick={() => setRange(r)}
-              className={cn(
-                "px-3 py-1.5 text-xs font-medium transition-colors",
-                range === r ? "bg-primary text-primary-foreground" : "hover:bg-accent"
-              )}
-            >
-              {r === "all" ? "All Time" : r === "7d" ? "7 Days" : r === "30d" ? "30 Days" : "90 Days"}
-            </button>
-          ))}
+      <div className="space-y-2">
+        <div className="flex flex-wrap gap-2">
+          <div className="flex rounded-lg border overflow-hidden flex-shrink-0">
+            {(["7d", "30d", "90d", "all"] as DateRange[]).map((r) => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={cn(
+                  "px-2.5 py-1.5 text-xs font-medium transition-colors",
+                  range === r ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                )}
+              >
+                {r === "all" ? "All" : r}
+              </button>
+            ))}
+          </div>
+          <select
+            value={filterBehavior}
+            onChange={(e) => setFilterBehavior(e.target.value)}
+            className="rounded-md border border-input bg-background px-2 py-1.5 text-xs h-8 min-w-0 flex-1 sm:flex-none sm:w-auto"
+          >
+            <option value="all">All transactions</option>
+            <option value="debits">Redemptions only</option>
+            {behaviors.map((b) => (
+              <option key={b.id} value={b.id}>{b.icon} {b.name}</option>
+            ))}
+          </select>
+          <Button variant="outline" size="sm" onClick={exportCSV} disabled={behaviorFiltered.length === 0}
+            className="ml-auto flex-shrink-0">
+            📥 CSV
+          </Button>
         </div>
-        <select
-          value={filterBehavior}
-          onChange={(e) => setFilterBehavior(e.target.value)}
-          className="rounded-md border border-input bg-background px-2 py-1.5 text-xs h-8"
-        >
-          <option value="all">All transactions</option>
-          <option value="debits">Redemptions only</option>
-          {behaviors.map((b) => (
-            <option key={b.id} value={b.id}>{b.icon} {b.name}</option>
-          ))}
-        </select>
-        <div className="flex-1" />
-        <Button variant="outline" size="sm" onClick={exportCSV} disabled={behaviorFiltered.length === 0}>
-          📥 Export CSV
-        </Button>
       </div>
 
       {/* Summary Cards */}
-      <div className="grid gap-3 grid-cols-2 md:grid-cols-4">
-        <Card><CardContent className="py-4 text-center">
-          <p className="text-2xl font-bold text-green-600">+{totalCredits}</p>
-          <p className="text-xs text-muted-foreground">Points Earned</p>
+      <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
+        <Card><CardContent className="py-3 md:py-4 text-center">
+          <p className="text-xl md:text-2xl font-bold text-green-600">+{totalCredits}</p>
+          <p className="text-[10px] md:text-xs text-muted-foreground">Earned</p>
         </CardContent></Card>
-        <Card><CardContent className="py-4 text-center">
-          <p className="text-2xl font-bold text-red-500">−{totalDebits}</p>
-          <p className="text-xs text-muted-foreground">Points Spent</p>
+        <Card><CardContent className="py-3 md:py-4 text-center">
+          <p className="text-xl md:text-2xl font-bold text-red-500">−{totalDebits}</p>
+          <p className="text-[10px] md:text-xs text-muted-foreground">Spent</p>
         </CardContent></Card>
-        <Card><CardContent className="py-4 text-center">
-          <p className="text-2xl font-bold">{creditCount}</p>
-          <p className="text-xs text-muted-foreground">Awards Given</p>
+        <Card><CardContent className="py-3 md:py-4 text-center">
+          <p className="text-xl md:text-2xl font-bold">{creditCount}</p>
+          <p className="text-[10px] md:text-xs text-muted-foreground">Awards</p>
         </CardContent></Card>
-        <Card><CardContent className="py-4 text-center">
-          <p className="text-2xl font-bold">{debitCount}</p>
-          <p className="text-xs text-muted-foreground">Rewards Redeemed</p>
+        <Card><CardContent className="py-3 md:py-4 text-center">
+          <p className="text-xl md:text-2xl font-bold">{debitCount}</p>
+          <p className="text-[10px] md:text-xs text-muted-foreground">Redeemed</p>
         </CardContent></Card>
       </div>
 
@@ -548,7 +581,7 @@ function DataTab({ clientId, clientName }: { clientId: string; clientName: strin
         </Card>
       )}
 
-      <div className="grid gap-6 md:grid-cols-2">
+      <div className="grid gap-4 md:grid-cols-2">
         {/* Bar Chart: Points by Behavior */}
         {barData.length > 0 && (
           <Card>
@@ -825,20 +858,20 @@ function PrintablesTab({ clientId, client }: { clientId: string; client: any }) 
       {/* Print All controls */}
       <Card>
         <CardContent className="py-5">
-          <div className="flex items-center justify-between">
+          <div className="space-y-3">
             <div>
               <h3 className="font-semibold">Print All Materials</h3>
               <p className="text-sm text-muted-foreground">
-                Client card, reward tickets, and behavior reference — ready to print and laminate.
+                Client card, reward tickets, and behavior reference.
               </p>
             </div>
             <div className="flex items-center gap-3">
               <div className="flex items-center gap-2">
-                <label className="text-sm text-muted-foreground">Copies:</label>
+                <label className="text-xs text-muted-foreground">Copies:</label>
                 <Input type="number" min={1} max={20} value={copies} onChange={(e) => setCopies(Math.max(1, +e.target.value))}
-                  className="w-16 h-9 text-center" />
+                  className="w-14 h-8 text-center text-sm" />
               </div>
-              <Button onClick={handlePrintAll} size="lg">
+              <Button onClick={handlePrintAll} className="ml-auto">
                 🖨️ Print All
               </Button>
             </div>
@@ -860,7 +893,7 @@ function PrintablesTab({ clientId, client }: { clientId: string; client: any }) 
           <p className="text-sm text-muted-foreground mb-4">
             Print and display — clients can see what they're working toward. Scan a ticket to redeem.
           </p>
-          <div className="flex flex-wrap gap-6">
+          <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {rewards.map((r) => (
               <PrintableRewardTicket key={r.id} reward={r} client={client} />
             ))}
@@ -1247,31 +1280,31 @@ function ThermometerRow({ icon, name, current, goal, pct, canRedeem, onRedeem }:
   }
 
   return (
-    <div className="flex items-center gap-4">
-      <span className="text-2xl w-8 text-center flex-shrink-0">{icon}</span>
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center justify-between mb-1">
-          <span className="text-sm font-medium truncate">{name}</span>
-          <span className="text-xs text-muted-foreground">{current} / {goal}</span>
-        </div>
-        <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
+    <div className="space-y-1.5">
+      <div className="flex items-center gap-2">
+        <span className="text-xl flex-shrink-0">{icon}</span>
+        <span className="text-sm font-medium truncate flex-1 min-w-0">{name}</span>
+        <span className="text-xs text-muted-foreground flex-shrink-0">{current}/{goal}</span>
+      </div>
+      <div className="flex items-center gap-2">
+        <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
           <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
         </div>
+        {canRedeem ? (
+          <Button
+            size="sm"
+            variant={confirming ? "destructive" : "default"}
+            onClick={handleRedeem}
+            onBlur={() => setTimeout(() => setConfirming(false), 200)}
+            disabled={busy}
+            className="flex-shrink-0 h-7 text-xs"
+          >
+            {busy ? "..." : confirming ? `−${goal}?` : "Redeem"}
+          </Button>
+        ) : (
+          <span className="text-[11px] text-muted-foreground flex-shrink-0">{goal - current} to go</span>
+        )}
       </div>
-      {canRedeem ? (
-        <Button
-          size="sm"
-          variant={confirming ? "destructive" : "default"}
-          onClick={handleRedeem}
-          onBlur={() => setTimeout(() => setConfirming(false), 200)}
-          disabled={busy}
-          className="flex-shrink-0"
-        >
-          {busy ? "..." : confirming ? `Spend ${goal} pts?` : "Redeem"}
-        </Button>
-      ) : (
-        <span className="text-xs text-muted-foreground w-16 text-right flex-shrink-0">{goal - current} to go</span>
-      )}
     </div>
   );
 }
