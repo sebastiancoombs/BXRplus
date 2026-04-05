@@ -1,14 +1,46 @@
-import { useRef } from "react";
+import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 import type { Client } from "@/types/database";
 
+// ═══════════════════════════════════════
+// Card theme options
+// ═══════════════════════════════════════
+
+interface CardTheme {
+  id: string;
+  label: string;
+  emoji: string;
+  bg: string;
+  chipColor: string;
+  textClass: string;
+}
+
+const cardThemes: CardTheme[] = [
+  { id: "galaxy", label: "Galaxy", emoji: "🚀", bg: "linear-gradient(135deg, #1e1b4b, #4f46e5, #7c3aed)", chipColor: "#a78bfa", textClass: "text-white" },
+  { id: "ocean", label: "Ocean", emoji: "🐬", bg: "linear-gradient(135deg, #0c4a6e, #0284c7, #38bdf8)", chipColor: "#7dd3fc", textClass: "text-white" },
+  { id: "sunset", label: "Sunset", emoji: "🌅", bg: "linear-gradient(135deg, #9a3412, #ea580c, #fbbf24)", chipColor: "#fde68a", textClass: "text-white" },
+  { id: "forest", label: "Forest", emoji: "🌲", bg: "linear-gradient(135deg, #14532d, #16a34a, #86efac)", chipColor: "#bbf7d0", textClass: "text-white" },
+  { id: "candy", label: "Candy", emoji: "🍬", bg: "linear-gradient(135deg, #ec4899, #f472b6, #fda4af)", chipColor: "#fecdd3", textClass: "text-white" },
+  { id: "dino", label: "Dinosaur", emoji: "🦕", bg: "linear-gradient(135deg, #365314, #65a30d, #a3e635)", chipColor: "#d9f99d", textClass: "text-white" },
+  { id: "space", label: "Space", emoji: "👾", bg: "linear-gradient(135deg, #0f172a, #1e293b, #334155)", chipColor: "#94a3b8", textClass: "text-white" },
+  { id: "rainbow", label: "Rainbow", emoji: "🌈", bg: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6)", chipColor: "#fde68a", textClass: "text-white" },
+  { id: "unicorn", label: "Unicorn", emoji: "🦄", bg: "linear-gradient(135deg, #c084fc, #f0abfc, #fbcfe8)", chipColor: "#fae8ff", textClass: "text-purple-900" },
+  { id: "sports", label: "Sports", emoji: "⚽", bg: "linear-gradient(135deg, #1e3a5f, #2563eb, #60a5fa)", chipColor: "#bfdbfe", textClass: "text-white" },
+  { id: "superhero", label: "Superhero", emoji: "💥", bg: "linear-gradient(135deg, #991b1b, #dc2626, #fbbf24)", chipColor: "#fde68a", textClass: "text-white" },
+  { id: "arctic", label: "Arctic", emoji: "🐧", bg: "linear-gradient(135deg, #e0f2fe, #bae6fd, #7dd3fc)", chipColor: "#0ea5e9", textClass: "text-sky-900" },
+];
+
+const stickerOptions = ["⭐", "🌟", "🎯", "🔥", "💎", "🏅", "🎮", "🎨", "🎵", "🐾", "🦋", "🌸", "⚡", "🍕", "🎪"];
+
 export function PrintableClientCard({ client }: { client: Client }) {
-  const cardRef = useRef<HTMLDivElement>(null);
+  const [themeId, setThemeId] = useState("galaxy");
+  const [sticker, setSticker] = useState("⭐");
+  const [showCustomize, setShowCustomize] = useState(false);
+  const theme = cardThemes.find((t) => t.id === themeId) ?? cardThemes[0];
 
   function handlePrint() {
-    const el = cardRef.current;
-    if (!el) return;
     const win = window.open("", "_blank");
     if (!win) return;
     win.document.write(`
@@ -16,60 +48,131 @@ export function PrintableClientCard({ client }: { client: Client }) {
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        .card { width: 3.375in; height: 2.125in; border-radius: 12px; background: linear-gradient(135deg, #4f46e5, #7c3aed); color: white; padding: 20px; position: relative; overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.15); }
-        .card::before { content: ''; position: absolute; top: -30px; right: -30px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.08); }
-        .card::after { content: ''; position: absolute; bottom: -40px; left: -20px; width: 100px; height: 100px; border-radius: 50%; background: rgba(255,255,255,0.05); }
-        .brand { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.7; margin-bottom: 8px; }
-        .name { font-size: 18px; font-weight: 700; margin-bottom: 4px; }
-        .balance { font-size: 11px; opacity: 0.8; }
-        .qr-wrap { position: absolute; bottom: 14px; right: 14px; background: white; padding: 6px; border-radius: 8px; }
-        .chip { width: 32px; height: 24px; border-radius: 4px; background: linear-gradient(135deg, #fbbf24, #f59e0b); margin-bottom: 12px; }
-        @media print { body { background: white; } }
+        .card { width: 3.375in; height: 2.125in; border-radius: 14px; background: ${theme.bg}; padding: 18px; position: relative; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
+        .card::before { content: ''; position: absolute; top: -40px; right: -40px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+        .card::after { content: ''; position: absolute; bottom: -50px; left: -30px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.05); }
+        .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; position: relative; z-index: 1; }
+        .brand { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.7; }
+        .sticker { font-size: 28px; }
+        .chip { width: 34px; height: 26px; border-radius: 5px; background: ${theme.chipColor}; margin-bottom: 14px; opacity: 0.8; position: relative; z-index: 1; }
+        .name { font-size: 20px; font-weight: 800; letter-spacing: 0.5px; position: relative; z-index: 1; }
+        .subtitle { font-size: 11px; opacity: 0.7; margin-top: 2px; position: relative; z-index: 1; }
+        .qr-wrap { position: absolute; bottom: 12px; right: 12px; background: white; padding: 5px; border-radius: 8px; z-index: 1; }
+        .theme-emoji { position: absolute; bottom: 10px; left: 16px; font-size: 22px; opacity: 0.3; z-index: 0; }
+        @media print { body { background: white; } .card { box-shadow: none; border: 1px solid #ddd; } }
       </style></head><body>
       <div class="card">
-        <div class="brand">🏆 BXR+</div>
+        <div class="top">
+          <div class="brand">🏆 BXR+</div>
+          <div class="sticker">${sticker}</div>
+        </div>
         <div class="chip"></div>
-        <div class="name">${client.full_name}</div>
-        <div class="balance">Token Economy Card</div>
+        <div class="name ${theme.textClass}">${client.full_name}</div>
+        <div class="subtitle ${theme.textClass}">My Reward Card</div>
+        <div class="theme-emoji">${theme.emoji}</div>
         <div class="qr-wrap">
           ${document.getElementById('print-qr-' + client.id)?.innerHTML ?? ''}
         </div>
       </div>
-      <script>window.print(); window.close();</script>
+      <script>window.print(); window.close();<\/script>
       </body></html>
     `);
     win.document.close();
   }
 
   return (
-    <div>
-      {/* Preview card */}
-      <div ref={cardRef} className="relative w-[3.375in] h-[2.125in] rounded-xl overflow-hidden text-white p-5 cursor-pointer hover:shadow-xl transition-shadow"
-        style={{ background: "linear-gradient(135deg, #4f46e5, #7c3aed)" }}
+    <div className="space-y-4">
+      {/* Live preview */}
+      <div
+        className="relative w-[3.375in] h-[2.125in] rounded-[14px] overflow-hidden p-[18px] cursor-pointer hover:shadow-xl transition-shadow"
+        style={{ background: theme.bg }}
         onClick={handlePrint}
       >
-        <div className="absolute -top-8 -right-8 w-28 h-28 rounded-full bg-white/10" />
-        <div className="absolute -bottom-10 -left-5 w-24 h-24 rounded-full bg-white/5" />
-        <p className="text-[10px] tracking-[2px] uppercase opacity-70 mb-2">🏆 BXR+</p>
-        <div className="w-8 h-6 rounded bg-gradient-to-br from-yellow-400 to-amber-500 mb-3" />
-        <p className="text-lg font-bold">{client.full_name}</p>
-        <p className="text-[11px] opacity-80">Token Economy Card</p>
-        <div className="absolute bottom-3 right-3 bg-white p-1.5 rounded-lg" id={`print-qr-${client.id}`}>
+        <div className="absolute -top-10 -right-10 w-36 h-36 rounded-full bg-white/10" />
+        <div className="absolute -bottom-12 -left-7 w-28 h-28 rounded-full bg-white/5" />
+        <div className="flex justify-between items-start relative z-10 mb-2.5">
+          <p className={`text-[10px] tracking-[2px] uppercase opacity-70 ${theme.textClass}`}>🏆 BXR+</p>
+          <span className="text-3xl">{sticker}</span>
+        </div>
+        <div className="w-[34px] h-[26px] rounded-[5px] mb-3.5 opacity-80 relative z-10" style={{ background: theme.chipColor }} />
+        <p className={`text-xl font-extrabold tracking-wide relative z-10 ${theme.textClass}`}>{client.full_name}</p>
+        <p className={`text-[11px] opacity-70 mt-0.5 relative z-10 ${theme.textClass}`}>My Reward Card</p>
+        <span className="absolute bottom-2.5 left-4 text-2xl opacity-20">{theme.emoji}</span>
+        <div className="absolute bottom-3 right-3 bg-white p-1.5 rounded-lg z-10" id={`print-qr-${client.id}`}>
           <QRCodeSVG value={client.qr_code} size={44} />
         </div>
       </div>
-      <Button variant="outline" size="sm" onClick={handlePrint} className="mt-3 w-full">
+
+      {/* Customize toggle */}
+      <button
+        onClick={() => setShowCustomize(!showCustomize)}
+        className="text-sm text-primary hover:underline"
+      >
+        {showCustomize ? "Hide options" : "🎨 Customize card"}
+      </button>
+
+      {showCustomize && (
+        <div className="space-y-4 p-4 bg-muted/50 rounded-xl">
+          {/* Theme picker */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Card Theme</p>
+            <div className="flex flex-wrap gap-2">
+              {cardThemes.map((t) => (
+                <button
+                  key={t.id}
+                  onClick={() => setThemeId(t.id)}
+                  className={cn(
+                    "flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium border transition-all",
+                    themeId === t.id
+                      ? "border-primary bg-primary/10 text-primary ring-2 ring-primary/30"
+                      : "border-border hover:border-primary/40"
+                  )}
+                >
+                  <span>{t.emoji}</span> {t.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Sticker picker */}
+          <div>
+            <p className="text-xs font-medium text-muted-foreground mb-2">Card Sticker</p>
+            <div className="flex flex-wrap gap-1.5">
+              {stickerOptions.map((s) => (
+                <button
+                  key={s}
+                  onClick={() => setSticker(s)}
+                  className={cn(
+                    "w-10 h-10 rounded-lg flex items-center justify-center text-xl border transition-all",
+                    sticker === s
+                      ? "border-primary bg-primary/10 ring-2 ring-primary/30"
+                      : "border-border hover:border-primary/40"
+                  )}
+                >
+                  {s}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Print button */}
+      <Button variant="outline" onClick={handlePrint} className="w-full">
         🖨️ Print Card
       </Button>
     </div>
   );
 }
 
+// ═══════════════════════════════════════
+// Reward Ticket (unchanged)
+// ═══════════════════════════════════════
+
 export function PrintableRewardTicket({ reward, client }: {
   reward: { id: string; name: string; icon: string; point_cost: number };
   client: Client;
 }) {
-  // QR encodes a JSON payload the scan page can parse
   const qrValue = JSON.stringify({
     action: "redeem",
     clientId: client.id,
@@ -108,7 +211,7 @@ export function PrintableRewardTicket({ reward, client }: {
         <div class="scan-text">Scan to redeem</div>
         <div class="brand">🏆 BXR+</div>
       </div>
-      <script>window.print(); window.close();</script>
+      <script>window.print(); window.close();<\/script>
       </body></html>
     `);
     win.document.close();
@@ -116,20 +219,15 @@ export function PrintableRewardTicket({ reward, client }: {
 
   return (
     <div className="text-center">
-      {/* Hidden QR for print extraction */}
       <div className="hidden" id={`reward-qr-${reward.id}`}>
         <QRCodeSVG value={qrValue} size={80} />
       </div>
-
-      {/* Visible ticket preview */}
       <div
         className="inline-block bg-card border-2 rounded-2xl p-5 cursor-pointer hover:shadow-lg transition-shadow relative"
         onClick={handlePrint}
       >
-        {/* Notch cuts */}
         <div className="absolute w-5 h-5 bg-background rounded-full -left-3 top-1/2 -translate-y-1/2 border-r-2" />
         <div className="absolute w-5 h-5 bg-background rounded-full -right-3 top-1/2 -translate-y-1/2 border-l-2" />
-
         <span className="text-4xl block mb-2">{reward.icon}</span>
         <p className="font-bold">{reward.name}</p>
         <p className="text-sm text-muted-foreground">{reward.point_cost} pts</p>
