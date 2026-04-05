@@ -11,7 +11,7 @@ import { PrintableClientCard, PrintableRewardTicket } from "@/components/Printab
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/types/database";
 
-type Tab = "dashboard" | "rewards" | "team";
+type Tab = "dashboard" | "rewards" | "team" | "printables";
 
 export default function ClientPage() {
   const { activeClient, clients, loading } = useClientContext();
@@ -38,6 +38,7 @@ export default function ClientPage() {
   const tabs: { key: Tab; label: string; icon: string }[] = [
     { key: "dashboard", label: "Dashboard", icon: "📊" },
     { key: "rewards", label: "Rewards & Behaviors", icon: "🎁" },
+    { key: "printables", label: "Printables", icon: "🖨️" },
     { key: "team", label: "Team", icon: "👥" },
   ];
 
@@ -76,7 +77,8 @@ export default function ClientPage() {
       {/* Tab content */}
       <div className="max-w-5xl mx-auto px-6 py-6">
         {tab === "dashboard" && <DashboardTab clientId={activeClient.id} />}
-        {tab === "rewards" && <RewardsTab clientId={activeClient.id} client={activeClient} />}
+        {tab === "rewards" && <RewardsTab clientId={activeClient.id} />}
+        {tab === "printables" && <PrintablesTab clientId={activeClient.id} client={activeClient} />}
         {tab === "team" && <TeamTab clientId={activeClient.id} isOwner={activeClient.isOwner} />}
       </div>
     </div>
@@ -198,7 +200,7 @@ function DashboardTab({ clientId }: { clientId: string }) {
 // REWARDS TAB
 // ═══════════════════════════════════════
 
-function RewardsTab({ clientId, client }: { clientId: string; client: any }) {
+function RewardsTab({ clientId }: { clientId: string }) {
   const { behaviors, rewards, loading, refresh } = useClientDetail(clientId);
 
   if (loading) return <p className="text-muted-foreground">Loading...</p>;
@@ -223,25 +225,11 @@ function RewardsTab({ clientId, client }: { clientId: string; client: any }) {
         <h3 className="font-semibold mb-3">🎁 Rewards <span className="text-muted-foreground font-normal text-sm">— what points buy</span></h3>
         <AddItemForm type="reward" clientId={clientId} onAdded={refresh} />
         {rewards.length > 0 && (
-          <>
-            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
-              {rewards.map((r) => (
-                <EditableItemCard key={r.id} item={r} type="reward" onUpdate={refresh} />
-              ))}
-            </div>
-
-            {/* Printable reward tickets */}
-            <div className="mt-6">
-              <h4 className="text-sm font-medium text-muted-foreground mb-3">
-                🖨️ Printable Reward Tickets <span className="font-normal">— print these out so clients can see and choose what to work toward</span>
-              </h4>
-              <div className="flex flex-wrap gap-6">
-                {rewards.map((r) => (
-                  <PrintableRewardTicket key={r.id} reward={r} client={client} />
-                ))}
-              </div>
-            </div>
-          </>
+          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
+            {rewards.map((r) => (
+              <EditableItemCard key={r.id} item={r} type="reward" onUpdate={refresh} />
+            ))}
+          </div>
         )}
       </div>
     </div>
@@ -371,6 +359,234 @@ function AddItemForm({ type, clientId, onAdded }: { type: "behavior" | "reward";
       </div>
       <Button type="submit" size="sm" className="h-9" disabled={busy}>Add</Button>
     </form>
+  );
+}
+
+// ═══════════════════════════════════════
+// PRINTABLES TAB
+// ═══════════════════════════════════════
+
+function PrintablesTab({ clientId, client }: { clientId: string; client: any }) {
+  const { behaviors, rewards, loading } = useClientDetail(clientId);
+  const [copies, setCopies] = useState(1);
+
+  if (loading) return <p className="text-muted-foreground">Loading...</p>;
+
+  function handlePrintAll() {
+    const win = window.open("", "_blank");
+    if (!win) return;
+
+    // Collect all QR SVGs from the DOM
+    const clientQR = document.getElementById(`print-qr-${client.id}`)?.innerHTML ?? "";
+    const rewardQRs = rewards.map((r) => ({
+      ...r,
+      qrHtml: document.getElementById(`reward-qr-${r.id}`)?.innerHTML ?? "",
+    }));
+
+    const pages: string[] = [];
+    for (let i = 0; i < copies; i++) {
+      // Client card
+      pages.push(`
+        <div class="page-break">
+          <div class="section-title">Client Card${copies > 1 ? ` (${i + 1}/${copies})` : ""}</div>
+          <div class="card" style="background: linear-gradient(135deg, #4f46e5, #7c3aed);">
+            <div class="card-top"><div class="brand">🏆 BXR+</div><div class="sticker">⭐</div></div>
+            <div class="chip"></div>
+            <div class="card-name">${client.full_name}</div>
+            <div class="card-sub">My Reward Card</div>
+            <div class="card-qr">${clientQR}</div>
+          </div>
+        </div>
+      `);
+
+      // Reward tickets — 4 per page
+      if (rewardQRs.length > 0) {
+        for (let j = 0; j < rewardQRs.length; j += 4) {
+          const batch = rewardQRs.slice(j, j + 4);
+          pages.push(`
+            <div class="page-break">
+              <div class="section-title">Reward Tickets${copies > 1 ? ` (${i + 1}/${copies})` : ""}</div>
+              <div class="ticket-grid">
+                ${batch.map((r) => `
+                  <div class="ticket">
+                    <div class="ticket-notch-l"></div><div class="ticket-notch-r"></div>
+                    <div class="ticket-icon">${r.icon}</div>
+                    <div class="ticket-name">${r.name}</div>
+                    <div class="ticket-cost">${r.point_cost} points</div>
+                    <div class="ticket-for">for ${client.full_name}</div>
+                    <div class="ticket-qr">${r.qrHtml}</div>
+                    <div class="ticket-scan">Scan to redeem</div>
+                  </div>
+                `).join("")}
+              </div>
+            </div>
+          `);
+        }
+      }
+
+      // Behavior reference card
+      if (behaviors.length > 0) {
+        pages.push(`
+          <div class="page-break">
+            <div class="section-title">Behavior Reference${copies > 1 ? ` (${i + 1}/${copies})` : ""}</div>
+            <div class="ref-card">
+              <div class="ref-header">
+                <span>⭐ Behaviors for ${client.full_name}</span>
+              </div>
+              <table class="ref-table">
+                <thead><tr><th>Behavior</th><th>Points</th></tr></thead>
+                <tbody>
+                  ${behaviors.map((b) => `
+                    <tr><td>${b.icon} ${b.name}</td><td class="pts">+${b.point_value}</td></tr>
+                  `).join("")}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        `);
+      }
+    }
+
+    win.document.write(`
+      <html><head><title>BXR+ Printables — ${client.full_name}</title>
+      <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: white; padding: 20px; }
+        .page-break { page-break-after: always; margin-bottom: 40px; }
+        .page-break:last-child { page-break-after: avoid; }
+        .section-title { font-size: 10px; color: #999; text-transform: uppercase; letter-spacing: 2px; margin-bottom: 16px; }
+
+        /* Card */
+        .card { width: 3.375in; height: 2.125in; border-radius: 14px; color: white; padding: 18px; position: relative; overflow: hidden; margin: 0 auto; }
+        .card::before { content: ''; position: absolute; top: -40px; right: -40px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.08); }
+        .card-top { display: flex; justify-content: space-between; align-items: flex-start; position: relative; z-index: 1; margin-bottom: 8px; }
+        .brand { font-size: 10px; letter-spacing: 2px; text-transform: uppercase; opacity: 0.7; }
+        .sticker { font-size: 28px; }
+        .chip { width: 34px; height: 26px; border-radius: 5px; background: rgba(255,255,255,0.3); margin-bottom: 14px; position: relative; z-index: 1; }
+        .card-name { font-size: 20px; font-weight: 800; position: relative; z-index: 1; }
+        .card-sub { font-size: 11px; opacity: 0.7; position: relative; z-index: 1; }
+        .card-qr { position: absolute; bottom: 12px; right: 12px; background: white; padding: 5px; border-radius: 8px; z-index: 1; }
+
+        /* Tickets */
+        .ticket-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; max-width: 6.5in; margin: 0 auto; }
+        .ticket { border: 2px solid #e5e7eb; border-radius: 16px; padding: 20px; text-align: center; position: relative; }
+        .ticket-notch-l, .ticket-notch-r { position: absolute; width: 18px; height: 18px; background: white; border-radius: 50%; top: 50%; transform: translateY(-50%); }
+        .ticket-notch-l { left: -11px; border-right: 2px solid #e5e7eb; }
+        .ticket-notch-r { right: -11px; border-left: 2px solid #e5e7eb; }
+        .ticket-icon { font-size: 32px; margin-bottom: 6px; }
+        .ticket-name { font-size: 14px; font-weight: 700; }
+        .ticket-cost { font-size: 12px; color: #6b7280; margin-bottom: 8px; }
+        .ticket-for { font-size: 10px; color: #9ca3af; margin-bottom: 10px; }
+        .ticket-qr { display: inline-block; padding: 6px; border: 1px solid #e5e7eb; border-radius: 8px; }
+        .ticket-scan { font-size: 9px; color: #9ca3af; margin-top: 4px; }
+
+        /* Behavior reference */
+        .ref-card { border: 2px solid #e5e7eb; border-radius: 12px; overflow: hidden; max-width: 5in; margin: 0 auto; }
+        .ref-header { background: #f9fafb; padding: 12px 16px; font-weight: 700; font-size: 14px; border-bottom: 2px solid #e5e7eb; }
+        .ref-table { width: 100%; border-collapse: collapse; }
+        .ref-table th { text-align: left; padding: 8px 16px; font-size: 11px; color: #6b7280; text-transform: uppercase; letter-spacing: 1px; border-bottom: 1px solid #e5e7eb; }
+        .ref-table td { padding: 10px 16px; font-size: 14px; border-bottom: 1px solid #f3f4f6; }
+        .ref-table .pts { text-align: right; font-weight: 600; color: #16a34a; }
+
+        @media print { 
+          body { padding: 0; } 
+          .page-break { margin-bottom: 0; }
+        }
+      </style></head><body>
+      ${pages.join("")}
+      <script>window.print();<\/script>
+      </body></html>
+    `);
+    win.document.close();
+  }
+
+  return (
+    <div className="space-y-8">
+      {/* Print All controls */}
+      <Card>
+        <CardContent className="py-5">
+          <div className="flex items-center justify-between">
+            <div>
+              <h3 className="font-semibold">Print All Materials</h3>
+              <p className="text-sm text-muted-foreground">
+                Client card, reward tickets, and behavior reference — ready to print and laminate.
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center gap-2">
+                <label className="text-sm text-muted-foreground">Copies:</label>
+                <Input type="number" min={1} max={20} value={copies} onChange={(e) => setCopies(Math.max(1, +e.target.value))}
+                  className="w-16 h-9 text-center" />
+              </div>
+              <Button onClick={handlePrintAll} size="lg">
+                🖨️ Print All
+              </Button>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+
+      {/* Client Card Preview */}
+      <div>
+        <h3 className="font-semibold mb-3">💳 Client Card</h3>
+        <p className="text-sm text-muted-foreground mb-4">Credit-card sized — print and laminate. Scan to open their dashboard.</p>
+        <PrintableClientCard client={client} />
+      </div>
+
+      {/* Reward Tickets */}
+      {rewards.length > 0 && (
+        <div>
+          <h3 className="font-semibold mb-3">🎫 Reward Tickets</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Print and display — clients can see what they're working toward. Scan a ticket to redeem.
+          </p>
+          <div className="flex flex-wrap gap-6">
+            {rewards.map((r) => (
+              <PrintableRewardTicket key={r.id} reward={r} client={client} />
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Behavior Reference */}
+      {behaviors.length > 0 && (
+        <div>
+          <h3 className="font-semibold mb-3">📋 Behavior Reference Sheet</h3>
+          <p className="text-sm text-muted-foreground mb-4">
+            Quick reference for the team — which behaviors earn how many points.
+          </p>
+          <Card className="max-w-md">
+            <CardContent className="py-0">
+              <div className="py-3 border-b font-semibold text-sm">
+                ⭐ Behaviors for {client.full_name}
+              </div>
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-xs text-muted-foreground uppercase">
+                    <th className="text-left py-2 font-medium">Behavior</th>
+                    <th className="text-right py-2 font-medium">Points</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {behaviors.map((b) => (
+                    <tr key={b.id} className="border-t">
+                      <td className="py-2">{b.icon} {b.name}</td>
+                      <td className="py-2 text-right text-green-600 font-semibold">+{b.point_value}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+
+      {rewards.length === 0 && behaviors.length === 0 && (
+        <p className="text-muted-foreground text-center py-8">
+          Add some behaviors and rewards first — then come back here to print everything.
+        </p>
+      )}
+    </div>
   );
 }
 
