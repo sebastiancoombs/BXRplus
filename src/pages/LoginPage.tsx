@@ -31,7 +31,8 @@ export default function LoginPage() {
         await signUp(email, password, fullName, role);
       }
     } catch (err: any) {
-      setError(err.message);
+      setError(err?.message ?? err?.toString() ?? "Something went wrong. Check your connection.");
+      console.error("Auth error:", err);
     } finally {
       setLoading(false);
     }
