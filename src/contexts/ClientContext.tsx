@@ -3,43 +3,52 @@ import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
 import type { Client, AppRole } from "@/types/database";
 
-interface ClientWithRole extends Client {
-  myRole: AppRole | null; // user's relationship to this client
+interface ClientWithMeta extends Client {
+  isOwner: boolean;
+  myRole: AppRole | null; // from client_staff, null if owner-only
 }
 
 interface ClientState {
-  clients: ClientWithRole[];
-  activeClient: ClientWithRole | null;
+  clients: ClientWithMeta[];
+  activeClient: ClientWithMeta | null;
   setActiveClientId: (id: string) => void;
   loading: boolean;
   refresh: () => Promise<void>;
+  createClient: (name: string, dob?: string) => Promise<void>;
 }
 
 const ClientContext = createContext<ClientState | null>(null);
 
 export function ClientProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [clients, setClients] = useState<ClientWithRole[]>([]);
+  const [clients, setClients] = useState<ClientWithMeta[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
-  const fetch = useCallback(async () => {
+  const fetchClients = useCallback(async () => {
     if (!user) { setClients([]); setLoading(false); return; }
     setLoading(true);
 
-    // Get all client_staff rows for this user, with the client data
-    const { data: staffRows } = await supabase
+    // Get all clients I can see (owned + shared via client_staff)
+    const { data: allClients } = await supabase
+      .from("clients")
+      .select("*")
+      .order("full_name");
+
+    // Get my staff relationships
+    const { data: myStaff } = await supabase
       .from("client_staff")
-      .select("client_id, relationship, client:clients(*)")
+      .select("client_id, relationship")
       .eq("user_id", user.id);
 
-    const list: ClientWithRole[] = (staffRows ?? [])
-      .filter((r: any) => r.client)
-      .map((r: any) => ({
-        ...r.client,
-        myRole: r.relationship as AppRole,
-      }))
-      .sort((a: ClientWithRole, b: ClientWithRole) => a.full_name.localeCompare(b.full_name));
+    const staffMap = new Map<string, AppRole>();
+    (myStaff ?? []).forEach((s: any) => staffMap.set(s.client_id, s.relationship));
+
+    const list: ClientWithMeta[] = (allClients ?? []).map((c: any) => ({
+      ...c,
+      isOwner: c.owner_id === user.id,
+      myRole: staffMap.get(c.id) ?? null,
+    }));
 
     setClients(list);
     setActiveId((prev) => {
@@ -49,20 +58,26 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     setLoading(false);
   }, [user]);
 
-  useEffect(() => { fetch(); }, [fetch]);
+  useEffect(() => { fetchClients(); }, [fetchClients]);
+
+  const createClient = async (name: string, dob?: string) => {
+    if (!user) return;
+    await supabase.from("clients").insert({
+      full_name: name,
+      date_of_birth: dob || null,
+      avatar_url: null,
+      owner_id: user.id,
+    });
+    await fetchClients();
+  };
 
   const activeClient = clients.find((c) => c.id === activeId) ?? null;
 
   return (
-    <ClientContext.Provider
-      value={{
-        clients,
-        activeClient,
-        setActiveClientId: setActiveId,
-        loading,
-        refresh: fetch,
-      }}
-    >
+    <ClientContext.Provider value={{
+      clients, activeClient, setActiveClientId: setActiveId,
+      loading, refresh: fetchClients, createClient,
+    }}>
       {children}
     </ClientContext.Provider>
   );

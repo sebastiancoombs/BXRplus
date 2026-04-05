@@ -4,7 +4,7 @@ export type TransactionType = "credit" | "debit";
 export interface Profile {
   id: string;
   full_name: string;
-  role?: AppRole | null; // legacy — role now lives per-client on client_staff
+  role?: AppRole | null; // legacy — role lives per-client on client_staff
   avatar_url: string | null;
   created_at: string;
 }
@@ -16,6 +16,7 @@ export interface Client {
   avatar_url: string | null;
   qr_code: string;
   balance: number;
+  owner_id: string | null;
   created_at: string;
 }
 
@@ -62,13 +63,11 @@ export interface Transaction {
   note: string | null;
   created_by: string;
   created_at: string;
-  // joined
   behavior?: Behavior;
   reward?: Reward;
   creator?: Profile;
 }
 
-// Supabase generated types placeholder
 export interface Database {
   public: {
     Tables: {

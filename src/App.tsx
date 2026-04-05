@@ -4,9 +4,7 @@ import { ClientProvider } from "@/contexts/ClientContext";
 import AppLayout from "@/components/AppLayout";
 import LandingPage from "@/pages/LandingPage";
 import LoginPage from "@/pages/LoginPage";
-import DashboardPage from "@/pages/DashboardPage";
-import RewardsPage from "@/pages/RewardsPage";
-import TeamPage from "@/pages/TeamPage";
+import ClientPage from "@/pages/ClientPage";
 import ScanPage from "@/pages/ScanPage";
 import ProfilePage from "@/pages/ProfilePage";
 
@@ -32,9 +30,7 @@ export default function App() {
           <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
-            <Route path="/dashboard" element={<DashboardPage />} />
-            <Route path="/rewards" element={<RewardsPage />} />
-            <Route path="/team" element={<TeamPage />} />
+            <Route path="/dashboard" element={<ClientPage />} />
             <Route path="/scan" element={<ScanPage />} />
             <Route path="/profile" element={<ProfilePage />} />
           </Route>
