@@ -15,21 +15,22 @@ interface CardTheme {
   bg: string;
   chipColor: string;
   textClass: string;
+  textHex: string;
 }
 
 const cardThemes: CardTheme[] = [
-  { id: "galaxy", label: "Galaxy", emoji: "🚀", bg: "linear-gradient(135deg, #1e1b4b, #4f46e5, #7c3aed)", chipColor: "#a78bfa", textClass: "text-white" },
-  { id: "ocean", label: "Ocean", emoji: "🐬", bg: "linear-gradient(135deg, #0c4a6e, #0284c7, #38bdf8)", chipColor: "#7dd3fc", textClass: "text-white" },
-  { id: "sunset", label: "Sunset", emoji: "🌅", bg: "linear-gradient(135deg, #9a3412, #ea580c, #fbbf24)", chipColor: "#fde68a", textClass: "text-white" },
-  { id: "forest", label: "Forest", emoji: "🌲", bg: "linear-gradient(135deg, #14532d, #16a34a, #86efac)", chipColor: "#bbf7d0", textClass: "text-white" },
-  { id: "candy", label: "Candy", emoji: "🍬", bg: "linear-gradient(135deg, #ec4899, #f472b6, #fda4af)", chipColor: "#fecdd3", textClass: "text-white" },
-  { id: "dino", label: "Dinosaur", emoji: "🦕", bg: "linear-gradient(135deg, #365314, #65a30d, #a3e635)", chipColor: "#d9f99d", textClass: "text-white" },
-  { id: "space", label: "Space", emoji: "👾", bg: "linear-gradient(135deg, #0f172a, #1e293b, #334155)", chipColor: "#94a3b8", textClass: "text-white" },
-  { id: "rainbow", label: "Rainbow", emoji: "🌈", bg: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6)", chipColor: "#fde68a", textClass: "text-white" },
-  { id: "unicorn", label: "Unicorn", emoji: "🦄", bg: "linear-gradient(135deg, #c084fc, #f0abfc, #fbcfe8)", chipColor: "#fae8ff", textClass: "text-purple-900" },
-  { id: "sports", label: "Sports", emoji: "⚽", bg: "linear-gradient(135deg, #1e3a5f, #2563eb, #60a5fa)", chipColor: "#bfdbfe", textClass: "text-white" },
-  { id: "superhero", label: "Superhero", emoji: "💥", bg: "linear-gradient(135deg, #991b1b, #dc2626, #fbbf24)", chipColor: "#fde68a", textClass: "text-white" },
-  { id: "arctic", label: "Arctic", emoji: "🐧", bg: "linear-gradient(135deg, #e0f2fe, #bae6fd, #7dd3fc)", chipColor: "#0ea5e9", textClass: "text-sky-900" },
+  { id: "galaxy", label: "Galaxy", emoji: "🚀", bg: "linear-gradient(135deg, #1e1b4b, #4f46e5, #7c3aed)", chipColor: "#a78bfa", textClass: "text-white", textHex: "#ffffff" },
+  { id: "ocean", label: "Ocean", emoji: "🐬", bg: "linear-gradient(135deg, #0c4a6e, #0284c7, #38bdf8)", chipColor: "#7dd3fc", textClass: "text-white", textHex: "#ffffff" },
+  { id: "sunset", label: "Sunset", emoji: "🌅", bg: "linear-gradient(135deg, #9a3412, #ea580c, #fbbf24)", chipColor: "#fde68a", textClass: "text-white", textHex: "#ffffff" },
+  { id: "forest", label: "Forest", emoji: "🌲", bg: "linear-gradient(135deg, #14532d, #16a34a, #86efac)", chipColor: "#bbf7d0", textClass: "text-white", textHex: "#ffffff" },
+  { id: "candy", label: "Candy", emoji: "🍬", bg: "linear-gradient(135deg, #ec4899, #f472b6, #fda4af)", chipColor: "#fecdd3", textClass: "text-white", textHex: "#ffffff" },
+  { id: "dino", label: "Dinosaur", emoji: "🦕", bg: "linear-gradient(135deg, #365314, #65a30d, #a3e635)", chipColor: "#d9f99d", textClass: "text-white", textHex: "#ffffff" },
+  { id: "space", label: "Space", emoji: "👾", bg: "linear-gradient(135deg, #0f172a, #1e293b, #334155)", chipColor: "#94a3b8", textClass: "text-white", textHex: "#ffffff" },
+  { id: "rainbow", label: "Rainbow", emoji: "🌈", bg: "linear-gradient(135deg, #ef4444, #f97316, #eab308, #22c55e, #3b82f6, #8b5cf6)", chipColor: "#fde68a", textClass: "text-white", textHex: "#ffffff" },
+  { id: "unicorn", label: "Unicorn", emoji: "🦄", bg: "linear-gradient(135deg, #c084fc, #f0abfc, #fbcfe8)", chipColor: "#fae8ff", textClass: "text-purple-900", textHex: "#581c87" },
+  { id: "sports", label: "Sports", emoji: "⚽", bg: "linear-gradient(135deg, #1e3a5f, #2563eb, #60a5fa)", chipColor: "#bfdbfe", textClass: "text-white", textHex: "#ffffff" },
+  { id: "superhero", label: "Superhero", emoji: "💥", bg: "linear-gradient(135deg, #991b1b, #dc2626, #fbbf24)", chipColor: "#fde68a", textClass: "text-white", textHex: "#ffffff" },
+  { id: "arctic", label: "Arctic", emoji: "🐧", bg: "linear-gradient(135deg, #e0f2fe, #bae6fd, #7dd3fc)", chipColor: "#0ea5e9", textClass: "text-sky-900", textHex: "#0c4a6e" },
 ];
 
 const stickerOptions = ["⭐", "🌟", "🎯", "🔥", "💎", "🏅", "🎮", "🎨", "🎵", "🐾", "🦋", "🌸", "⚡", "🍕", "🎪"];
@@ -48,7 +49,7 @@ export function PrintableClientCard({ client }: { client: Client }) {
       <style>
         * { margin: 0; padding: 0; box-sizing: border-box; }
         body { display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f5f5; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-        .card { width: 3.375in; height: 2.125in; border-radius: 14px; background: ${theme.bg}; padding: 18px; position: relative; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
+        .card { width: 3.375in; height: 2.125in; border-radius: 14px; background: ${theme.bg}; color: ${theme.textHex}; padding: 18px; position: relative; overflow: hidden; box-shadow: 0 4px 24px rgba(0,0,0,0.15); }
         .card::before { content: ''; position: absolute; top: -40px; right: -40px; width: 140px; height: 140px; border-radius: 50%; background: rgba(255,255,255,0.08); }
         .card::after { content: ''; position: absolute; bottom: -50px; left: -30px; width: 120px; height: 120px; border-radius: 50%; background: rgba(255,255,255,0.05); }
         .top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; position: relative; z-index: 1; }
@@ -59,7 +60,7 @@ export function PrintableClientCard({ client }: { client: Client }) {
         .subtitle { font-size: 11px; opacity: 0.7; margin-top: 2px; position: relative; z-index: 1; }
         .qr-wrap { position: absolute; bottom: 12px; right: 12px; background: white; padding: 5px; border-radius: 8px; z-index: 1; }
         .theme-emoji { position: absolute; bottom: 10px; left: 16px; font-size: 22px; opacity: 0.3; z-index: 0; }
-        @media print { body { background: white; } .card { box-shadow: none; border: 1px solid #ddd; } }
+        @media print { body { background: white; } .card { box-shadow: none; border: 1px solid #ddd; -webkit-print-color-adjust: exact; print-color-adjust: exact; } }
       </style></head><body>
       <div class="card">
         <div class="top">
@@ -67,8 +68,8 @@ export function PrintableClientCard({ client }: { client: Client }) {
           <div class="sticker">${sticker}</div>
         </div>
         <div class="chip"></div>
-        <div class="name ${theme.textClass}">${client.full_name}</div>
-        <div class="subtitle ${theme.textClass}">My Reward Card</div>
+        <div class="name">${client.full_name}</div>
+        <div class="subtitle">My Reward Card</div>
         <div class="theme-emoji">${theme.emoji}</div>
         <div class="qr-wrap">
           ${document.getElementById('print-qr-' + client.id)?.innerHTML ?? ''}
