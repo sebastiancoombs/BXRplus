@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
-import { useClients } from "@/hooks/useClients";
 import { useAuth } from "@/contexts/AuthContext";
+import { useClientContext } from "@/contexts/ClientContext";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,9 +19,8 @@ interface StaffMember {
 
 export default function TeamPage() {
   const { profile } = useAuth();
-  const { clients, loading, refresh: refreshClients } = useClients();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-  const activeId = selectedId ?? clients[0]?.id ?? null;
+  const { clients, activeClient, setActiveClientId, loading, refresh: refreshClients } = useClientContext();
+  const activeId = activeClient?.id ?? null;
 
   // Add client form
   const [showAdd, setShowAdd] = useState(false);
@@ -91,7 +90,7 @@ export default function TeamPage() {
             {clients.map((c) => (
               <button
                 key={c.id}
-                onClick={() => setSelectedId(c.id)}
+                onClick={() => setActiveClientId(c.id)}
                 className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
                   activeId === c.id
                     ? "bg-primary text-primary-foreground"

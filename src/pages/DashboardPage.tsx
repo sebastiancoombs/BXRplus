@@ -1,18 +1,15 @@
 import { useState } from "react";
-import { useClients, useClientDetail, awardPoints, redeemReward } from "@/hooks/useClients";
+import { useClientContext } from "@/contexts/ClientContext";
+import { useClientDetail, awardPoints, redeemReward } from "@/hooks/useClients";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
-  const { clients, loading } = useClients();
-  const [selectedId, setSelectedId] = useState<string | null>(null);
-
-  // Auto-select first client
-  const activeId = selectedId ?? clients[0]?.id ?? null;
+  const { activeClient, loading } = useClientContext();
 
   if (loading) return <p className="text-muted-foreground">Loading...</p>;
-  if (clients.length === 0)
+  if (!activeClient)
     return (
       <div className="text-center py-20">
         <p className="text-4xl mb-4">👋</p>
@@ -23,31 +20,20 @@ export default function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Dashboard</h1>
-        {/* Client selector */}
-        {clients.length > 1 && (
-          <select
-            value={activeId ?? ""}
-            onChange={(e) => setSelectedId(e.target.value)}
-            className="rounded-md border border-input bg-background px-3 py-2 text-sm"
-          >
-            {clients.map((c) => (
-              <option key={c.id} value={c.id}>
-                {c.full_name}
-              </option>
-            ))}
-          </select>
-        )}
-      </div>
-
-      {activeId && <ClientDashboardContent clientId={activeId} />}
+      <h1 className="text-2xl font-bold">Dashboard — {activeClient.full_name}</h1>
+      <ClientDashboardContent clientId={activeClient.id} />
     </div>
   );
 }
 
 function ClientDashboardContent({ clientId }: { clientId: string }) {
   const { client, behaviors, rewards, transactions, loading, refresh } = useClientDetail(clientId);
+  const { refresh: refreshClients } = useClientContext();
+
+  async function handleRefresh() {
+    await refresh();
+    await refreshClients();
+  }
 
   if (loading) return <p className="text-muted-foreground">Loading client data...</p>;
   if (!client) return <p>Client not found.</p>;
@@ -64,7 +50,6 @@ function ClientDashboardContent({ clientId }: { clientId: string }) {
           </CardContent>
         </Card>
 
-        {/* Quick Award Buttons */}
         <Card className="md:col-span-2">
           <CardContent className="py-4">
             <p className="text-sm font-medium text-muted-foreground mb-3">Quick Award</p>
@@ -73,7 +58,7 @@ function ClientDashboardContent({ clientId }: { clientId: string }) {
             ) : (
               <div className="flex flex-wrap gap-2">
                 {behaviors.map((b) => (
-                  <QuickAwardBtn key={b.id} behavior={b} clientId={client.id} onDone={refresh} />
+                  <QuickAwardBtn key={b.id} behavior={b} clientId={client.id} onDone={handleRefresh} />
                 ))}
               </div>
             )}
@@ -103,7 +88,7 @@ function ClientDashboardContent({ clientId }: { clientId: string }) {
                     canRedeem={canRedeem}
                     onRedeem={async () => {
                       await redeemReward(client.id, r.id);
-                      refresh();
+                      handleRefresh();
                     }}
                   />
                 );
@@ -184,7 +169,6 @@ function ClientDashboardContent({ clientId }: { clientId: string }) {
   );
 }
 
-// ── Quick award button ──
 function QuickAwardBtn({
   behavior,
   clientId,
@@ -225,7 +209,6 @@ function QuickAwardBtn({
   );
 }
 
-// ── Thermometer progress row ──
 function ThermometerRow({
   icon,
   name,
@@ -251,7 +234,6 @@ function ThermometerRow({
     setBusy(false);
   }
 
-  // Color gradient based on progress
   const barColor =
     pct >= 100 ? "bg-green-500" : pct >= 60 ? "bg-yellow-500" : pct >= 30 ? "bg-orange-400" : "bg-red-400";
 
@@ -265,7 +247,6 @@ function ThermometerRow({
             {current} / {goal}
           </span>
         </div>
-        {/* Thermometer */}
         <div className="w-full bg-muted rounded-full h-3 overflow-hidden">
           <div
             className={`h-full rounded-full transition-all duration-500 ${barColor}`}
