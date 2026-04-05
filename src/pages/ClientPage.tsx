@@ -11,7 +11,7 @@ import { PrintableClientCard, PrintableRewardTicket } from "@/components/Printab
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/types/database";
 
-type Tab = "dashboard" | "rewards" | "data" | "printables" | "team";
+type Tab = "dashboard" | "rewards" | "data" | "printables" | "team" | "settings";
 
 // Keep tab state outside the component so it survives re-renders from context refreshes
 let persistedTab: Tab = "dashboard";
@@ -45,6 +45,7 @@ export default function ClientPage() {
     { key: "data", label: "Data", icon: "📈" },
     { key: "printables", label: "Printables", icon: "🖨️" },
     { key: "team", label: "Team", icon: "👥" },
+    { key: "settings", label: "Client Settings", icon: "✏️" },
   ];
 
   return (
@@ -87,6 +88,7 @@ export default function ClientPage() {
         {tab === "data" && <DataTab clientId={activeClient.id} clientName={activeClient.full_name} />}
         {tab === "printables" && <PrintablesTab clientId={activeClient.id} client={activeClient} />}
         {tab === "team" && <TeamTab clientId={activeClient.id} isOwner={activeClient.isOwner} />}
+        {tab === "settings" && <ClientSettingsTab clientId={activeClient.id} isOwner={activeClient.isOwner} />}
       </div>
     </div>
   );
@@ -1147,6 +1149,131 @@ function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) 
               </Button>
             </form>
             {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════
+// CLIENT SETTINGS TAB
+// ═══════════════════════════════════════
+
+function ClientSettingsTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) {
+  const { refresh: refreshClients } = useClientContext();
+  const [client, setClient] = useState<any>(null);
+  const [loading, setLoading] = useState(true);
+  const [name, setName] = useState("");
+  const [dob, setDob] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+
+  useEffect(() => {
+    supabase.from("clients").select("*").eq("id", clientId).single().then(({ data }) => {
+      setClient(data);
+      setName(data?.full_name ?? "");
+      setDob(data?.date_of_birth ?? "");
+      setLoading(false);
+    });
+  }, [clientId]);
+
+  async function handleSave(e: React.FormEvent) {
+    e.preventDefault();
+    if (!name.trim()) return;
+    setSaving(true);
+    setSaved(false);
+    await supabase.from("clients").update({
+      full_name: name.trim(),
+      date_of_birth: dob || null,
+    }).eq("id", clientId);
+    setSaving(false);
+    setSaved(true);
+    await refreshClients();
+    setTimeout(() => setSaved(false), 2000);
+  }
+
+  async function handleDelete() {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    setDeleting(true);
+    // Delete staff links first, then client
+    await supabase.from("client_staff").delete().eq("client_id", clientId);
+    await supabase.from("behaviors").delete().eq("client_id", clientId);
+    await supabase.from("rewards").delete().eq("client_id", clientId);
+    await supabase.from("transactions").delete().eq("client_id", clientId);
+    await supabase.from("clients").delete().eq("id", clientId);
+    await refreshClients();
+    persistedTab = "dashboard";
+  }
+
+  if (loading) return <p className="text-muted-foreground">Loading...</p>;
+
+  return (
+    <div className="space-y-6 max-w-lg">
+      {/* Edit Details */}
+      <Card>
+        <CardContent className="py-5">
+          <h3 className="font-semibold mb-4">Client Details</h3>
+          <form onSubmit={handleSave} className="space-y-4">
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Full Name</label>
+              <Input value={name} onChange={(e) => setName(e.target.value)} required />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Date of Birth</label>
+              <Input type="date" value={dob} onChange={(e) => setDob(e.target.value)} />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">QR Code</label>
+              <Input value={client?.qr_code ?? ""} disabled className="bg-muted font-mono text-xs" />
+              <p className="text-[11px] text-muted-foreground">Auto-generated. Used for card scanning.</p>
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Current Balance</label>
+              <Input value={`${client?.balance ?? 0} points`} disabled className="bg-muted" />
+            </div>
+            <div className="space-y-1.5">
+              <label className="text-sm font-medium">Created</label>
+              <Input
+                value={client?.created_at ? new Date(client.created_at).toLocaleDateString("en-US", { month: "long", day: "numeric", year: "numeric" }) : ""}
+                disabled className="bg-muted"
+              />
+            </div>
+            <div className="flex items-center gap-2">
+              <Button type="submit" disabled={saving}>
+                {saving ? "Saving..." : "Save Changes"}
+              </Button>
+              {saved && <span className="text-sm text-green-600">✓ Saved</span>}
+            </div>
+          </form>
+        </CardContent>
+      </Card>
+
+      {/* Danger Zone — owner only */}
+      {isOwner && (
+        <Card className="border-destructive/30">
+          <CardContent className="py-5">
+            <h3 className="font-semibold text-destructive mb-2">Danger Zone</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Deleting a client removes all their data — behaviors, rewards, transactions, and team assignments. This cannot be undone.
+            </p>
+            {confirmDelete ? (
+              <div className="flex items-center gap-3">
+                <p className="text-sm text-destructive font-medium">Are you sure?</p>
+                <Button variant="destructive" size="sm" onClick={handleDelete} disabled={deleting}>
+                  {deleting ? "Deleting..." : "Yes, Delete Everything"}
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => setConfirmDelete(false)}>
+                  Cancel
+                </Button>
+              </div>
+            ) : (
+              <Button variant="destructive" onClick={handleDelete}>
+                Delete Client
+              </Button>
+            )}
           </CardContent>
         </Card>
       )}
