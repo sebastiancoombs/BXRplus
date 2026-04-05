@@ -8,6 +8,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PrintableClientCard, PrintableRewardTicket } from "@/components/PrintableCard";
+import IconPicker from "@/components/IconPicker";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/types/database";
 
@@ -304,8 +305,8 @@ function EditableItemCard({ item, type, onUpdate }: {
     return (
       <Card className="border-primary/30">
         <CardContent className="py-3 space-y-2">
-          <div className="flex gap-2">
-            <Input value={icon} onChange={(e) => setIcon(e.target.value)} className="w-12 text-center text-lg h-8 flex-shrink-0" />
+          <div className="flex gap-2 items-center">
+            <IconPicker value={icon} onChange={setIcon} />
             <Input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 min-w-0 h-8 text-sm" />
           </div>
           <div className="flex flex-wrap items-center gap-2">
@@ -330,10 +331,10 @@ function EditableItemCard({ item, type, onUpdate }: {
     <Card className="group">
       <CardContent className="py-3">
         <div className="flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <span className="text-xl">{item.icon}</span>
-            <div>
-              <p className="font-medium text-sm">{item.name}</p>
+          <div className="flex items-center gap-2 min-w-0">
+            <ItemIcon icon={item.icon} />
+            <div className="min-w-0">
+              <p className="font-medium text-sm truncate">{item.name}</p>
               <Badge variant={type === "behavior" ? "secondary" : "default"} className="text-xs">
                 {type === "behavior" ? `+${item.point_value}` : `${item.point_cost} pts`}
               </Badge>
@@ -386,8 +387,8 @@ function AddItemForm({ type, clientId, onAdded }: { type: "behavior" | "reward";
 
   return (
     <form onSubmit={submit} className="space-y-2">
-      <div className="flex gap-2">
-        <Input value={icon} onChange={(e) => setIcon(e.target.value)} className="w-12 text-center text-lg h-9 flex-shrink-0" />
+      <div className="flex gap-2 items-center">
+        <IconPicker value={icon} onChange={setIcon} clientId={clientId} />
         <Input value={name} onChange={(e) => setName(e.target.value)}
           placeholder={type === "behavior" ? "e.g. Followed instructions" : "e.g. iPad time"}
           className="flex-1 min-w-0 h-9" required />
@@ -1412,6 +1413,13 @@ function StaffRow({ staff, isOwner, roleColors, onChangeRole, onMakeOwner, onRem
 // SHARED COMPONENTS
 // ═══════════════════════════════════════
 
+function ItemIcon({ icon, size = "text-xl" }: { icon: string; size?: string }) {
+  if (icon.startsWith("http")) {
+    return <img src={icon} alt="" className="w-6 h-6 object-contain rounded flex-shrink-0" />;
+  }
+  return <span className={`${size} flex-shrink-0`}>{icon}</span>;
+}
+
 function QuickAwardBtn({ behavior, clientId, onDone }: { behavior: any; clientId: string; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
@@ -1436,9 +1444,9 @@ function QuickAwardBtn({ behavior, clientId, onDone }: { behavior: any; clientId
       className={`transition-all ${flash ? "ring-2 ring-green-400 bg-green-50" : ""}`}
     >
       {confirming ? (
-        <>{behavior.icon} Award +{behavior.point_value}?</>
+        <><ItemIcon icon={behavior.icon} size="text-base" /> Award +{behavior.point_value}?</>
       ) : (
-        <>{behavior.icon} {behavior.name} <Badge variant="secondary" className="ml-1.5 text-xs">+{behavior.point_value}</Badge></>
+        <><ItemIcon icon={behavior.icon} size="text-base" /> {behavior.name} <Badge variant="secondary" className="ml-1.5 text-xs">+{behavior.point_value}</Badge></>
       )}
     </Button>
   );
@@ -1462,7 +1470,7 @@ function ThermometerRow({ icon, name, current, goal, pct, canRedeem, onRedeem }:
   return (
     <div className="space-y-1.5">
       <div className="flex items-center gap-2">
-        <span className="text-xl flex-shrink-0">{icon}</span>
+        <ItemIcon icon={icon} />
         <span className="text-sm font-medium truncate flex-1 min-w-0">{name}</span>
         <span className="text-xs text-muted-foreground flex-shrink-0">{current}/{goal}</span>
       </div>
