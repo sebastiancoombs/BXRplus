@@ -5,7 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
+
 
 export default function ProfilePage() {
   const { user, profile, signOut } = useAuth();
@@ -72,7 +72,7 @@ export default function ProfilePage() {
             <div>
               <p className="font-medium text-lg">{profile?.full_name}</p>
               <p className="text-sm text-muted-foreground">{user?.email}</p>
-              <Badge className="mt-1 capitalize">{profile?.role}</Badge>
+              {/* Role is per-client, not per-account */}
             </div>
           </div>
 
@@ -86,11 +86,7 @@ export default function ProfilePage() {
               <Input value={user?.email ?? ""} disabled className="bg-muted" />
               <p className="text-xs text-muted-foreground">Email cannot be changed here.</p>
             </div>
-            <div className="space-y-1">
-              <Label>Role</Label>
-              <Input value={profile?.role?.toUpperCase() ?? ""} disabled className="bg-muted" />
-              <p className="text-xs text-muted-foreground">Contact your BCBA to change roles.</p>
-            </div>
+            {/* Role is per-client — managed on the Team page */}
             <div className="flex items-center gap-2">
               <Button type="submit" disabled={saving}>
                 {saving ? "Saving..." : "Save Changes"}

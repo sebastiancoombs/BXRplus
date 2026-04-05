@@ -5,7 +5,6 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import type { AppRole } from "@/types/database";
 
 export default function LoginPage() {
   const { signIn, signUp } = useAuth();
@@ -16,7 +15,6 @@ export default function LoginPage() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [fullName, setFullName] = useState("");
-  const [role, setRole] = useState<AppRole>("rbt");
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
@@ -28,7 +26,7 @@ export default function LoginPage() {
       if (mode === "login") {
         await signIn(email, password);
       } else {
-        await signUp(email, password, fullName, role);
+        await signUp(email, password, fullName);
       }
     } catch (err: any) {
       setError(err?.message ?? err?.toString() ?? "Something went wrong. Check your connection.");
@@ -47,38 +45,24 @@ export default function LoginPage() {
           </Link>
         </div>
         <CardHeader className="text-center">
-          <CardTitle className="text-2xl font-bold">🏆 Token Economy</CardTitle>
+          <CardTitle className="text-2xl font-bold">🏆 BXR+</CardTitle>
           <CardDescription>
-            {mode === "login" ? "Sign in to manage rewards" : "Create your account"}
+            {mode === "login" ? "Sign in to your account" : "Create your free account"}
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             {mode === "register" && (
-              <>
-                <div className="space-y-2">
-                  <Label htmlFor="fullName">Full Name</Label>
-                  <Input
-                    id="fullName"
-                    value={fullName}
-                    onChange={(e) => setFullName(e.target.value)}
-                    required
-                  />
-                </div>
-                <div className="space-y-2">
-                  <Label htmlFor="role">Role</Label>
-                  <select
-                    id="role"
-                    value={role}
-                    onChange={(e) => setRole(e.target.value as AppRole)}
-                    className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm"
-                  >
-                    <option value="bcba">BCBA</option>
-                    <option value="rbt">RBT</option>
-                    <option value="parent">Parent</option>
-                  </select>
-                </div>
-              </>
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Your Name</Label>
+                <Input
+                  id="fullName"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="e.g. Dr. Sarah Chen"
+                  required
+                />
+              </div>
             )}
             <div className="space-y-2">
               <Label htmlFor="email">Email</Label>

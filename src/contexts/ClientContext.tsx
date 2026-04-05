@@ -1,11 +1,15 @@
 import { createContext, useContext, useState, useEffect, useCallback, type ReactNode } from "react";
 import { supabase } from "@/lib/supabase";
 import { useAuth } from "@/contexts/AuthContext";
-import type { Client } from "@/types/database";
+import type { Client, AppRole } from "@/types/database";
+
+interface ClientWithRole extends Client {
+  myRole: AppRole | null; // user's relationship to this client
+}
 
 interface ClientState {
-  clients: Client[];
-  activeClient: Client | null;
+  clients: ClientWithRole[];
+  activeClient: ClientWithRole | null;
   setActiveClientId: (id: string) => void;
   loading: boolean;
   refresh: () => Promise<void>;
@@ -15,17 +19,29 @@ const ClientContext = createContext<ClientState | null>(null);
 
 export function ClientProvider({ children }: { children: ReactNode }) {
   const { user } = useAuth();
-  const [clients, setClients] = useState<Client[]>([]);
+  const [clients, setClients] = useState<ClientWithRole[]>([]);
   const [activeId, setActiveId] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
 
   const fetch = useCallback(async () => {
     if (!user) { setClients([]); setLoading(false); return; }
     setLoading(true);
-    const { data } = await supabase.from("clients").select("*").order("full_name");
-    const list = data ?? [];
+
+    // Get all client_staff rows for this user, with the client data
+    const { data: staffRows } = await supabase
+      .from("client_staff")
+      .select("client_id, relationship, client:clients(*)")
+      .eq("user_id", user.id);
+
+    const list: ClientWithRole[] = (staffRows ?? [])
+      .filter((r: any) => r.client)
+      .map((r: any) => ({
+        ...r.client,
+        myRole: r.relationship as AppRole,
+      }))
+      .sort((a: ClientWithRole, b: ClientWithRole) => a.full_name.localeCompare(b.full_name));
+
     setClients(list);
-    // Keep current selection if still valid, else pick first
     setActiveId((prev) => {
       if (prev && list.find((c) => c.id === prev)) return prev;
       return list[0]?.id ?? null;

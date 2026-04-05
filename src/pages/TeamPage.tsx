@@ -14,23 +14,23 @@ interface StaffMember {
   id: string;
   user_id: string;
   relationship: AppRole;
-  profile?: { full_name: string; role: AppRole } | null;
+  profile?: { full_name: string } | null;
 }
 
 export default function TeamPage() {
-  const { profile } = useAuth();
+  const { user } = useAuth();
   const { clients, activeClient, setActiveClientId, loading, refresh: refreshClients } = useClientContext();
-  const activeId = activeClient?.id ?? null;
 
   // Add client form
   const [showAdd, setShowAdd] = useState(false);
   const [newName, setNewName] = useState("");
   const [newDob, setNewDob] = useState("");
+  const [myRole, setMyRole] = useState<AppRole>("bcba");
   const [adding, setAdding] = useState(false);
 
   async function addClient(e: React.FormEvent) {
     e.preventDefault();
-    if (!newName.trim() || !profile) return;
+    if (!newName.trim() || !user) return;
     setAdding(true);
     const { data } = await supabase
       .from("clients")
@@ -40,8 +40,8 @@ export default function TeamPage() {
     if (data) {
       await supabase.from("client_staff").insert({
         client_id: data.id,
-        user_id: profile.id,
-        relationship: profile.role,
+        user_id: user.id,
+        relationship: myRole,
       });
     }
     setNewName("");
@@ -56,24 +56,36 @@ export default function TeamPage() {
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Team Management</h1>
+        <h1 className="text-2xl font-bold">Team & Clients</h1>
         <Button onClick={() => setShowAdd(!showAdd)}>+ Add Client</Button>
       </div>
 
       {showAdd && (
         <Card>
           <CardContent className="py-4">
-            <form onSubmit={addClient} className="flex gap-3 items-end">
-              <div className="flex-1 space-y-1">
+            <form onSubmit={addClient} className="flex flex-wrap gap-3 items-end">
+              <div className="flex-1 min-w-[180px] space-y-1">
                 <Label className="text-xs">Client Name</Label>
-                <Input value={newName} onChange={(e) => setNewName(e.target.value)} required />
+                <Input value={newName} onChange={(e) => setNewName(e.target.value)} placeholder="e.g. Alex" required />
               </div>
               <div className="space-y-1">
                 <Label className="text-xs">Date of Birth</Label>
                 <Input type="date" value={newDob} onChange={(e) => setNewDob(e.target.value)} />
               </div>
+              <div className="w-32 space-y-1">
+                <Label className="text-xs">My Role</Label>
+                <select
+                  value={myRole}
+                  onChange={(e) => setMyRole(e.target.value as AppRole)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm h-9"
+                >
+                  <option value="bcba">BCBA</option>
+                  <option value="rbt">RBT</option>
+                  <option value="parent">Parent</option>
+                </select>
+              </div>
               <Button type="submit" disabled={adding}>
-                {adding ? "Adding..." : "Add"}
+                {adding ? "Adding..." : "Add Client"}
               </Button>
             </form>
           </CardContent>
@@ -81,34 +93,50 @@ export default function TeamPage() {
       )}
 
       {clients.length === 0 ? (
-        <p className="text-muted-foreground">No clients yet. Add one above.</p>
+        <Card>
+          <CardContent className="py-12 text-center text-muted-foreground">
+            <p className="text-4xl mb-4">👋</p>
+            <p className="text-lg font-medium">No clients yet</p>
+            <p>Add your first client to get started.</p>
+          </CardContent>
+        </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-4">
           {/* Client List */}
           <div className="space-y-2">
             <p className="text-sm font-medium text-muted-foreground">Clients</p>
-            {clients.map((c) => (
-              <button
-                key={c.id}
-                onClick={() => setActiveClientId(c.id)}
-                className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
-                  activeId === c.id
-                    ? "bg-primary text-primary-foreground"
-                    : "hover:bg-accent text-foreground"
-                }`}
-              >
-                {c.full_name}
-                <Badge variant="secondary" className="ml-2 text-xs">
-                  {c.balance} pts
-                </Badge>
-              </button>
-            ))}
+            {clients.map((c) => {
+              const badgeColors: Record<string, string> = {
+                bcba: "bg-purple-100 text-purple-700",
+                rbt: "bg-blue-100 text-blue-700",
+                parent: "bg-green-100 text-green-700",
+              };
+              const badge = badgeColors[c.myRole ?? ""] ?? "";
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setActiveClientId(c.id)}
+                  className={`w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors ${
+                    activeClient?.id === c.id
+                      ? "bg-primary text-primary-foreground"
+                      : "hover:bg-accent text-foreground"
+                  }`}
+                >
+                  <span>{c.full_name}</span>
+                  <span className={`ml-2 text-[10px] px-1.5 py-0.5 rounded-full font-medium ${
+                    activeClient?.id === c.id ? "bg-white/20 text-white" : badge
+                  }`}>
+                    {(c.myRole ?? "").toUpperCase()}
+                  </span>
+                </button>
+              );
+            })}
           </div>
 
           {/* Detail */}
           <div className="md:col-span-3">
-            {activeId ? (
-              <ClientTeamDetail clientId={activeId} />
+            {activeClient ? (
+              <ClientTeamDetail clientId={activeClient.id} myRole={activeClient.myRole} />
             ) : (
               <p className="text-muted-foreground">Select a client.</p>
             )}
@@ -119,13 +147,14 @@ export default function TeamPage() {
   );
 }
 
-function ClientTeamDetail({ clientId }: { clientId: string }) {
+function ClientTeamDetail({ clientId, myRole }: { clientId: string; myRole: AppRole | null }) {
   const [staff, setStaff] = useState<StaffMember[]>([]);
   const [loading, setLoading] = useState(true);
   const [client, setClient] = useState<any>(null);
+  const isBCBA = myRole === "bcba";
 
   // Add member form
-  const [email, setEmail] = useState("");
+  const [searchName, setSearchName] = useState("");
   const [role, setRole] = useState<AppRole>("rbt");
   const [addError, setAddError] = useState("");
   const [adding, setAdding] = useState(false);
@@ -136,7 +165,7 @@ function ClientTeamDetail({ clientId }: { clientId: string }) {
       supabase.from("clients").select("*").eq("id", clientId).single(),
       supabase
         .from("client_staff")
-        .select("*, profile:profiles(full_name, role)")
+        .select("*, profile:profiles(full_name)")
         .eq("client_id", clientId),
     ]);
     setClient(clientRes.data);
@@ -144,39 +173,29 @@ function ClientTeamDetail({ clientId }: { clientId: string }) {
     setLoading(false);
   }, [clientId]);
 
-  useEffect(() => {
-    fetchStaff();
-  }, [fetchStaff]);
+  useEffect(() => { fetchStaff(); }, [fetchStaff]);
 
   async function addMember(e: React.FormEvent) {
     e.preventDefault();
     setAddError("");
     setAdding(true);
 
-    // Look up user by email from auth — we query profiles
-    // Since we can't query auth.users from client, we'll look up by a workaround:
-    // In a real app you'd have email on profiles or use an invite system.
-    // For now, we look up profiles by full_name or add by user ID.
-    // Let's add email to profiles in a future iteration.
-    // For now, accept a user ID or name search.
-
     const { data: found } = await supabase
       .from("profiles")
-      .select("id, full_name, role")
-      .ilike("full_name", `%${email}%`)
+      .select("id, full_name")
+      .ilike("full_name", `%${searchName}%`)
       .limit(1)
       .single();
 
     if (!found) {
-      setAddError("No user found with that name. They need to register first.");
+      setAddError("No user found with that name. They need to create an account first.");
       setAdding(false);
       return;
     }
 
-    // Check if already assigned
     const existing = staff.find((s) => s.user_id === found.id);
     if (existing) {
-      setAddError("This person is already assigned to this client.");
+      setAddError("This person is already on the team.");
       setAdding(false);
       return;
     }
@@ -187,7 +206,7 @@ function ClientTeamDetail({ clientId }: { clientId: string }) {
       relationship: role,
     });
 
-    setEmail("");
+    setSearchName("");
     setAdding(false);
     fetchStaff();
   }
@@ -247,9 +266,11 @@ function ClientTeamDetail({ clientId }: { clientId: string }) {
                       </Badge>
                     </div>
                   </div>
-                  <Button variant="ghost" size="sm" onClick={() => removeMember(s.id)}>
-                    ✕
-                  </Button>
+                  {isBCBA && (
+                    <Button variant="ghost" size="sm" onClick={() => removeMember(s.id)}>
+                      ✕
+                    </Button>
+                  )}
                 </div>
               ))}
             </div>
@@ -257,39 +278,47 @@ function ClientTeamDetail({ clientId }: { clientId: string }) {
         </CardContent>
       </Card>
 
-      {/* Add Team Member */}
-      <Card>
-        <CardContent className="py-4">
-          <p className="text-sm font-medium text-muted-foreground mb-3">Add Team Member</p>
-          <form onSubmit={addMember} className="flex gap-3 items-end">
-            <div className="flex-1 space-y-1">
-              <Label className="text-xs">Search by Name</Label>
-              <Input
-                value={email}
-                onChange={(e) => setEmail(e.target.value)}
-                placeholder="Enter person's name..."
-                required
-              />
-            </div>
-            <div className="w-32 space-y-1">
-              <Label className="text-xs">Role</Label>
-              <select
-                value={role}
-                onChange={(e) => setRole(e.target.value as AppRole)}
-                className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm h-9"
-              >
-                <option value="rbt">RBT</option>
-                <option value="parent">Parent</option>
-                <option value="bcba">BCBA</option>
-              </select>
-            </div>
-            <Button type="submit" disabled={adding}>
-              {adding ? "Adding..." : "Add"}
-            </Button>
-          </form>
-          {addError && <p className="text-sm text-red-500 mt-2">{addError}</p>}
-        </CardContent>
-      </Card>
+      {/* Add Team Member — BCBAs only for this client */}
+      {isBCBA && (
+        <Card>
+          <CardContent className="py-4">
+            <p className="text-sm font-medium text-muted-foreground mb-3">Add Team Member</p>
+            <form onSubmit={addMember} className="flex gap-3 items-end">
+              <div className="flex-1 space-y-1">
+                <Label className="text-xs">Search by Name</Label>
+                <Input
+                  value={searchName}
+                  onChange={(e) => setSearchName(e.target.value)}
+                  placeholder="Enter person's name..."
+                  required
+                />
+              </div>
+              <div className="w-32 space-y-1">
+                <Label className="text-xs">Their Role</Label>
+                <select
+                  value={role}
+                  onChange={(e) => setRole(e.target.value as AppRole)}
+                  className="w-full rounded-md border border-input bg-background px-3 py-2 text-sm h-9"
+                >
+                  <option value="rbt">RBT</option>
+                  <option value="parent">Parent</option>
+                  <option value="bcba">BCBA</option>
+                </select>
+              </div>
+              <Button type="submit" disabled={adding}>
+                {adding ? "Adding..." : "Add"}
+              </Button>
+            </form>
+            {addError && <p className="text-sm text-red-500 mt-2">{addError}</p>}
+          </CardContent>
+        </Card>
+      )}
+
+      {!isBCBA && (
+        <p className="text-sm text-muted-foreground italic">
+          Only the BCBA for this client can add or remove team members.
+        </p>
+      )}
     </div>
   );
 }

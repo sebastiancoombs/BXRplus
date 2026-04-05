@@ -4,7 +4,7 @@ export type TransactionType = "credit" | "debit";
 export interface Profile {
   id: string;
   full_name: string;
-  role: AppRole;
+  role?: AppRole | null; // legacy — role now lives per-client on client_staff
   avatar_url: string | null;
   created_at: string;
 }

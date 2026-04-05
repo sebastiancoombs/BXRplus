@@ -3,20 +3,24 @@ import { useAuth } from "@/contexts/AuthContext";
 import { useClientContext } from "@/contexts/ClientContext";
 import { cn } from "@/lib/utils";
 
-const allNav = [
-  { path: "/dashboard", label: "Dashboard", icon: "📊", roles: ["bcba", "rbt", "parent"] },
-  { path: "/rewards", label: "Rewards", icon: "🎁", roles: ["bcba", "rbt", "parent"] },
-  { path: "/team", label: "Team Management", icon: "👥", roles: ["bcba"] },
-  { path: "/scan", label: "Scan Card", icon: "📷", roles: ["bcba", "rbt", "parent"] },
-  { path: "/profile", label: "Profile", icon: "⚙️", roles: ["bcba", "rbt", "parent"] },
+const navItems = [
+  { path: "/dashboard", label: "Dashboard", icon: "📊" },
+  { path: "/rewards", label: "Rewards", icon: "🎁" },
+  { path: "/team", label: "Team", icon: "👥" },
+  { path: "/scan", label: "Scan Card", icon: "📷" },
+  { path: "/profile", label: "Profile", icon: "⚙️" },
 ];
+
+const roleBadge: Record<string, { label: string; color: string }> = {
+  bcba: { label: "BCBA", color: "bg-purple-100 text-purple-700" },
+  rbt: { label: "RBT", color: "bg-blue-100 text-blue-700" },
+  parent: { label: "Parent", color: "bg-green-100 text-green-700" },
+};
 
 export default function Sidebar() {
   const location = useLocation();
   const { profile, signOut } = useAuth();
   const { clients, activeClient, setActiveClientId } = useClientContext();
-  const role = profile?.role ?? "rbt";
-  const navItems = allNav.filter((n) => n.roles.includes(role));
 
   return (
     <aside className="w-64 border-r bg-card min-h-screen flex flex-col">
@@ -29,60 +33,65 @@ export default function Sidebar() {
       </div>
 
       {/* Client Switcher */}
-      {clients.length > 0 && (
-        <div className="p-3 border-b">
-          <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2 px-1">
-            Client
-          </p>
-          {clients.length === 1 ? (
-            <div className="flex items-center gap-2.5 px-2 py-1.5">
-              <div className="w-7 h-7 rounded-full bg-primary/10 flex items-center justify-center text-xs font-bold text-primary flex-shrink-0">
-                {activeClient?.full_name[0]?.toUpperCase()}
-              </div>
-              <div className="min-w-0">
-                <p className="text-sm font-medium truncate">{activeClient?.full_name}</p>
-                <p className="text-xs text-muted-foreground">{activeClient?.balance} pts</p>
-              </div>
-            </div>
-          ) : (
-            <div className="space-y-0.5">
-              {clients.map((c) => {
-                const active = c.id === activeClient?.id;
-                return (
-                  <button
-                    key={c.id}
-                    onClick={() => setActiveClientId(c.id)}
+      <div className="p-3 border-b">
+        <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium mb-2 px-1">
+          {clients.length === 0 ? "No Clients Yet" : "Clients"}
+        </p>
+        {clients.length === 0 ? (
+          <Link
+            to="/team"
+            className="flex items-center gap-2 px-2 py-2 rounded-md text-sm text-primary hover:bg-primary/5 transition-colors"
+          >
+            <span>+</span> Add your first client
+          </Link>
+        ) : (
+          <div className="space-y-0.5 max-h-48 overflow-y-auto">
+            {clients.map((c) => {
+              const active = c.id === activeClient?.id;
+              const badge = roleBadge[c.myRole ?? ""] ?? null;
+              return (
+                <button
+                  key={c.id}
+                  onClick={() => setActiveClientId(c.id)}
+                  className={cn(
+                    "w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors",
+                    active
+                      ? "bg-primary/10 text-primary"
+                      : "text-foreground hover:bg-accent"
+                  )}
+                >
+                  <div
                     className={cn(
-                      "w-full flex items-center gap-2.5 px-2 py-1.5 rounded-md text-left transition-colors",
-                      active
-                        ? "bg-primary/10 text-primary"
-                        : "text-foreground hover:bg-accent"
+                      "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0",
+                      active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
                     )}
                   >
-                    <div
-                      className={cn(
-                        "w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold flex-shrink-0",
-                        active ? "bg-primary text-primary-foreground" : "bg-muted text-muted-foreground"
+                    {c.full_name[0]?.toUpperCase()}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-medium truncate">{c.full_name}</p>
+                    <div className="flex items-center gap-1.5">
+                      <span className="text-[11px] text-muted-foreground">{c.balance} pts</span>
+                      {badge && (
+                        <span className={`text-[10px] px-1.5 py-0.5 rounded-full font-medium ${badge.color}`}>
+                          {badge.label}
+                        </span>
                       )}
-                    >
-                      {c.full_name[0]?.toUpperCase()}
                     </div>
-                    <div className="min-w-0">
-                      <p className="text-sm font-medium truncate">{c.full_name}</p>
-                      <p className="text-[11px] text-muted-foreground">{c.balance} pts</p>
-                    </div>
-                  </button>
-                );
-              })}
-            </div>
-          )}
-        </div>
-      )}
+                  </div>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </div>
 
       {/* User Info */}
       <div className="px-4 py-3 border-b">
         <p className="font-medium text-sm truncate">{profile?.full_name ?? "User"}</p>
-        <p className="text-xs text-muted-foreground capitalize">{role}</p>
+        <p className="text-xs text-muted-foreground">
+          {clients.length} client{clients.length !== 1 ? "s" : ""}
+        </p>
       </div>
 
       {/* Navigation */}
