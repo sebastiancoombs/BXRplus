@@ -625,7 +625,8 @@ function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) 
     setLoading(false);
   }
 
-  useState(() => { fetchTeam(); });
+  // Re-fetch when clientId changes
+  useEffect(() => { fetchTeam(); }, [clientId]);
 
   // Live search as user types
   useEffect(() => {
@@ -679,9 +680,13 @@ function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) 
     fetchTeam();
   }
 
+  async function changeRole(staffId: string, newRole: AppRole) {
+    await supabase.from("client_staff").update({ relationship: newRole }).eq("id", staffId);
+    fetchTeam();
+  }
+
   async function transferOwnership(newOwnerId: string) {
     await supabase.rpc("transfer_ownership", { p_client_id: clientId, p_new_owner_id: newOwnerId });
-    // Refresh
     window.location.reload();
   }
 
@@ -728,33 +733,15 @@ function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) 
 
           {/* Staff */}
           {staff.map((s: any) => (
-            <div key={s.id} className="flex items-center justify-between py-2 border-b last:border-0">
-              <div className="flex items-center gap-3">
-                <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold">
-                  {(s.profile?.full_name ?? "?")[0].toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm font-medium">{s.profile?.full_name ?? "Unknown"}</p>
-                  <Badge className={`text-xs ${roleColors[s.relationship] ?? ""}`}>
-                    {s.relationship.toUpperCase()}
-                  </Badge>
-                </div>
-              </div>
-              <div className="flex gap-1">
-                {isOwner && s.relationship === "bcba" && (
-                  <Button variant="ghost" size="sm" className="text-xs"
-                    onClick={() => transferOwnership(s.user_id)}>
-                    Make Owner
-                  </Button>
-                )}
-                {isOwner && (
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive"
-                    onClick={() => removeMember(s.id)}>
-                    ✕
-                  </Button>
-                )}
-              </div>
-            </div>
+            <StaffRow
+              key={s.id}
+              staff={s}
+              isOwner={isOwner}
+              roleColors={roleColors}
+              onChangeRole={(newRole) => changeRole(s.id, newRole)}
+              onMakeOwner={() => transferOwnership(s.user_id)}
+              onRemove={() => removeMember(s.id)}
+            />
           ))}
         </CardContent>
       </Card>
@@ -815,6 +802,80 @@ function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) 
             {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
           </CardContent>
         </Card>
+      )}
+    </div>
+  );
+}
+
+// ═══════════════════════════════════════
+// STAFF ROW (with editable role)
+// ═══════════════════════════════════════
+
+function StaffRow({ staff, isOwner, roleColors, onChangeRole, onMakeOwner, onRemove }: {
+  staff: any;
+  isOwner: boolean;
+  roleColors: Record<string, string>;
+  onChangeRole: (role: AppRole) => void;
+  onMakeOwner: () => void;
+  onRemove: () => void;
+}) {
+  const [confirmTransfer, setConfirmTransfer] = useState(false);
+  const [confirmRemove, setConfirmRemove] = useState(false);
+
+  return (
+    <div className="flex items-center justify-between py-2.5 border-b last:border-0">
+      <div className="flex items-center gap-3">
+        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold">
+          {(staff.profile?.full_name ?? "?")[0].toUpperCase()}
+        </div>
+        <div>
+          <p className="text-sm font-medium">{staff.profile?.full_name ?? "Unknown"}</p>
+          {isOwner ? (
+            <select
+              value={staff.relationship}
+              onChange={(e) => onChangeRole(e.target.value as AppRole)}
+              className={`text-xs font-medium rounded-full px-2 py-0.5 border-0 cursor-pointer ${roleColors[staff.relationship] ?? ""}`}
+            >
+              <option value="bcba">BCBA</option>
+              <option value="rbt">RBT</option>
+              <option value="parent">Parent</option>
+            </select>
+          ) : (
+            <Badge className={`text-xs ${roleColors[staff.relationship] ?? ""}`}>
+              {staff.relationship.toUpperCase()}
+            </Badge>
+          )}
+        </div>
+      </div>
+      {isOwner && (
+        <div className="flex gap-1">
+          {confirmTransfer ? (
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-muted-foreground">Transfer ownership?</span>
+              <Button variant="default" size="sm" className="h-6 text-xs px-2" onClick={onMakeOwner}>Yes</Button>
+              <Button variant="ghost" size="sm" className="h-6 text-xs px-2"
+                onClick={() => setConfirmTransfer(false)}>No</Button>
+            </div>
+          ) : confirmRemove ? (
+            <div className="flex items-center gap-1">
+              <span className="text-xs text-destructive">Remove?</span>
+              <Button variant="destructive" size="sm" className="h-6 text-xs px-2" onClick={onRemove}>Yes</Button>
+              <Button variant="ghost" size="sm" className="h-6 text-xs px-2"
+                onClick={() => setConfirmRemove(false)}>No</Button>
+            </div>
+          ) : (
+            <>
+              <Button variant="ghost" size="sm" className="h-7 text-xs text-muted-foreground hover:text-foreground"
+                onClick={() => setConfirmTransfer(true)} title="Transfer ownership">
+                👑
+              </Button>
+              <Button variant="ghost" size="sm" className="h-7 text-muted-foreground hover:text-destructive"
+                onClick={() => setConfirmRemove(true)} title="Remove from team">
+                ✕
+              </Button>
+            </>
+          )}
+        </div>
       )}
     </div>
   );
