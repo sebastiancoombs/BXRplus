@@ -7,7 +7,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
-import { QRCodeSVG } from "qrcode.react";
+import { PrintableClientCard, PrintableRewardTicket } from "@/components/PrintableCard";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/types/database";
 
@@ -76,7 +76,7 @@ export default function ClientPage() {
       {/* Tab content */}
       <div className="max-w-5xl mx-auto px-6 py-6">
         {tab === "dashboard" && <DashboardTab clientId={activeClient.id} />}
-        {tab === "rewards" && <RewardsTab clientId={activeClient.id} />}
+        {tab === "rewards" && <RewardsTab clientId={activeClient.id} client={activeClient} />}
         {tab === "team" && <TeamTab clientId={activeClient.id} isOwner={activeClient.isOwner} />}
       </div>
     </div>
@@ -198,7 +198,7 @@ function DashboardTab({ clientId }: { clientId: string }) {
 // REWARDS TAB
 // ═══════════════════════════════════════
 
-function RewardsTab({ clientId }: { clientId: string }) {
+function RewardsTab({ clientId, client }: { clientId: string; client: any }) {
   const { behaviors, rewards, loading, refresh } = useClientDetail(clientId);
 
   if (loading) return <p className="text-muted-foreground">Loading...</p>;
@@ -237,25 +237,40 @@ function RewardsTab({ clientId }: { clientId: string }) {
         <h3 className="font-semibold mb-3">🎁 Rewards <span className="text-muted-foreground font-normal text-sm">— what points buy</span></h3>
         <AddItemForm type="reward" clientId={clientId} onAdded={refresh} />
         {rewards.length > 0 && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
-            {rewards.map((r) => (
-              <Card key={r.id}>
-                <CardContent className="py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{r.icon}</span>
-                    <div>
-                      <p className="font-medium text-sm">{r.name}</p>
-                      <Badge className="text-xs">{r.point_cost} pts</Badge>
+          <>
+            {/* Reward cards with remove */}
+            <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
+              {rewards.map((r) => (
+                <Card key={r.id}>
+                  <CardContent className="py-3 flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xl">{r.icon}</span>
+                      <div>
+                        <p className="font-medium text-sm">{r.name}</p>
+                        <Badge className="text-xs">{r.point_cost} pts</Badge>
+                      </div>
                     </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive"
-                    onClick={async () => { await supabase.from("rewards").update({ is_active: false }).eq("id", r.id); refresh(); }}>
-                    ✕
-                  </Button>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
+                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive"
+                      onClick={async () => { await supabase.from("rewards").update({ is_active: false }).eq("id", r.id); refresh(); }}>
+                      ✕
+                    </Button>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+
+            {/* Printable reward tickets */}
+            <div className="mt-6">
+              <h4 className="text-sm font-medium text-muted-foreground mb-3">
+                🖨️ Printable Reward Tickets <span className="font-normal">— print these out so clients can see and choose what to work toward</span>
+              </h4>
+              <div className="flex flex-wrap gap-6">
+                {rewards.map((r) => (
+                  <PrintableRewardTicket key={r.id} reward={r} client={client} />
+                ))}
+              </div>
+            </div>
+          </>
         )}
       </div>
     </div>
@@ -363,15 +378,13 @@ function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) 
 
   return (
     <div className="space-y-6">
-      {/* QR Card */}
-      {client?.qr_code && (
+      {/* Printable Credit Card */}
+      {client && (
         <Card>
-          <CardContent className="py-4 flex items-center gap-6">
-            <QRCodeSVG value={client.qr_code} size={80} />
-            <div>
-              <p className="font-medium">Client QR Card</p>
-              <p className="text-sm text-muted-foreground">Scan this to pull up {client.full_name}'s dashboard from any device.</p>
-            </div>
+          <CardContent className="py-5">
+            <p className="font-medium mb-1">Client Card</p>
+            <p className="text-sm text-muted-foreground mb-4">Print and laminate — scan from any phone to pull up their dashboard.</p>
+            <PrintableClientCard client={client} />
           </CardContent>
         </Card>
       )}
