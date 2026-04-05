@@ -13,9 +13,13 @@ import type { AppRole } from "@/types/database";
 
 type Tab = "dashboard" | "rewards" | "team" | "printables";
 
+// Keep tab state outside the component so it survives re-renders from context refreshes
+let persistedTab: Tab = "dashboard";
+
 export default function ClientPage() {
   const { activeClient, clients, loading } = useClientContext();
-  const [tab, setTab] = useState<Tab>("dashboard");
+  const [tab, setTabState] = useState<Tab>(persistedTab);
+  const setTab = (t: Tab) => { persistedTab = t; setTabState(t); };
 
   if (loading) return <p className="text-muted-foreground p-6">Loading...</p>;
 
@@ -201,7 +205,9 @@ function DashboardTab({ clientId }: { clientId: string }) {
 // ═══════════════════════════════════════
 
 function RewardsTab({ clientId }: { clientId: string }) {
-  const { behaviors, rewards, loading, refresh } = useClientDetail(clientId);
+  const { behaviors, rewards, loading, refresh: refreshDetail } = useClientDetail(clientId);
+  // Only refresh local detail data, NOT the global client context (avoids remounts)
+  const refresh = refreshDetail;
 
   if (loading) return <p className="text-muted-foreground">Loading...</p>;
 
