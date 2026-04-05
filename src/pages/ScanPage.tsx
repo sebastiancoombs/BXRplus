@@ -15,24 +15,28 @@ export default function ScanPage() {
   const [manualCode, setManualCode] = useState("");
   const videoRef = useRef<HTMLVideoElement>(null);
 
-  async function handleScan(text: string) {
+  // Pending redemption state
+  const [pendingRedeem, setPendingRedeem] = useState<{ clientId: string; rewardId: string; rewardName?: string } | null>(null);
 
+  async function handleScan(text: string) {
     // Try to parse as reward redemption QR
     try {
       const data = JSON.parse(text);
       if (data.action === "redeem" && data.clientId && data.rewardId) {
+        // Look up the reward name for the confirm message
+        const { data: reward } = await (await import("@/lib/supabase")).supabase
+          .from("rewards")
+          .select("name, point_cost")
+          .eq("id", data.rewardId)
+          .single();
+
+        setPendingRedeem({
+          clientId: data.clientId,
+          rewardId: data.rewardId,
+          rewardName: reward ? `${reward.name} (${reward.point_cost} pts)` : "this reward",
+        });
         setStatus("idle");
-        setStatusMsg("Redeeming reward...");
-        try {
-          await redeemReward(data.clientId, data.rewardId);
-          await refresh();
-          setStatus("success");
-          setStatusMsg("Reward redeemed! 🎉");
-          setActiveClientId(data.clientId);
-        } catch (err: any) {
-          setStatus("error");
-          setStatusMsg(err?.message ?? "Failed to redeem. Not enough points?");
-        }
+        setStatusMsg("");
         return;
       }
     } catch {
@@ -56,6 +60,29 @@ export default function ScanPage() {
       setStatus("error");
       setStatusMsg("No client found for this code.");
     }
+  }
+
+  async function confirmRedeem() {
+    if (!pendingRedeem) return;
+    setStatusMsg("Redeeming...");
+    try {
+      await redeemReward(pendingRedeem.clientId, pendingRedeem.rewardId);
+      await refresh();
+      setStatus("success");
+      setStatusMsg("Reward redeemed! 🎉");
+      setActiveClientId(pendingRedeem.clientId);
+      setPendingRedeem(null);
+    } catch (err: any) {
+      setStatus("error");
+      setStatusMsg(err?.message ?? "Failed to redeem. Not enough points?");
+      setPendingRedeem(null);
+    }
+  }
+
+  function cancelRedeem() {
+    setPendingRedeem(null);
+    setStatus("idle");
+    setStatusMsg("");
   }
 
   async function startScanning() {
@@ -130,8 +157,24 @@ export default function ScanPage() {
         </CardContent>
       </Card>
 
+      {/* Confirm Redemption */}
+      {pendingRedeem && (
+        <Card className="border-2 border-amber-300 bg-amber-50">
+          <CardContent className="py-5 text-center space-y-3">
+            <p className="text-lg font-bold">Confirm Redemption</p>
+            <p className="text-sm text-muted-foreground">
+              Redeem <span className="font-semibold text-foreground">{pendingRedeem.rewardName}</span>?
+            </p>
+            <div className="flex gap-3 justify-center">
+              <Button variant="outline" onClick={cancelRedeem}>Cancel</Button>
+              <Button onClick={confirmRedeem}>Yes, Redeem</Button>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Status */}
-      {statusMsg && (
+      {statusMsg && !pendingRedeem && (
         <div className={`text-center p-4 rounded-lg ${
           status === "success" ? "bg-green-50 text-green-700" :
           status === "error" ? "bg-red-50 text-red-600" :

@@ -475,17 +475,31 @@ function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) 
 function QuickAwardBtn({ behavior, clientId, onDone }: { behavior: any; clientId: string; onDone: () => void }) {
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
+  const [confirming, setConfirming] = useState(false);
+
   async function go() {
+    if (!confirming) { setConfirming(true); return; }
     setBusy(true);
     await awardPoints(clientId, behavior.id, behavior.point_value);
-    setFlash(true); setTimeout(() => setFlash(false), 500);
+    setFlash(true); setConfirming(false);
+    setTimeout(() => setFlash(false), 600);
     onDone(); setBusy(false);
   }
+
   return (
-    <Button variant="outline" size="sm" onClick={go} disabled={busy}
-      className={`transition-all ${flash ? "ring-2 ring-green-400 bg-green-50" : ""}`}>
-      {behavior.icon} {behavior.name}
-      <Badge variant="secondary" className="ml-1.5 text-xs">+{behavior.point_value}</Badge>
+    <Button
+      variant={confirming ? "default" : "outline"}
+      size="sm"
+      onClick={go}
+      onBlur={() => setTimeout(() => setConfirming(false), 200)}
+      disabled={busy}
+      className={`transition-all ${flash ? "ring-2 ring-green-400 bg-green-50" : ""}`}
+    >
+      {confirming ? (
+        <>{behavior.icon} Award +{behavior.point_value}?</>
+      ) : (
+        <>{behavior.icon} {behavior.name} <Badge variant="secondary" className="ml-1.5 text-xs">+{behavior.point_value}</Badge></>
+      )}
     </Button>
   );
 }
@@ -494,7 +508,17 @@ function ThermometerRow({ icon, name, current, goal, pct, canRedeem, onRedeem }:
   icon: string; name: string; current: number; goal: number; pct: number; canRedeem: boolean; onRedeem: () => Promise<void>;
 }) {
   const [busy, setBusy] = useState(false);
+  const [confirming, setConfirming] = useState(false);
   const barColor = pct >= 100 ? "bg-green-500" : pct >= 60 ? "bg-yellow-500" : pct >= 30 ? "bg-orange-400" : "bg-red-400";
+
+  async function handleRedeem() {
+    if (!confirming) { setConfirming(true); return; }
+    setBusy(true);
+    await onRedeem();
+    setConfirming(false);
+    setBusy(false);
+  }
+
   return (
     <div className="flex items-center gap-4">
       <span className="text-2xl w-8 text-center flex-shrink-0">{icon}</span>
@@ -508,8 +532,15 @@ function ThermometerRow({ icon, name, current, goal, pct, canRedeem, onRedeem }:
         </div>
       </div>
       {canRedeem ? (
-        <Button size="sm" onClick={async () => { setBusy(true); await onRedeem(); setBusy(false); }} disabled={busy}>
-          {busy ? "..." : "Redeem"}
+        <Button
+          size="sm"
+          variant={confirming ? "destructive" : "default"}
+          onClick={handleRedeem}
+          onBlur={() => setTimeout(() => setConfirming(false), 200)}
+          disabled={busy}
+          className="flex-shrink-0"
+        >
+          {busy ? "..." : confirming ? `Spend ${goal} pts?` : "Redeem"}
         </Button>
       ) : (
         <span className="text-xs text-muted-foreground w-16 text-right flex-shrink-0">{goal - current} to go</span>
