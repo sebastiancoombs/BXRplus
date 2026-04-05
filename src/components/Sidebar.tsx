@@ -48,7 +48,7 @@ export default function Sidebar() {
 
   const sidebarContent = (
     <aside className={cn(
-      "border-r bg-card min-h-screen flex flex-col transition-all duration-200",
+      "border-r bg-card h-screen flex flex-col transition-all duration-200 flex-shrink-0",
       collapsed ? "w-16" : "w-60"
     )}>
       {/* Brand + Collapse Toggle */}

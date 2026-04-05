@@ -563,7 +563,7 @@ function DataTab({ clientId, clientName }: { clientId: string; clientName: strin
         </CardContent></Card>
       </div>
 
-      {/* Timeline Chart */}
+      {/* Timeline Chart — earned vs spent */}
       {timelineData.length > 1 && (
         <Card>
           <CardContent className="py-5">
@@ -582,6 +582,59 @@ function DataTab({ clientId, clientName }: { clientId: string; clientName: strin
           </CardContent>
         </Card>
       )}
+
+      {/* Behavior Frequency by Day — line per behavior */}
+      {(() => {
+        // Build: { date: string, [behaviorName]: count }[]
+        const behaviorNames = Array.from(new Set(
+          filtered.filter((t) => t.type === "credit" && t.behavior).map((t) => t.behavior?.name ?? "")
+        )).filter(Boolean);
+
+        if (behaviorNames.length === 0) return null;
+
+        const dailyBehaviors = new Map<string, Record<string, number>>();
+        filtered.filter((t) => t.type === "credit" && t.behavior).forEach((t) => {
+          const day = new Date(t.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+          if (!dailyBehaviors.has(day)) dailyBehaviors.set(day, {});
+          const row = dailyBehaviors.get(day)!;
+          const name = t.behavior?.name ?? "";
+          row[name] = (row[name] ?? 0) + 1;
+        });
+
+        const chartData = Array.from(dailyBehaviors.entries())
+          .map(([date, counts]) => ({ date, ...counts }))
+          .reverse();
+
+        if (chartData.length < 2) return null;
+
+        return (
+          <Card>
+            <CardContent className="py-5">
+              <p className="text-sm font-medium text-muted-foreground mb-4">Behavior Frequency by Day</p>
+              <ResponsiveContainer width="100%" height={280}>
+                <LineChart data={chartData}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                  <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                  <YAxis tick={{ fontSize: 11 }} allowDecimals={false} />
+                  <Tooltip />
+                  <Legend />
+                  {behaviorNames.map((name, i) => (
+                    <Line
+                      key={name}
+                      type="monotone"
+                      dataKey={name}
+                      stroke={CHART_COLORS[i % CHART_COLORS.length]}
+                      strokeWidth={2}
+                      dot={{ r: 3 }}
+                      connectNulls
+                    />
+                  ))}
+                </LineChart>
+              </ResponsiveContainer>
+            </CardContent>
+          </Card>
+        );
+      })()}
 
       <div className="grid gap-4 md:grid-cols-2">
         {/* Bar Chart: Points by Behavior */}
