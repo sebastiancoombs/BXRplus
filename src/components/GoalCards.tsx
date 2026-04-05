@@ -13,81 +13,161 @@ export interface Goal {
 
 export interface Report {
   id: string;
+  clientId: string;
   name: string;
   goals: Goal[];
 }
 
 export interface GoalCardsProps {
   reports?: Report[];
-  onGoalClick?: (goalId: string) => void;
+  onGoalClick?: (goal: Goal, reportName: string) => void;
 }
 
-const defaultReports: Report[] = [
+/** Sample reports and goals as BCBAs write them: one report = one document (e.g. ITP, 6-mo progress); goals have objective + operational definition. */
+export const defaultReports: Report[] = [
   {
-    id: "1",
-    name: "Q1 2024 Objectives",
+    id: "r1",
+    clientId: "1",
+    name: "Initial Treatment Plan (ITP)",
     goals: [
       {
-        id: "1-1",
-        title: "Increase user engagement by 25%",
+        id: "r1-g1",
+        title: "Mand for preferred items (vocal or AAC)",
         description:
-          "Focus on improving user retention through enhanced onboarding and feature discovery",
-        status: "Reviewed",
-      },
-      {
-        id: "1-2",
-        title: "Launch mobile application",
-        description: "Complete development and release iOS and Android apps",
+          "Client will independently request at least 5 preferred items per session using a vocal word approximation or AAC device within 5 s of the opportunity, in 80% of opportunities across 3 consecutive sessions and 2 settings.",
         status: "In Progress",
       },
       {
-        id: "1-3",
-        title: "Expand to European markets",
+        id: "r1-g2",
+        title: "Tolerate non-preferred activity (3 min)",
+        description:
+          "Client will remain in a non-preferred activity for 3 min without elopement, aggression, or property destruction, given a first-then visual and one redirect, in 80% of opportunities across 3 consecutive sessions.",
+        status: "In Progress",
+      },
+      {
+        id: "r1-g3",
+        title: "Follow 2-step gross-motor instructions",
+        description:
+          "Client will complete a 2-step gross-motor instruction (e.g., “Clap then jump”) within 5 s of the SD, in 80% of opportunities across 3 consecutive sessions.",
+        status: "Reviewed",
+      },
+    ],
+  },
+  {
+    id: "r2",
+    clientId: "1",
+    name: "6-Month Progress Report",
+    goals: [
+      {
+        id: "r2-g1",
+        title: "Mand for preferred items (vocal or AAC)",
+        description:
+          "Client will independently request at least 5 preferred items per session using a vocal word approximation or AAC device within 5 s of the opportunity, in 80% of opportunities across 3 consecutive sessions and 2 settings.",
+        status: "In Progress",
+      },
+      {
+        id: "r2-g2",
+        title: "Accept “no” or 30 s delay",
+        description:
+          "Client will accept “no” or a 30 s delay to a preferred item without problem behavior (aggression, property destruction, or elopement), in 80% of opportunities across 2 settings.",
+        status: "In Progress",
+      },
+      {
+        id: "r2-g3",
+        title: "Turn-taking with one peer (2 exchanges)",
+        description:
+          "Client will take 2 turns with one peer in a shared activity (e.g., ball, puzzle) with no more than 1 verbal prompt per turn, in 80% of opportunities across 3 sessions. Mastered; moved to maintenance.",
         status: "Removed",
       },
     ],
   },
   {
-    id: "2",
-    name: "Product Development Goals",
+    id: "r3",
+    clientId: "2",
+    name: "Initial Treatment Plan (ITP)",
     goals: [
       {
-        id: "2-1",
-        title: "Implement AI-powered recommendations",
+        id: "r3-g1",
+        title: "Remain in designated area (no elopement)",
         description:
-          "Integrate machine learning algorithms to provide personalized content suggestions",
+          "Client will remain within arm’s reach of the supervising adult during group or table activities for 10 min with no more than 1 gestural prompt, in 80% of opportunities across 3 consecutive sessions.",
         status: "In Progress",
       },
       {
-        id: "2-2",
-        title: "Redesign dashboard interface",
+        id: "r3-g2",
+        title: "Accept “no” or delay for preferred item",
         description:
-          "Modernize UI/UX with improved accessibility and responsiveness",
+          "Client will accept denial or 30 s delay to a preferred item without problem behavior, in 80% of opportunities across 2 settings.",
         status: "Reviewed",
       },
       {
-        id: "2-3",
-        title: "Add real-time collaboration features",
+        id: "r3-g3",
+        title: "Imitate 5 novel motor actions",
         description:
-          "Enable multiple users to work simultaneously on shared documents",
+          "Client will imitate a novel motor action within 5 s of the model (e.g., touch nose, wave) in 4 of 5 trials per session across 3 consecutive sessions.",
         status: "In Progress",
       },
     ],
   },
   {
-    id: "3",
-    name: "Marketing Initiatives",
+    id: "r4",
+    clientId: "3",
+    name: "Quarterly Progress Report",
     goals: [
       {
-        id: "3-1",
-        title: "Launch content marketing campaign",
+        id: "r4-g1",
+        title: "Respond to name (orient within 3 s)",
         description:
-          "Create and distribute high-quality blog posts and video content",
+          "Client will orient toward the speaker or make eye contact within 3 s of name call in 90% of opportunities across 2 settings.",
         status: "Reviewed",
       },
       {
-        id: "3-2",
-        title: "Partner with industry influencers",
+        id: "r4-g2",
+        title: "Match identical objects/pictures (field of 4)",
+        description:
+          "Client will match 10 target items to an identical sample in a field of 4 with 90% accuracy across 3 consecutive sessions.",
+        status: "In Progress",
+      },
+      {
+        id: "r4-g3",
+        title: "Request break (card or vocalization)",
+        description:
+          "Client will hand a break card or emit the vocalization “break” before leaving the work area when the break option is presented, in 80% of opportunities.",
+        status: "In Progress",
+      },
+    ],
+  },
+  {
+    id: "r5",
+    clientId: "3",
+    name: "Annual Review",
+    goals: [
+      {
+        id: "r5-g1",
+        title: "Respond to name (orient within 3 s)",
+        description:
+          "Client will orient toward the speaker or make eye contact within 3 s of name call in 90% of opportunities across 2 settings.",
+        status: "Reviewed",
+      },
+      {
+        id: "r5-g2",
+        title: "Match identical objects/pictures (field of 4)",
+        description:
+          "Client will match 10 target items to an identical sample in a field of 4 with 90% accuracy across 3 consecutive sessions.",
+        status: "In Progress",
+      },
+      {
+        id: "r5-g3",
+        title: "Request break (card or vocalization)",
+        description:
+          "Client will hand a break card or emit “break” before leaving the work area when the break option is presented, in 80% of opportunities.",
+        status: "In Progress",
+      },
+      {
+        id: "r5-g4",
+        title: "Toilet training – sit on toilet 2 min",
+        description:
+          "Client will sit on the toilet for 2 min when scheduled. Discontinued this quarter per family request; to be revisited next authorization period.",
         status: "Removed",
       },
     ],
@@ -126,17 +206,19 @@ export const GoalCards: React.FC<GoalCardsProps> = ({
 }) => {
   const [selectedGoal, setSelectedGoal] = useState<string | null>(null);
 
-  const handleGoalClick = (goalId: string) => {
-    setSelectedGoal(goalId);
-    onGoalClick(goalId);
+  const handleGoalClick = (goal: Goal, reportName: string) => {
+    setSelectedGoal(goal.id);
+    onGoalClick(goal, reportName);
   };
 
   return (
     <div className="w-full max-w-6xl mx-auto p-6 space-y-8">
       <div className="space-y-2">
-        <h1 className="text-3xl font-bold text-foreground">Goals Overview</h1>
-        <p className="text-muted-foreground">
-          Track and manage your organizational goals across different reports
+        <h2 className="text-xl font-semibold text-foreground">
+          Goals by report
+        </h2>
+        <p className="text-sm text-muted-foreground">
+          Click a goal to build or edit its report section
         </p>
       </div>
 
@@ -165,7 +247,7 @@ export const GoalCards: React.FC<GoalCardsProps> = ({
                     "p-5 cursor-pointer transition-all duration-200 hover:shadow-lg hover:scale-[1.02] border-border",
                     isSelected && "ring-2 ring-primary shadow-md"
                   )}
-                  onClick={() => handleGoalClick(goal.id)}
+                  onClick={() => handleGoalClick(goal, report.name)}
                 >
                   <div className="space-y-3">
                     <div className="flex items-start justify-between gap-2">
