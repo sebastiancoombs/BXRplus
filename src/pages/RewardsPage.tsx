@@ -1,6 +1,8 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useClientContext } from "@/contexts/ClientContext";
 import { useClientDetail } from "@/hooks/useClients";
+import ClientHeader from "@/components/ClientHeader";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -10,15 +12,23 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 export default function RewardsPage() {
-  const { activeClient, loading } = useClientContext();
+  const { activeClient, clients, loading } = useClientContext();
 
   if (loading) return <p className="text-muted-foreground">Loading...</p>;
-  if (!activeClient)
-    return <p className="text-muted-foreground">No clients assigned. Select a client from the sidebar.</p>;
+  if (clients.length === 0)
+    return (
+      <div className="text-center py-20 max-w-md mx-auto">
+        <p className="text-4xl mb-4">🎁</p>
+        <p className="text-lg font-medium">Add a client first</p>
+        <p className="text-muted-foreground mb-6">You need a client before you can set up rewards.</p>
+        <Link to="/team"><Button>+ Add Client</Button></Link>
+      </div>
+    );
+  if (!activeClient) return null;
 
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Rewards & Behaviors — {activeClient.full_name}</h1>
+    <div>
+      <ClientHeader />
       <RewardsContent clientId={activeClient.id} />
     </div>
   );

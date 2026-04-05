@@ -1,26 +1,37 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { useClientContext } from "@/contexts/ClientContext";
 import { useClientDetail, awardPoints, redeemReward } from "@/hooks/useClients";
+import ClientHeader from "@/components/ClientHeader";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 
 export default function DashboardPage() {
-  const { activeClient, loading } = useClientContext();
+  const { activeClient, clients, loading } = useClientContext();
 
   if (loading) return <p className="text-muted-foreground">Loading...</p>;
-  if (!activeClient)
+
+  // Empty state — no clients at all
+  if (clients.length === 0)
     return (
-      <div className="text-center py-20">
-        <p className="text-4xl mb-4">👋</p>
-        <p className="text-lg font-medium">No clients yet</p>
-        <p className="text-muted-foreground">Ask your BCBA to add you to a client.</p>
+      <div className="text-center py-20 max-w-md mx-auto">
+        <p className="text-5xl mb-6">🏆</p>
+        <h2 className="text-2xl font-bold mb-2">Welcome to BXR+</h2>
+        <p className="text-muted-foreground mb-8">
+          Start by adding your first client. You can set up their behaviors and rewards right after.
+        </p>
+        <Link to="/team">
+          <Button size="lg">+ Add Your First Client</Button>
+        </Link>
       </div>
     );
 
+  if (!activeClient) return null;
+
   return (
-    <div className="space-y-6">
-      <h1 className="text-2xl font-bold">Dashboard — {activeClient.full_name}</h1>
+    <div>
+      <ClientHeader />
       <ClientDashboardContent clientId={activeClient.id} />
     </div>
   );
@@ -38,8 +49,32 @@ function ClientDashboardContent({ clientId }: { clientId: string }) {
   if (loading) return <p className="text-muted-foreground">Loading client data...</p>;
   if (!client) return <p>Client not found.</p>;
 
+  const hasBehaviors = behaviors.length > 0;
+  const hasRewards = rewards.length > 0;
+  const isNewClient = !hasBehaviors && !hasRewards && transactions.length === 0;
+
   return (
     <div className="space-y-6">
+      {/* Onboarding nudge for new clients */}
+      {isNewClient && (
+        <Card className="border-dashed border-2 border-primary/30 bg-primary/5">
+          <CardContent className="py-5">
+            <h3 className="font-semibold mb-2">Get started with {client.full_name}</h3>
+            <p className="text-sm text-muted-foreground mb-4">
+              Set up some behaviors to award points for, and rewards they can earn.
+            </p>
+            <div className="flex gap-3">
+              <Link to="/rewards">
+                <Button size="sm" variant="outline">⭐ Add Behaviors</Button>
+              </Link>
+              <Link to="/rewards">
+                <Button size="sm" variant="outline">🎁 Add Rewards</Button>
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Balance + Quick Award */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="md:col-span-1 bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
@@ -52,9 +87,23 @@ function ClientDashboardContent({ clientId }: { clientId: string }) {
 
         <Card className="md:col-span-2">
           <CardContent className="py-4">
-            <p className="text-sm font-medium text-muted-foreground mb-3">Quick Award</p>
-            {behaviors.length === 0 ? (
-              <p className="text-sm text-muted-foreground">No behaviors configured yet.</p>
+            <div className="flex items-center justify-between mb-3">
+              <p className="text-sm font-medium text-muted-foreground">Quick Award</p>
+              {hasBehaviors && (
+                <Link to="/rewards" className="text-xs text-primary hover:underline">
+                  Edit behaviors →
+                </Link>
+              )}
+            </div>
+            {!hasBehaviors ? (
+              <Link to="/rewards" className="block">
+                <div className="border-2 border-dashed rounded-lg p-4 text-center hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+                  <p className="text-sm text-muted-foreground">
+                    <span className="text-lg block mb-1">⭐</span>
+                    Add behaviors to start awarding points
+                  </p>
+                </div>
+              </Link>
             ) : (
               <div className="flex flex-wrap gap-2">
                 {behaviors.map((b) => (
@@ -69,9 +118,21 @@ function ClientDashboardContent({ clientId }: { clientId: string }) {
       {/* Reward Thermometers */}
       <Card>
         <CardContent className="py-5">
-          <p className="text-sm font-medium text-muted-foreground mb-4">Progress Toward Rewards</p>
-          {rewards.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No rewards configured yet.</p>
+          <div className="flex items-center justify-between mb-4">
+            <p className="text-sm font-medium text-muted-foreground">Progress Toward Rewards</p>
+            <Link to="/rewards" className="text-xs text-primary hover:underline">
+              {hasRewards ? "Edit rewards →" : "Add rewards →"}
+            </Link>
+          </div>
+          {!hasRewards ? (
+            <Link to="/rewards" className="block">
+              <div className="border-2 border-dashed rounded-lg p-6 text-center hover:border-primary/50 hover:bg-primary/5 transition-colors cursor-pointer">
+                <p className="text-sm text-muted-foreground">
+                  <span className="text-lg block mb-1">🎁</span>
+                  Add rewards so {client.full_name} has something to work toward
+                </p>
+              </div>
+            </Link>
           ) : (
             <div className="space-y-4">
               {rewards.map((r) => {
@@ -103,7 +164,12 @@ function ClientDashboardContent({ clientId }: { clientId: string }) {
         <CardContent className="py-5">
           <p className="text-sm font-medium text-muted-foreground mb-4">Transaction History</p>
           {transactions.length === 0 ? (
-            <p className="text-sm text-muted-foreground">No transactions yet.</p>
+            <div className="text-center py-6 text-muted-foreground">
+              <p className="text-sm">No transactions yet.</p>
+              {hasBehaviors && (
+                <p className="text-xs mt-1">Award some points above to see them here.</p>
+              )}
+            </div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
