@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
 import { useClientContext } from "@/contexts/ClientContext";
 import { useClientDetail, awardPoints, redeemReward } from "@/hooks/useClients";
 import { useAuth } from "@/contexts/AuthContext";
@@ -606,9 +606,13 @@ function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) 
   const [client, setClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [searchName, setSearchName] = useState("");
+  const [searchResults, setSearchResults] = useState<any[]>([]);
+  const [showResults, setShowResults] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<any>(null);
   const [role, setRole] = useState<AppRole>("rbt");
   const [error, setError] = useState("");
   const [adding, setAdding] = useState(false);
+  const searchRef = useRef<HTMLDivElement>(null);
 
   async function fetchTeam() {
     setLoading(true);
@@ -623,16 +627,51 @@ function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) 
 
   useState(() => { fetchTeam(); });
 
+  // Live search as user types
+  useEffect(() => {
+    if (searchName.length < 2) { setSearchResults([]); setShowResults(false); return; }
+    const timeout = setTimeout(async () => {
+      const { data } = await supabase
+        .from("profiles")
+        .select("id, full_name")
+        .ilike("full_name", `%${searchName}%`)
+        .limit(8);
+      // Filter out people already on the team
+      const staffIds = new Set(staff.map((s: any) => s.user_id));
+      const filtered = (data ?? []).filter((p: any) => !staffIds.has(p.id) && p.id !== user?.id);
+      setSearchResults(filtered);
+      setShowResults(true);
+    }, 300);
+    return () => clearTimeout(timeout);
+  }, [searchName, staff, user]);
+
+  // Close dropdown on outside click
+  useEffect(() => {
+    function handler(e: MouseEvent) {
+      if (searchRef.current && !searchRef.current.contains(e.target as Node)) setShowResults(false);
+    }
+    document.addEventListener("mousedown", handler);
+    return () => document.removeEventListener("mousedown", handler);
+  }, []);
+
+  function selectUser(p: any) {
+    setSelectedUser(p);
+    setSearchName(p.full_name);
+    setShowResults(false);
+    setError("");
+  }
+
   async function addMember(e: React.FormEvent) {
     e.preventDefault();
     setError("");
+    if (!selectedUser) {
+      setError("Select a person from the dropdown.");
+      return;
+    }
     setAdding(true);
-    const { data: found } = await supabase.from("profiles").select("id, full_name")
-      .ilike("full_name", `%${searchName}%`).limit(1).single();
-    if (!found) { setError("No user found. They need to create an account first."); setAdding(false); return; }
-    if (staff.find((s: any) => s.user_id === found.id)) { setError("Already on the team."); setAdding(false); return; }
-    await supabase.from("client_staff").insert({ client_id: clientId, user_id: found.id, relationship: role });
-    setSearchName(""); setAdding(false); fetchTeam();
+    if (staff.find((s: any) => s.user_id === selectedUser.id)) { setError("Already on the team."); setAdding(false); return; }
+    await supabase.from("client_staff").insert({ client_id: clientId, user_id: selectedUser.id, relationship: role });
+    setSearchName(""); setSelectedUser(null); setAdding(false); fetchTeam();
   }
 
   async function removeMember(id: string) {
@@ -725,16 +764,51 @@ function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) 
         <Card>
           <CardContent className="py-4">
             <p className="font-medium mb-3">Add Team Member</p>
-            <form onSubmit={addMember} className="flex gap-2 items-center">
-              <Input value={searchName} onChange={(e) => setSearchName(e.target.value)}
-                placeholder="Search by name..." className="flex-1 h-9" required />
+            <form onSubmit={addMember} className="flex gap-2 items-end">
+              <div className="flex-1 relative" ref={searchRef}>
+                <Input
+                  value={searchName}
+                  onChange={(e) => { setSearchName(e.target.value); setSelectedUser(null); }}
+                  onFocus={() => searchResults.length > 0 && setShowResults(true)}
+                  placeholder="Start typing a name..."
+                  className="h-9"
+                  required
+                />
+                {/* Live search dropdown */}
+                {showResults && (
+                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
+                    {searchResults.length === 0 ? (
+                      <div className="px-3 py-3 text-sm text-muted-foreground">
+                        No users found. They need to create a BXR+ account first.
+                      </div>
+                    ) : (
+                      searchResults.map((p: any) => (
+                        <button
+                          key={p.id}
+                          type="button"
+                          onClick={() => selectUser(p)}
+                          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-accent transition-colors"
+                        >
+                          <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold flex-shrink-0">
+                            {p.full_name[0]?.toUpperCase()}
+                          </div>
+                          <span className="text-sm font-medium">{p.full_name}</span>
+                        </button>
+                      ))
+                    )}
+                  </div>
+                )}
+                {selectedUser && (
+                  <p className="text-xs text-green-600 mt-1">✓ {selectedUser.full_name} selected</p>
+                )}
+              </div>
               <select value={role} onChange={(e) => setRole(e.target.value as AppRole)}
                 className="rounded-md border border-input bg-background px-2 py-1 text-sm h-9">
                 <option value="rbt">RBT</option>
                 <option value="parent">Parent</option>
                 <option value="bcba">BCBA</option>
               </select>
-              <Button type="submit" size="sm" className="h-9" disabled={adding}>
+              <Button type="submit" size="sm" className="h-9" disabled={adding || !selectedUser}>
                 {adding ? "..." : "Add"}
               </Button>
             </form>
