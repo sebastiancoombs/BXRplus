@@ -212,21 +212,7 @@ function RewardsTab({ clientId, client }: { clientId: string; client: any }) {
         {behaviors.length > 0 && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
             {behaviors.map((b) => (
-              <Card key={b.id}>
-                <CardContent className="py-3 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-xl">{b.icon}</span>
-                    <div>
-                      <p className="font-medium text-sm">{b.name}</p>
-                      <Badge variant="secondary" className="text-xs">+{b.point_value}</Badge>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive"
-                    onClick={async () => { await supabase.from("behaviors").update({ is_active: false }).eq("id", b.id); refresh(); }}>
-                    ✕
-                  </Button>
-                </CardContent>
-              </Card>
+              <EditableItemCard key={b.id} item={b} type="behavior" onUpdate={refresh} />
             ))}
           </div>
         )}
@@ -238,24 +224,9 @@ function RewardsTab({ clientId, client }: { clientId: string; client: any }) {
         <AddItemForm type="reward" clientId={clientId} onAdded={refresh} />
         {rewards.length > 0 && (
           <>
-            {/* Reward cards with remove */}
             <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
               {rewards.map((r) => (
-                <Card key={r.id}>
-                  <CardContent className="py-3 flex items-center justify-between">
-                    <div className="flex items-center gap-2">
-                      <span className="text-xl">{r.icon}</span>
-                      <div>
-                        <p className="font-medium text-sm">{r.name}</p>
-                        <Badge className="text-xs">{r.point_cost} pts</Badge>
-                      </div>
-                    </div>
-                    <Button variant="ghost" size="sm" className="text-muted-foreground hover:text-destructive"
-                      onClick={async () => { await supabase.from("rewards").update({ is_active: false }).eq("id", r.id); refresh(); }}>
-                      ✕
-                    </Button>
-                  </CardContent>
-                </Card>
+                <EditableItemCard key={r.id} item={r} type="reward" onUpdate={refresh} />
               ))}
             </div>
 
@@ -274,6 +245,91 @@ function RewardsTab({ clientId, client }: { clientId: string; client: any }) {
         )}
       </div>
     </div>
+  );
+}
+
+function EditableItemCard({ item, type, onUpdate }: {
+  item: any;
+  type: "behavior" | "reward";
+  onUpdate: () => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [name, setName] = useState(item.name);
+  const [icon, setIcon] = useState(item.icon);
+  const [value, setValue] = useState(type === "behavior" ? item.point_value : item.point_cost);
+  const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  const table = type === "behavior" ? "behaviors" : "rewards";
+  const valueField = type === "behavior" ? "point_value" : "point_cost";
+
+  async function save() {
+    setBusy(true);
+    await supabase.from(table).update({ name, icon, [valueField]: value }).eq("id", item.id);
+    setBusy(false);
+    setEditing(false);
+    onUpdate();
+  }
+
+  async function remove() {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    await supabase.from(table).update({ is_active: false }).eq("id", item.id);
+    onUpdate();
+  }
+
+  if (editing) {
+    return (
+      <Card className="border-primary/30">
+        <CardContent className="py-3 space-y-2">
+          <div className="flex gap-2">
+            <Input value={icon} onChange={(e) => setIcon(e.target.value)} className="w-12 text-center text-lg h-8" />
+            <Input value={name} onChange={(e) => setName(e.target.value)} className="flex-1 h-8 text-sm" />
+          </div>
+          <div className="flex items-center gap-2">
+            <span className="text-xs text-muted-foreground">{type === "behavior" ? "+" : ""}</span>
+            <Input type="number" min={1} value={value} onChange={(e) => setValue(+e.target.value)} className="w-20 h-8 text-sm" />
+            <span className="text-xs text-muted-foreground">pts</span>
+            <div className="flex-1" />
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEditing(false)}>Cancel</Button>
+            <Button size="sm" className="h-7 text-xs" onClick={save} disabled={busy}>
+              {busy ? "..." : "Save"}
+            </Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card className="group">
+      <CardContent className="py-3">
+        <div className="flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <span className="text-xl">{item.icon}</span>
+            <div>
+              <p className="font-medium text-sm">{item.name}</p>
+              <Badge variant={type === "behavior" ? "secondary" : "default"} className="text-xs">
+                {type === "behavior" ? `+${item.point_value}` : `${item.point_cost} pts`}
+              </Badge>
+            </div>
+          </div>
+          <div className="flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-muted-foreground hover:text-foreground"
+              onClick={() => setEditing(true)} title="Edit">
+              ✏️
+            </Button>
+            <Button variant="ghost" size="sm"
+              className={`h-7 w-7 p-0 ${confirmDelete ? "text-destructive" : "text-muted-foreground hover:text-destructive"}`}
+              onClick={remove}
+              onBlur={() => setTimeout(() => setConfirmDelete(false), 200)}
+              title={confirmDelete ? "Click again to delete" : "Delete"}
+            >
+              {confirmDelete ? "❌" : "🗑️"}
+            </Button>
+          </div>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
