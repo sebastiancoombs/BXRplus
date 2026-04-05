@@ -2,11 +2,8 @@ import { useState } from "react";
 import { QRCodeSVG } from "qrcode.react";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
+import { supabase } from "@/lib/supabase";
 import type { Client } from "@/types/database";
-
-// ═══════════════════════════════════════
-// Card theme options
-// ═══════════════════════════════════════
 
 interface CardTheme {
   id: string;
@@ -36,10 +33,26 @@ const cardThemes: CardTheme[] = [
 const stickerOptions = ["⭐", "🌟", "🎯", "🔥", "💎", "🏅", "🎮", "🎨", "🎵", "🐾", "🦋", "🌸", "⚡", "🍕", "🎪"];
 
 export function PrintableClientCard({ client }: { client: Client }) {
-  const [themeId, setThemeId] = useState("galaxy");
-  const [sticker, setSticker] = useState("⭐");
+  const [themeId, setThemeId] = useState(client.card_theme ?? "galaxy");
+  const [sticker, setSticker] = useState(client.card_sticker ?? "⭐");
   const [showCustomize, setShowCustomize] = useState(false);
+  const [saving, setSaving] = useState(false);
+  const [saved, setSaved] = useState(false);
   const theme = cardThemes.find((t) => t.id === themeId) ?? cardThemes[0];
+
+  // Track if changes were made
+  const hasChanges = themeId !== (client.card_theme ?? "galaxy") || sticker !== (client.card_sticker ?? "⭐");
+
+  async function saveCustomization() {
+    setSaving(true);
+    await supabase.from("clients").update({
+      card_theme: themeId,
+      card_sticker: sticker,
+    }).eq("id", client.id);
+    setSaving(false);
+    setSaved(true);
+    setTimeout(() => setSaved(false), 2000);
+  }
 
   function handlePrint() {
     const win = window.open("", "_blank");
@@ -104,13 +117,18 @@ export function PrintableClientCard({ client }: { client: Client }) {
         </div>
       </div>
 
-      {/* Customize toggle */}
-      <button
-        onClick={() => setShowCustomize(!showCustomize)}
-        className="text-sm text-primary hover:underline"
-      >
-        {showCustomize ? "Hide options" : "🎨 Customize card"}
-      </button>
+      {/* Actions */}
+      <div className="flex flex-wrap gap-2">
+        <Button variant="outline" onClick={handlePrint}>
+          🖨️ Print Card
+        </Button>
+        <Button
+          variant={showCustomize ? "secondary" : "outline"}
+          onClick={() => setShowCustomize(!showCustomize)}
+        >
+          🎨 {showCustomize ? "Hide Customization" : "Customize"}
+        </Button>
+      </div>
 
       {showCustomize && (
         <div className="space-y-4 p-4 bg-muted/50 rounded-xl">
@@ -155,19 +173,25 @@ export function PrintableClientCard({ client }: { client: Client }) {
               ))}
             </div>
           </div>
+
+          {/* Save */}
+          <div className="flex items-center gap-2 pt-1">
+            <Button onClick={saveCustomization} disabled={saving || !hasChanges}>
+              {saving ? "Saving..." : "Save Card Design"}
+            </Button>
+            {saved && <span className="text-sm text-green-600">✓ Saved</span>}
+            {!hasChanges && !saved && (
+              <span className="text-xs text-muted-foreground">No changes to save</span>
+            )}
+          </div>
         </div>
       )}
-
-      {/* Print button */}
-      <Button variant="outline" onClick={handlePrint} className="w-full">
-        🖨️ Print Card
-      </Button>
     </div>
   );
 }
 
 // ═══════════════════════════════════════
-// Reward Ticket (unchanged)
+// Reward Ticket
 // ═══════════════════════════════════════
 
 export function PrintableRewardTicket({ reward, client }: {

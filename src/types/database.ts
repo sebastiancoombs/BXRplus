@@ -17,6 +17,8 @@ export interface Client {
   qr_code: string;
   balance: number;
   owner_id: string | null;
+  card_theme: string | null;
+  card_sticker: string | null;
   created_at: string;
 }
 
