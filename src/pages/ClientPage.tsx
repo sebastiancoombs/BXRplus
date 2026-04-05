@@ -51,28 +51,29 @@ export default function ClientPage() {
     <div className="min-h-screen">
       {/* Client name + tabs */}
       <div className="border-b bg-card sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="py-4">
-            <h1 className="text-xl font-bold">{activeClient.full_name}</h1>
-            <p className="text-sm text-muted-foreground">
+        <div className="max-w-5xl mx-auto px-4 md:px-6">
+          <div className="py-3 md:py-4 pl-10 md:pl-0">
+            <h1 className="text-lg md:text-xl font-bold">{activeClient.full_name}</h1>
+            <p className="text-xs md:text-sm text-muted-foreground">
               {activeClient.balance} points
               {activeClient.isOwner && " · Owner"}
               {activeClient.myRole && !activeClient.isOwner && ` · ${activeClient.myRole.toUpperCase()}`}
             </p>
           </div>
-          <div className="flex gap-1 -mb-px">
+          <div className="flex gap-0.5 -mb-px overflow-x-auto scrollbar-none">
             {tabs.map((t) => (
               <button
                 key={t.key}
                 onClick={() => setTab(t.key)}
                 className={cn(
-                  "px-4 py-2.5 text-sm font-medium border-b-2 transition-colors",
+                  "px-3 md:px-4 py-2 md:py-2.5 text-xs md:text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex-shrink-0",
                   tab === t.key
                     ? "border-primary text-primary"
                     : "border-transparent text-muted-foreground hover:text-foreground hover:border-muted"
                 )}
               >
-                {t.icon} {t.label}
+                <span className="md:mr-1">{t.icon}</span>
+                <span className="hidden sm:inline"> {t.label}</span>
               </button>
             ))}
           </div>
@@ -80,7 +81,7 @@ export default function ClientPage() {
       </div>
 
       {/* Tab content */}
-      <div className="max-w-5xl mx-auto px-6 py-6">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-4 md:py-6">
         {tab === "dashboard" && <DashboardTab clientId={activeClient.id} />}
         {tab === "rewards" && <RewardsTab clientId={activeClient.id} />}
         {tab === "data" && <DataTab clientId={activeClient.id} clientName={activeClient.full_name} />}

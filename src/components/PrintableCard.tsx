@@ -85,7 +85,7 @@ export function PrintableClientCard({ client }: { client: Client }) {
     <div className="space-y-4">
       {/* Live preview */}
       <div
-        className="relative w-[3.375in] h-[2.125in] rounded-[14px] overflow-hidden p-[18px] cursor-pointer hover:shadow-xl transition-shadow"
+        className="relative w-full max-w-[3.375in] aspect-[3.375/2.125] rounded-[14px] overflow-hidden p-[18px] cursor-pointer hover:shadow-xl transition-shadow"
         style={{ background: theme.bg }}
         onClick={handlePrint}
       >
