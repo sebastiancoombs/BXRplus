@@ -182,8 +182,8 @@ function DashboardTab({ clientId }: { clientId: string }) {
           <CardContent className="py-5">
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Progress Toward Rewards</p>
-                <p className="text-xs text-muted-foreground mt-1">Fun, kid-friendly bars with customizable styles and celebration effects.</p>
+                <p className="text-sm font-medium text-muted-foreground">Reward Progress</p>
+                <p className="text-xs text-muted-foreground mt-1">See what is available now, what is next to unlock, and how close they are to each reward.</p>
               </div>
               <Button variant={showProgressSettings ? "secondary" : "outline"} size="sm" onClick={() => setShowProgressSettings((v) => !v)}>
                 {showProgressSettings ? "Hide options" : "Customize"}
@@ -199,31 +199,21 @@ function DashboardTab({ clientId }: { clientId: string }) {
               />
             )}
 
-            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-              {rewards.map((r) => {
-                const pct = Math.min(100, (displayBalance / r.point_cost) * 100);
-                return (
-                  <RewardJourneyCard
-                    key={r.id}
-                    reward={r}
-                    current={displayBalance}
-                    pct={pct}
-                    canRedeem={displayBalance >= r.point_cost}
-                    onCelebrate={triggerCelebration}
-                    onRedeem={async () => {
-                      setOptimisticBalance((b) => Math.max(0, (b ?? client.balance) - r.point_cost));
-                      try {
-                        await redeemReward(client.id, r.id);
-                        await handleRefresh();
-                      } catch (e) {
-                        setOptimisticBalance(client.balance);
-                        throw e;
-                      }
-                    }}
-                  />
-                );
-              })}
-            </div>
+            <UnifiedRewardPath
+              rewards={rewards}
+              current={displayBalance}
+              onCelebrate={triggerCelebration}
+              onRedeem={async (reward) => {
+                setOptimisticBalance((b) => Math.max(0, (b ?? client.balance) - reward.point_cost));
+                try {
+                  await redeemReward(client.id, reward.id);
+                  await handleRefresh();
+                } catch (e) {
+                  setOptimisticBalance(client.balance);
+                  throw e;
+                }
+              }}
+            />
           </CardContent>
         </Card>
       )}
@@ -1601,74 +1591,115 @@ function getJourneyPreset(id: string) {
   return JOURNEY_PRESETS.find((p) => p.id === id) ?? JOURNEY_PRESETS[0];
 }
 
-function RewardJourneyCard({ reward, current, pct, canRedeem, onRedeem, onCelebrate }: {
-  reward: any;
+function UnifiedRewardPath({ rewards, current, onRedeem, onCelebrate }: {
+  rewards: any[];
   current: number;
-  pct: number;
-  canRedeem: boolean;
-  onRedeem: () => Promise<void>;
+  onRedeem: (reward: any) => Promise<void>;
   onCelebrate?: (x?: number, y?: number) => void;
 }) {
-  const [confirming, setConfirming] = useState(false);
-  const [busy, setBusy] = useState(false);
-  const preset = getJourneyPreset(reward.journey_preset ?? reward.journey_theme ?? "space");
-  const traveler = reward.traveler_icon ?? preset.traveler;
-  const destination = reward.destination_icon ?? preset.destination;
-  const theme = getJourneyThemeStyles(reward.journey_theme ?? preset.theme);
-  const travelerBottom = `calc(${Math.min(92, Math.max(8, pct))}% - 14px)`;
+  const [confirmingId, setConfirmingId] = useState<string | null>(null);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const sorted = [...rewards].sort((a, b) => a.point_cost - b.point_cost);
+  const maxCost = Math.max(...sorted.map((r) => r.point_cost), 1);
+  const nextReward = sorted.find((r) => current < r.point_cost) ?? null;
+  const availableCount = sorted.filter((r) => current >= r.point_cost).length;
+  const activeTheme = getJourneyThemeStyles(sorted[0]?.journey_theme ?? getJourneyPreset(sorted[0]?.journey_preset ?? "space").theme);
+  const activeTraveler = sorted[0]?.traveler_icon ?? getJourneyPreset(sorted[0]?.journey_preset ?? "space").traveler;
+  const avatarBottom = `calc(${Math.min(94, Math.max(6, (current / maxCost) * 100))}% - 18px)`;
 
-  async function handleRedeem(e: React.MouseEvent<HTMLButtonElement>) {
-    if (!confirming) { setConfirming(true); return; }
-    setBusy(true);
-    await onRedeem();
+  async function handleRedeem(reward: any, e: React.MouseEvent<HTMLButtonElement>) {
+    if (confirmingId !== reward.id) { setConfirmingId(reward.id); return; }
+    setBusyId(reward.id);
+    await onRedeem(reward);
     const rect = e.currentTarget.getBoundingClientRect();
     onCelebrate?.(rect.left + rect.width / 2, rect.top + rect.height / 2);
-    setConfirming(false);
-    setBusy(false);
+    setBusyId(null);
+    setConfirmingId(null);
   }
 
   return (
-    <Card className={`overflow-hidden ${theme.card}`}>
-      <CardContent className="py-4 px-4">
-        <div className="flex items-start justify-between gap-3 mb-3">
-          <div className="min-w-0">
-            <p className="text-sm font-bold truncate">{reward.name}</p>
-            <p className="text-xs text-muted-foreground">{current}/{reward.point_cost} points</p>
+    <Card className={`overflow-hidden ${activeTheme.card}`}>
+      <CardContent className="py-5 px-4 md:px-6">
+        <div className="flex flex-wrap items-start justify-between gap-3 mb-5">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Reward Progress</p>
+            <h3 className="text-xl font-bold">{current} points earned</h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              {availableCount > 0
+                ? `${availableCount} reward${availableCount === 1 ? "" : "s"} available now`
+                : nextReward
+                  ? `${nextReward.point_cost - current} points until the next reward`
+                  : "All listed rewards are available"}
+            </p>
           </div>
-          <Badge className={theme.badge}>{reward.point_cost} pts</Badge>
+          <div className="text-right">
+            <p className="text-xs text-muted-foreground">Next to unlock</p>
+            <p className="text-sm font-medium">{nextReward ? `${nextReward.name} · ${nextReward.point_cost} pts` : "Everything unlocked"}</p>
+          </div>
         </div>
 
-        <div className="grid grid-cols-[1fr_auto] gap-4 items-center min-h-[260px]">
-          <div className="relative flex justify-center h-[260px]">
-            <div className={`absolute inset-y-6 w-20 rounded-full ${theme.trackBg}`} />
-            <div className={`absolute bottom-6 w-20 rounded-full transition-all duration-500 ${theme.trackFill}`} style={{ height: `${Math.min(100, Math.max(8, pct))}%` }} />
-            <div className="absolute top-0 text-4xl z-10 animate-float-soft">
-              <ItemIcon icon={destination} size="text-4xl" />
-            </div>
-            <div className="absolute top-10 text-[11px] font-medium text-center px-2 text-muted-foreground max-w-[90px]">Goal</div>
-            <div className="absolute bottom-0 text-[11px] font-medium text-center px-2 text-muted-foreground max-w-[90px]">Start</div>
-            <div className="absolute left-1/2 -translate-x-1/2 z-20 transition-all duration-500" style={{ bottom: travelerBottom }}>
-              <div className="w-14 h-14 rounded-2xl bg-background/90 border shadow-sm grid place-items-center animate-journey-bob">
-                <ItemIcon icon={traveler} size="text-3xl" />
+        <div className="grid md:grid-cols-[140px_1fr] gap-5 items-start">
+          <div className="relative h-[520px] md:h-[640px] flex justify-center">
+            <div className={`absolute inset-y-4 w-16 rounded-full ${activeTheme.trackBg}`} />
+            <div className={`absolute bottom-4 w-16 rounded-full transition-all duration-700 ${activeTheme.trackFill}`} style={{ height: `${Math.min(100, Math.max(6, (current / maxCost) * 100))}%` }} />
+            <div className="absolute left-1/2 -translate-x-1/2 z-20 transition-all duration-700" style={{ bottom: avatarBottom }}>
+              <div className="w-16 h-16 rounded-3xl bg-background/90 border shadow-md grid place-items-center animate-journey-bob">
+                <ItemIcon icon={activeTraveler} size="text-4xl" />
               </div>
             </div>
+            {sorted.map((reward) => {
+              const y = `calc(${Math.min(96, Math.max(6, (reward.point_cost / maxCost) * 100))}% - 18px)`;
+              const unlocked = current >= reward.point_cost;
+              const isNext = nextReward?.id === reward.id;
+              return (
+                <div key={reward.id} className="absolute left-1/2 -translate-x-1/2 w-full flex justify-center" style={{ bottom: y }}>
+                  <div className={`w-12 h-12 rounded-2xl border-2 shadow-sm grid place-items-center ${unlocked ? "bg-background border-primary" : "bg-muted border-border"} ${isNext ? "ring-4 ring-primary/15" : ""}`}>
+                    <ItemIcon icon={reward.destination_icon ?? reward.icon ?? "🎁"} size="text-2xl" />
+                  </div>
+                </div>
+              );
+            })}
           </div>
 
-          <div className="min-w-[96px] flex flex-col items-end gap-2">
-            <div className="text-right">
-              <p className="text-xs text-muted-foreground">Theme</p>
-              <p className="text-sm font-medium">{preset.label}</p>
-            </div>
-            {canRedeem ? (
-              <Button size="sm" variant={confirming ? "destructive" : "default"} onClick={handleRedeem} disabled={busy}>
-                {busy ? "..." : confirming ? `Redeem?` : "Redeem"}
-              </Button>
-            ) : (
-              <div className="text-right">
-                <p className="text-xs text-muted-foreground">Next goal</p>
-                <p className="text-sm font-medium">{reward.point_cost - current} to go</p>
-              </div>
-            )}
+          <div className="space-y-3">
+            {sorted.map((reward) => {
+              const unlocked = current >= reward.point_cost;
+              const isNext = nextReward?.id === reward.id;
+              const preset = getJourneyPreset(reward.journey_preset ?? reward.journey_theme ?? "space");
+              return (
+                <div key={reward.id} className={`rounded-2xl border p-4 transition-all ${unlocked ? "bg-background shadow-sm" : "bg-muted/30"} ${isNext ? "border-primary shadow-md" : ""}`}>
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="min-w-0 flex items-start gap-3">
+                      <div className="w-11 h-11 rounded-2xl bg-background border grid place-items-center flex-shrink-0">
+                        <ItemIcon icon={reward.icon} size="text-2xl" />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="font-semibold truncate">{reward.name}</p>
+                        <p className="text-xs text-muted-foreground mt-0.5">
+                          {unlocked ? "Available now" : isNext ? `${reward.point_cost - current} points to unlock` : `${reward.point_cost} points required`}
+                        </p>
+                        <p className="text-xs text-muted-foreground mt-1">Theme: {preset.label}</p>
+                      </div>
+                    </div>
+                    <Badge className={unlocked ? activeTheme.badge : "bg-muted text-muted-foreground"}>{reward.point_cost} pts</Badge>
+                  </div>
+
+                  <div className="mt-3 flex items-center justify-between gap-3">
+                    <div className="text-xs text-muted-foreground">
+                      {unlocked ? "Can be redeemed now" : isNext ? "Closest upcoming reward" : "Keep working toward this reward"}
+                    </div>
+                    {unlocked ? (
+                      <Button size="sm" variant={confirmingId === reward.id ? "destructive" : "default"}
+                        onClick={(e) => handleRedeem(reward, e)} disabled={busyId === reward.id}>
+                        {busyId === reward.id ? "..." : confirmingId === reward.id ? "Redeem?" : "Redeem"}
+                      </Button>
+                    ) : (
+                      <div className="text-sm font-medium">{Math.max(0, reward.point_cost - current)} left</div>
+                    )}
+                  </div>
+                </div>
+              );
+            })}
           </div>
         </div>
       </CardContent>
