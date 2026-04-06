@@ -601,7 +601,7 @@ function RewardsTab({ clientId }: { clientId: string }) {
           <div className="space-y-4">
             <div>
               <p className="text-xs font-medium text-muted-foreground mb-2">Earn Points</p>
-              <AddItemForm type="behavior" clientId={clientId} onAdded={refresh} defaultPositive />
+              <AddItemForm type="behavior" clientId={clientId} onAdded={refresh} />
               {positiveBehaviors.length > 0 ? (
                 <div className="grid gap-3 sm:grid-cols-2 mt-4">
                   {positiveBehaviors.map((b) => (
@@ -771,11 +771,10 @@ function EditableItemCard({ item, type, onUpdate }: {
   );
 }
 
-function AddItemForm({ type, clientId, onAdded, defaultPositive = false, defaultNegative = false }: {
+function AddItemForm({ type, clientId, onAdded, defaultNegative = false }: {
   type: "behavior" | "reward";
   clientId: string;
   onAdded: () => void;
-  defaultPositive?: boolean;
   defaultNegative?: boolean;
 }) {
   const [name, setName] = useState("");
@@ -1376,64 +1375,61 @@ function PrintablesTab({ clientId, client }: { clientId: string; client: any }) 
 
   return (
     <div className="space-y-8">
-      {/* Print All controls */}
-      <Card>
-        <CardContent className="py-5">
-          <div className="space-y-3">
-            <div>
-              <h3 className="font-semibold">Print All Materials</h3>
-              <p className="text-sm text-muted-foreground">
-                Client card, reward tickets, and behavior reference.
-              </p>
-            </div>
-            <div className="flex items-center gap-3">
-              <div className="flex items-center gap-2">
-                <label className="text-xs text-muted-foreground">Copies:</label>
-                <Input type="number" min={1} max={20} value={copies} onChange={(e) => setCopies(Math.max(1, +e.target.value))}
-                  className="w-14 h-8 text-center text-sm" />
-              </div>
-              <Button onClick={handlePrintAll} className="ml-auto">
-                🖨️ Print All
-              </Button>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
-
-      {/* Client Card Preview */}
-      <div>
-        <h3 className="font-semibold mb-3">💳 Client Card</h3>
-        <p className="text-sm text-muted-foreground mb-4">Credit-card sized — print and laminate. Scan to open their dashboard.</p>
-        <PrintableClientCard client={client} />
+      <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-5 md:p-7 shadow-sm">
+        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Print Studio</p>
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight mt-1">Printables</h2>
+        <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
+          Create cards, reward tickets, and reference sheets that are ready to print, laminate, and use in sessions.
+        </p>
       </div>
 
-      {/* Reward Tickets */}
-      {rewards.length > 0 && (
+      <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="text-sm font-semibold">Full Print Pack</p>
+            <p className="text-xs text-muted-foreground mt-1">Print the client card, reward tickets, and behavior reference in one step.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
+              <label className="text-xs text-muted-foreground">Copies</label>
+              <Input type="number" min={1} max={20} value={copies} onChange={(e) => setCopies(Math.max(1, +e.target.value))} className="w-16 h-9 text-center" />
+            </div>
+            <Button onClick={handlePrintAll}>Print Full Pack</Button>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-4">
         <div>
-          <h3 className="font-semibold mb-3">🎫 Reward Tickets</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Print and display — clients can see what they're working toward. Scan a ticket to redeem.
-          </p>
+          <p className="text-sm font-semibold">Client Card</p>
+          <p className="text-xs text-muted-foreground mt-1">Credit-card sized and easy to laminate. Scan it to open the client quickly.</p>
+        </div>
+        <PrintableClientCard client={client} />
+      </section>
+
+      {rewards.length > 0 && (
+        <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-4">
+          <div>
+            <p className="text-sm font-semibold">Reward Tickets</p>
+            <p className="text-xs text-muted-foreground mt-1">Printable reward choices that make goals visible and easy to redeem.</p>
+          </div>
           <div className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
             {rewards.map((r) => (
               <PrintableRewardTicket key={r.id} reward={r} client={client} />
             ))}
           </div>
-        </div>
+        </section>
       )}
 
-      {/* Behavior Reference */}
       {behaviors.length > 0 && (
-        <div>
-          <h3 className="font-semibold mb-3">📋 Behavior Reference Sheet</h3>
-          <p className="text-sm text-muted-foreground mb-4">
-            Quick reference for the team — which behaviors earn how many points.
-          </p>
-          <Card className="max-w-md">
+        <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-4 max-w-2xl">
+          <div>
+            <p className="text-sm font-semibold">Behavior Reference Sheet</p>
+            <p className="text-xs text-muted-foreground mt-1">A simple staff-facing reference for what adds or removes points.</p>
+          </div>
+          <Card className="max-w-xl shadow-none border">
             <CardContent className="py-0">
-              <div className="py-3 border-b font-semibold text-sm">
-                ⭐ Behaviors for {client.full_name}
-              </div>
+              <div className="py-3 border-b font-semibold text-sm">⭐ Behaviors for {client.full_name}</div>
               <table className="w-full text-sm">
                 <thead>
                   <tr className="text-xs text-muted-foreground uppercase">
@@ -1445,20 +1441,20 @@ function PrintablesTab({ clientId, client }: { clientId: string; client: any }) 
                   {behaviors.map((b) => (
                     <tr key={b.id} className="border-t">
                       <td className="py-2">{b.icon} {b.name}</td>
-                      <td className="py-2 text-right text-green-600 font-semibold">+{b.point_value}</td>
+                      <td className={`py-2 text-right font-semibold ${b.point_value >= 0 ? "text-green-600" : "text-red-500"}`}>{b.point_value > 0 ? "+" : ""}{b.point_value}</td>
                     </tr>
                   ))}
                 </tbody>
               </table>
             </CardContent>
           </Card>
-        </div>
+        </section>
       )}
 
       {rewards.length === 0 && behaviors.length === 0 && (
-        <p className="text-muted-foreground text-center py-8">
-          Add some behaviors and rewards first — then come back here to print everything.
-        </p>
+        <div className="rounded-3xl border border-dashed p-8 text-center text-muted-foreground">
+          Add behaviors and rewards first — then come back here to print a full starter pack.
+        </div>
       )}
     </div>
   );
@@ -1569,109 +1565,92 @@ function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) 
   };
 
   return (
-    <div className="space-y-6">
-      {/* Printable Credit Card */}
-      {client && (
-        <Card>
-          <CardContent className="py-5">
-            <p className="font-medium mb-1">Client Card</p>
-            <p className="text-sm text-muted-foreground mb-4">Print and laminate — scan from any phone to pull up their dashboard.</p>
-            <PrintableClientCard client={client} />
-          </CardContent>
-        </Card>
+    <div className="space-y-8">
+      <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-5 md:p-7 shadow-sm">
+        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Shared Support Team</p>
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight mt-1">Team</h2>
+        <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
+          Each client can have their own BCBA, RBT, and parent support team.
+        </p>
+      </div>
+
+      {isOwner && (
+        <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm">
+          <div className="mb-4">
+            <p className="text-sm font-semibold">Add Team Member</p>
+            <p className="text-xs text-muted-foreground mt-1">Search for an existing BXR+ user and assign their role for this client.</p>
+          </div>
+          <form onSubmit={addMember} className="grid gap-3 md:grid-cols-[1fr_auto_auto] items-end">
+            <div className="relative" ref={searchRef}>
+              <Input
+                value={searchName}
+                onChange={(e) => { setSearchName(e.target.value); setSelectedUser(null); }}
+                onFocus={() => searchResults.length > 0 && setShowResults(true)}
+                placeholder="Start typing a name..."
+                className="h-10"
+                required
+              />
+              {showResults && (
+                <div className="absolute top-full left-0 right-0 mt-1 bg-card border rounded-xl shadow-lg z-50 max-h-48 overflow-y-auto">
+                  {searchResults.length === 0 ? (
+                    <div className="px-3 py-3 text-sm text-muted-foreground">No users found. They need to create a BXR+ account first.</div>
+                  ) : (
+                    searchResults.map((p: any) => (
+                      <button key={p.id} type="button" onClick={() => selectUser(p)} className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-accent transition-colors">
+                        <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold flex-shrink-0">{p.full_name[0]?.toUpperCase()}</div>
+                        <span className="text-sm font-medium">{p.full_name}</span>
+                      </button>
+                    ))
+                  )}
+                </div>
+              )}
+              {selectedUser && <p className="text-xs text-green-600 mt-1">✓ {selectedUser.full_name} selected</p>}
+            </div>
+            <select value={role} onChange={(e) => setRole(e.target.value as AppRole)} className="rounded-xl border border-input bg-background px-3 py-2 text-sm h-10">
+              <option value="rbt">RBT</option>
+              <option value="parent">Parent</option>
+              <option value="bcba">BCBA</option>
+            </select>
+            <Button type="submit" className="h-10" disabled={adding || !selectedUser}>{adding ? "..." : "Add to Team"}</Button>
+          </form>
+          {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
+        </section>
       )}
 
-      {/* Team Members */}
-      <Card>
-        <CardContent className="py-4">
-          <p className="font-medium mb-3">Team Members</p>
+      <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-4">
+        <div>
+          <p className="text-sm font-semibold">Team Members</p>
+          <p className="text-xs text-muted-foreground mt-1">Roles are assigned per client, so the same person can have a different role for another child.</p>
+        </div>
 
-          {/* Owner */}
-          <div className="flex items-center justify-between py-2 border-b">
+        <div className="rounded-2xl border bg-background px-4 py-3">
+          <div className="flex items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center text-sm font-bold text-primary">
-                👑
-              </div>
+              <div className="w-10 h-10 rounded-2xl bg-amber-100 flex items-center justify-center text-lg">👑</div>
               <div>
-                <p className="text-sm font-medium">
-                  {client?.owner_id === user?.id ? "You" : "Owner"}
-                </p>
-                <Badge className="text-xs bg-amber-100 text-amber-800">Owner</Badge>
+                <p className="text-sm font-medium">{client?.owner_id === user?.id ? "You" : "Owner"}</p>
+                <p className="text-xs text-muted-foreground">Client owner</p>
               </div>
             </div>
+            <Badge className="text-xs bg-amber-100 text-amber-800">Owner</Badge>
           </div>
+        </div>
 
-          {/* Staff */}
+        <div className="space-y-2">
           {staff.map((s: any) => (
-            <StaffRow
-              key={s.id}
-              staff={s}
-              isOwner={isOwner}
-              roleColors={roleColors}
-              onChangeRole={(newRole) => changeRole(s.id, newRole)}
-              onMakeOwner={() => transferOwnership(s.user_id)}
-              onRemove={() => removeMember(s.id)}
-            />
+            <StaffRow key={s.id} staff={s} isOwner={isOwner} roleColors={roleColors} onChangeRole={(newRole) => changeRole(s.id, newRole)} onMakeOwner={() => transferOwnership(s.user_id)} onRemove={() => removeMember(s.id)} />
           ))}
-        </CardContent>
-      </Card>
+        </div>
+      </section>
 
-      {/* Add member — owner only */}
-      {isOwner && (
-        <Card>
-          <CardContent className="py-4">
-            <p className="font-medium mb-3">Add Team Member</p>
-            <form onSubmit={addMember} className="flex gap-2 items-end">
-              <div className="flex-1 relative" ref={searchRef}>
-                <Input
-                  value={searchName}
-                  onChange={(e) => { setSearchName(e.target.value); setSelectedUser(null); }}
-                  onFocus={() => searchResults.length > 0 && setShowResults(true)}
-                  placeholder="Start typing a name..."
-                  className="h-9"
-                  required
-                />
-                {/* Live search dropdown */}
-                {showResults && (
-                  <div className="absolute top-full left-0 right-0 mt-1 bg-card border rounded-lg shadow-lg z-50 max-h-48 overflow-y-auto">
-                    {searchResults.length === 0 ? (
-                      <div className="px-3 py-3 text-sm text-muted-foreground">
-                        No users found. They need to create a BXR+ account first.
-                      </div>
-                    ) : (
-                      searchResults.map((p: any) => (
-                        <button
-                          key={p.id}
-                          type="button"
-                          onClick={() => selectUser(p)}
-                          className="w-full flex items-center gap-2.5 px-3 py-2.5 text-left hover:bg-accent transition-colors"
-                        >
-                          <div className="w-7 h-7 rounded-full bg-muted flex items-center justify-center text-xs font-bold flex-shrink-0">
-                            {p.full_name[0]?.toUpperCase()}
-                          </div>
-                          <span className="text-sm font-medium">{p.full_name}</span>
-                        </button>
-                      ))
-                    )}
-                  </div>
-                )}
-                {selectedUser && (
-                  <p className="text-xs text-green-600 mt-1">✓ {selectedUser.full_name} selected</p>
-                )}
-              </div>
-              <select value={role} onChange={(e) => setRole(e.target.value as AppRole)}
-                className="rounded-md border border-input bg-background px-2 py-1 text-sm h-9">
-                <option value="rbt">RBT</option>
-                <option value="parent">Parent</option>
-                <option value="bcba">BCBA</option>
-              </select>
-              <Button type="submit" size="sm" className="h-9" disabled={adding || !selectedUser}>
-                {adding ? "..." : "Add"}
-              </Button>
-            </form>
-            {error && <p className="text-sm text-red-500 mt-2">{error}</p>}
-          </CardContent>
-        </Card>
+      {client && (
+        <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm">
+          <div className="mb-4">
+            <p className="text-sm font-semibold">Client Card</p>
+            <p className="text-xs text-muted-foreground mt-1">Print and laminate so any team member can scan and open the client quickly.</p>
+          </div>
+          <PrintableClientCard client={client} />
+        </section>
       )}
     </div>
   );
@@ -1818,9 +1797,9 @@ function StaffRow({ staff, isOwner, roleColors, onChangeRole, onMakeOwner, onRem
   const [confirmRemove, setConfirmRemove] = useState(false);
 
   return (
-    <div className="flex items-center justify-between py-2.5 border-b last:border-0">
+    <div className="flex items-center justify-between gap-3 rounded-2xl border bg-background px-4 py-3">
       <div className="flex items-center gap-3">
-        <div className="w-8 h-8 rounded-full bg-muted flex items-center justify-center text-sm font-bold">
+        <div className="w-10 h-10 rounded-2xl bg-muted flex items-center justify-center text-sm font-bold">
           {(staff.profile?.full_name ?? "?")[0].toUpperCase()}
         </div>
         <div>
