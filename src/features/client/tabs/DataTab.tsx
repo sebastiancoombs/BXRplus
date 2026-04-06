@@ -56,16 +56,32 @@ export default function DataTab({ clientId, clientName }: { clientId: string; cl
   });
   const timelineData = Array.from(dailyMap.values()).reverse();
 
-  const behaviorCountDailyMap = new Map<string, { date: string; count: number }>();
-  filtered
-    .filter((t) => t.type === "credit" && t.behavior_id && (filterBehavior === "all" || t.behavior_id === filterBehavior))
-    .forEach((t) => {
-      const day = new Date(t.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
-      const prev = behaviorCountDailyMap.get(day) ?? { date: day, count: 0 };
-      prev.count += 1;
-      behaviorCountDailyMap.set(day, prev);
-    });
-  const behaviorCountLineData = Array.from(behaviorCountDailyMap.values()).reverse();
+  const filteredBehaviorEvents = filtered.filter((t) => t.type === "credit" && t.behavior_id && t.behavior);
+  const behaviorLineMap = new Map<string, Record<string, string | number>>();
+  const behaviorLineKeys = new Map<string, { key: string; label: string; color: string }>();
+
+  filteredBehaviorEvents.forEach((t) => {
+    const day = new Date(t.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+    const behaviorId = t.behavior_id as string;
+    if (filterBehavior !== "all" && filterBehavior !== behaviorId) return;
+
+    if (!behaviorLineKeys.has(behaviorId)) {
+      const index = behaviorLineKeys.size;
+      behaviorLineKeys.set(behaviorId, {
+        key: `behavior_${behaviorId.replace(/-/g, "_")}`,
+        label: `${t.behavior?.icon ?? "⭐"} ${t.behavior?.name ?? "Unknown"}`,
+        color: CHART_COLORS[index % CHART_COLORS.length],
+      });
+    }
+
+    const lineInfo = behaviorLineKeys.get(behaviorId)!;
+    const prev = behaviorLineMap.get(day) ?? { date: day };
+    prev[lineInfo.key] = ((prev[lineInfo.key] as number | undefined) ?? 0) + 1;
+    behaviorLineMap.set(day, prev);
+  });
+
+  const behaviorCountLineData = Array.from(behaviorLineMap.values()).reverse();
+  const behaviorLineSeries = Array.from(behaviorLineKeys.values());
 
   function exportCSV() {
     const rows = behaviorFiltered.map((t) => ({
@@ -135,29 +151,28 @@ export default function DataTab({ clientId, clientName }: { clientId: string; cl
           </ChartCard>
         )}
 
-        {behaviorCountLineData.length > 0 && (
+        {behaviorCountLineData.length > 0 && behaviorLineSeries.length > 0 && (
           <ChartCard title="Behavior Count by Day">
             <ResponsiveContainer width="100%" height={250}>
               <LineChart data={behaviorCountLineData}>
-                <defs>
-                  <linearGradient id="behaviorCountFill" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.28} />
-                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.02} />
-                  </linearGradient>
-                </defs>
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis dataKey="date" tick={{ fontSize: 11 }} />
                 <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
-                <Tooltip formatter={(val: number) => [`${val}`, "Behavior count"]} />
-                <Line
-                  type="monotone"
-                  dataKey="count"
-                  stroke="#8b5cf6"
-                  strokeWidth={3}
-                  name="Behavior count"
-                  dot={{ r: 3, fill: "#8b5cf6" }}
-                  activeDot={{ r: 5 }}
-                />
+                <Tooltip />
+                <Legend />
+                {behaviorLineSeries.map((series) => (
+                  <Line
+                    key={series.key}
+                    type="monotone"
+                    dataKey={series.key}
+                    stroke={series.color}
+                    strokeWidth={3}
+                    name={series.label}
+                    dot={{ r: 3, fill: series.color }}
+                    activeDot={{ r: 5 }}
+                    connectNulls
+                  />
+                ))}
               </LineChart>
             </ResponsiveContainer>
           </ChartCard>
