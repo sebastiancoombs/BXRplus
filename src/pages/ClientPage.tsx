@@ -1668,6 +1668,10 @@ function ClientSettingsTab({ clientId, isOwner }: { clientId: string; isOwner: b
   const [dob, setDob] = useState("");
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
+  const [feedbackTheme, setFeedbackTheme] = useState("stars");
+  const [feedbackIntensity, setFeedbackIntensity] = useState("standard");
+  const [feedbackMode, setFeedbackMode] = useState("playful");
+  const [feedbackSaving, setFeedbackSaving] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
@@ -1676,6 +1680,9 @@ function ClientSettingsTab({ clientId, isOwner }: { clientId: string; isOwner: b
       setClient(data);
       setName(data?.full_name ?? "");
       setDob(data?.date_of_birth ?? "");
+      setFeedbackTheme(data?.session_feedback_theme ?? "stars");
+      setFeedbackIntensity(data?.session_feedback_intensity ?? "standard");
+      setFeedbackMode(data?.session_feedback_mode ?? "playful");
       setLoading(false);
     });
   }, [clientId]);
@@ -1706,6 +1713,13 @@ function ClientSettingsTab({ clientId, isOwner }: { clientId: string; isOwner: b
     await supabase.from("clients").delete().eq("id", clientId);
     await refreshClients();
     persistedTab = "dashboard";
+  }
+
+  async function autoSaveFeedback(patch: { session_feedback_theme?: string; session_feedback_intensity?: string; session_feedback_mode?: string }, key: string) {
+    setFeedbackSaving(key);
+    await supabase.from("clients").update(patch).eq("id", clientId);
+    await refreshClients();
+    setTimeout(() => setFeedbackSaving(null), 300);
   }
 
   if (loading) return <p className="text-muted-foreground">Loading...</p>;
@@ -1748,6 +1762,54 @@ function ClientSettingsTab({ clientId, isOwner }: { clientId: string; isOwner: b
               {saved && <span className="text-sm text-green-600">✓ Saved</span>}
             </div>
           </form>
+        </CardContent>
+      </Card>
+
+      <Card>
+        <CardContent className="py-5 space-y-4">
+          <div>
+            <h3 className="font-semibold mb-1">Session Feedback</h3>
+            <p className="text-sm text-muted-foreground">Customize how the live session feels for this client. Changes save automatically.</p>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Feedback Theme</p>
+            <div className="flex flex-wrap gap-2">
+              {[
+                ["stars", "Stars"], ["bubbles", "Bubbles"], ["flowers", "Flowers"], ["smileys", "Smileys"],
+                ["fireworks", "Fireworks"], ["hearts", "Hearts"], ["candy", "Candy"], ["glow", "Glow"]
+              ].map(([id, label]) => (
+                <Button key={id} type="button" size="sm" variant={feedbackTheme === id ? "default" : "outline"}
+                  onClick={() => { setFeedbackTheme(id); autoSaveFeedback({ session_feedback_theme: id }, `theme-${id}`); }}>
+                  {feedbackSaving === `theme-${id}` ? "Saving..." : label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Feedback Intensity</p>
+            <div className="flex flex-wrap gap-2">
+              {[["calm", "Calm"], ["standard", "Standard"], ["lively", "Lively"]].map(([id, label]) => (
+                <Button key={id} type="button" size="sm" variant={feedbackIntensity === id ? "default" : "outline"}
+                  onClick={() => { setFeedbackIntensity(id); autoSaveFeedback({ session_feedback_intensity: id }, `intensity-${id}`); }}>
+                  {feedbackSaving === `intensity-${id}` ? "Saving..." : label}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="space-y-2">
+            <p className="text-xs font-medium text-muted-foreground">Feedback Mode</p>
+            <div className="flex flex-wrap gap-2">
+              {[["playful", "Playful"], ["calm", "Calm Visuals"]].map(([id, label]) => (
+                <Button key={id} type="button" size="sm" variant={feedbackMode === id ? "default" : "outline"}
+                  onClick={() => { setFeedbackMode(id); autoSaveFeedback({ session_feedback_mode: id }, `mode-${id}`); }}>
+                  {feedbackSaving === `mode-${id}` ? "Saving..." : label}
+                </Button>
+              ))}
+            </div>
+          </div>
         </CardContent>
       </Card>
 
