@@ -125,8 +125,26 @@
   100% { transform: translate(calc(-50% + var(--dx, 0px)), calc(-50% - 42px)) scale(1.05); opacity: 0; }
 }
 
+@keyframes journey-bob {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-4px); }
+}
+
+@keyframes float-soft {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
 .animate-reward-pop {
   animation: reward-pop 0.55s cubic-bezier(.2,.9,.2,1) forwards;
+}
+
+.animate-journey-bob {
+  animation: journey-bob 1.8s ease-in-out infinite;
+}
+
+.animate-float-soft {
+  animation: float-soft 2.4s ease-in-out infinite;
 }
 
 /* Emoji picker sizing */

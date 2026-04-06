@@ -199,14 +199,16 @@ function DashboardTab({ clientId }: { clientId: string }) {
               />
             )}
 
-            <div className="space-y-4">
+            <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
               {rewards.map((r) => {
                 const pct = Math.min(100, (displayBalance / r.point_cost) * 100);
                 return (
-                  <ThermometerRow key={r.id} icon={r.icon} name={r.name} current={displayBalance}
-                    goal={r.point_cost} pct={pct} canRedeem={displayBalance >= r.point_cost}
-                    theme={client.reward_bar_theme ?? "rainbow"}
-                    styleVariant={client.reward_bar_style ?? "rounded"}
+                  <RewardJourneyCard
+                    key={r.id}
+                    reward={r}
+                    current={displayBalance}
+                    pct={pct}
+                    canRedeem={displayBalance >= r.point_cost}
                     onCelebrate={triggerCelebration}
                     onRedeem={async () => {
                       setOptimisticBalance((b) => Math.max(0, (b ?? client.balance) - r.point_cost));
@@ -352,6 +354,10 @@ function EditableItemCard({ item, type, onUpdate }: {
   const [name, setName] = useState(item.name);
   const [icon, setIcon] = useState(item.icon);
   const [value, setValue] = useState(type === "behavior" ? item.point_value : item.point_cost);
+  const [journeyPreset, setJourneyPreset] = useState(item.journey_preset ?? "space");
+  const [travelerIcon, setTravelerIcon] = useState(item.traveler_icon ?? "🚀");
+  const [destinationIcon, setDestinationIcon] = useState(item.destination_icon ?? "🌙");
+  const [journeyTheme, setJourneyTheme] = useState(item.journey_theme ?? "space");
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -360,7 +366,10 @@ function EditableItemCard({ item, type, onUpdate }: {
 
   async function save() {
     setBusy(true);
-    await supabase.from(table).update({ name, icon, [valueField]: value }).eq("id", item.id);
+    await supabase.from(table).update(type === "behavior"
+      ? { name, icon, [valueField]: value }
+      : { name, icon, [valueField]: value, journey_preset: journeyPreset, traveler_icon: travelerIcon, destination_icon: destinationIcon, journey_theme: journeyTheme }
+    ).eq("id", item.id);
     setBusy(false);
     setEditing(false);
     onUpdate();
@@ -393,6 +402,27 @@ function EditableItemCard({ item, type, onUpdate }: {
               </Button>
             </div>
           </div>
+
+          {type === "reward" && (
+            <>
+              <select value={journeyPreset} onChange={(e) => {
+                const p = getJourneyPreset(e.target.value);
+                setJourneyPreset(p.id); setJourneyTheme(p.theme); setTravelerIcon(p.traveler); setDestinationIcon(p.destination);
+              }} className="w-full h-8 rounded-md border bg-background px-3 text-sm">
+                {JOURNEY_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+              </select>
+              <div className="grid grid-cols-2 gap-2">
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Traveler</p>
+                  <IconPicker value={travelerIcon} onChange={setTravelerIcon} clientId={item.client_id} />
+                </div>
+                <div className="space-y-1">
+                  <p className="text-xs text-muted-foreground">Destination</p>
+                  <IconPicker value={destinationIcon} onChange={setDestinationIcon} clientId={item.client_id} />
+                </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     );
@@ -435,6 +465,10 @@ function AddItemForm({ type, clientId, onAdded }: { type: "behavior" | "reward";
   const [name, setName] = useState("");
   const [value, setValue] = useState(type === "reward" ? 10 : 1);
   const [icon, setIcon] = useState(type === "reward" ? "🎁" : "⭐");
+  const [journeyPreset, setJourneyPreset] = useState("space");
+  const [travelerIcon, setTravelerIcon] = useState("🚀");
+  const [destinationIcon, setDestinationIcon] = useState("🌙");
+  const [journeyTheme, setJourneyTheme] = useState("space");
   const [busy, setBusy] = useState(false);
 
   async function submit(e: React.FormEvent) {
@@ -449,6 +483,7 @@ function AddItemForm({ type, clientId, onAdded }: { type: "behavior" | "reward";
     } else {
       await supabase.from("rewards").insert({
         client_id: clientId, name, point_cost: value, icon,
+        journey_preset: journeyPreset, traveler_icon: travelerIcon, destination_icon: destinationIcon, journey_theme: journeyTheme,
         is_active: true, description: null, created_by: null,
       });
     }
@@ -472,6 +507,27 @@ function AddItemForm({ type, clientId, onAdded }: { type: "behavior" | "reward";
         </div>
         <Button type="submit" size="sm" className="h-9 ml-auto" disabled={busy}>Add</Button>
       </div>
+
+      {type === "reward" && (
+        <div className="space-y-2 rounded-xl border bg-muted/20 p-3">
+          <select value={journeyPreset} onChange={(e) => {
+            const p = getJourneyPreset(e.target.value);
+            setJourneyPreset(p.id); setJourneyTheme(p.theme); setTravelerIcon(p.traveler); setDestinationIcon(p.destination);
+          }} className="w-full h-9 rounded-md border bg-background px-3 text-sm">
+            {JOURNEY_PRESETS.map((p) => <option key={p.id} value={p.id}>{p.label}</option>)}
+          </select>
+          <div className="grid grid-cols-2 gap-3 items-start">
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Traveler</p>
+              <IconPicker value={travelerIcon} onChange={setTravelerIcon} clientId={clientId} />
+            </div>
+            <div>
+              <p className="text-xs text-muted-foreground mb-1">Destination</p>
+              <IconPicker value={destinationIcon} onChange={setDestinationIcon} clientId={clientId} />
+            </div>
+          </div>
+        </div>
+      )}
     </form>
   );
 }
@@ -1532,91 +1588,104 @@ function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate, onOptimisticAw
   );
 }
 
-function ThermometerRow({ icon, name, current, goal, pct, canRedeem, onRedeem, theme, styleVariant, onCelebrate }: {
-  icon: string; name: string; current: number; goal: number; pct: number; canRedeem: boolean; onRedeem: () => Promise<void>;
-  theme: string; styleVariant: string; onCelebrate?: () => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const [confirming, setConfirming] = useState(false);
-  const { trackClass, trackFillClass, labelChipClass, fillPattern } = getRewardBarClasses(theme, styleVariant, pct);
+const JOURNEY_PRESETS = [
+  { id: "space", label: "Space Journey", traveler: "🚀", destination: "🌙", theme: "space" },
+  { id: "princess", label: "Princess Quest", traveler: "👸", destination: "🐴", theme: "princess" },
+  { id: "train", label: "Train Adventure", traveler: "🚂", destination: "🏰", theme: "train" },
+  { id: "ocean", label: "Ocean Adventure", traveler: "🧜", destination: "🐚", theme: "ocean" },
+  { id: "dino", label: "Dino Trek", traveler: "🦖", destination: "🌋", theme: "dino" },
+  { id: "unicorn", label: "Unicorn Trail", traveler: "🦄", destination: "🌈", theme: "unicorn" },
+];
 
-  async function handleRedeem() {
+function getJourneyPreset(id: string) {
+  return JOURNEY_PRESETS.find((p) => p.id === id) ?? JOURNEY_PRESETS[0];
+}
+
+function RewardJourneyCard({ reward, current, pct, canRedeem, onRedeem, onCelebrate }: {
+  reward: any;
+  current: number;
+  pct: number;
+  canRedeem: boolean;
+  onRedeem: () => Promise<void>;
+  onCelebrate?: (x?: number, y?: number) => void;
+}) {
+  const [confirming, setConfirming] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const preset = getJourneyPreset(reward.journey_preset ?? reward.journey_theme ?? "space");
+  const traveler = reward.traveler_icon ?? preset.traveler;
+  const destination = reward.destination_icon ?? preset.destination;
+  const theme = getJourneyThemeStyles(reward.journey_theme ?? preset.theme);
+  const travelerBottom = `calc(${Math.min(92, Math.max(8, pct))}% - 14px)`;
+
+  async function handleRedeem(e: React.MouseEvent<HTMLButtonElement>) {
     if (!confirming) { setConfirming(true); return; }
     setBusy(true);
     await onRedeem();
+    const rect = e.currentTarget.getBoundingClientRect();
+    onCelebrate?.(rect.left + rect.width / 2, rect.top + rect.height / 2);
     setConfirming(false);
     setBusy(false);
-    onCelebrate?.();
   }
 
   return (
-    <div className="space-y-1.5">
-      <div className="flex items-center gap-2">
-        <ItemIcon icon={icon} />
-        <span className="text-sm font-medium truncate flex-1 min-w-0">{name}</span>
-        <span className={`text-xs flex-shrink-0 px-2 py-0.5 rounded-full ${labelChipClass}`}>{current}/{goal}</span>
-      </div>
-      <div className="flex items-center gap-2">
-        <div className={`flex-1 h-4 overflow-hidden ${trackClass}`}>
-          <div className={`h-full transition-all duration-500 relative ${trackFillClass}`} style={{ width: `${pct}%` }}>
-            {fillPattern && <div className={`absolute inset-0 ${fillPattern}`} />}
+    <Card className={`overflow-hidden ${theme.card}`}>
+      <CardContent className="py-4 px-4">
+        <div className="flex items-start justify-between gap-3 mb-3">
+          <div className="min-w-0">
+            <p className="text-sm font-bold truncate">{reward.name}</p>
+            <p className="text-xs text-muted-foreground">{current}/{reward.point_cost} points</p>
+          </div>
+          <Badge className={theme.badge}>{reward.point_cost} pts</Badge>
+        </div>
+
+        <div className="grid grid-cols-[1fr_auto] gap-4 items-center min-h-[260px]">
+          <div className="relative flex justify-center h-[260px]">
+            <div className={`absolute inset-y-6 w-20 rounded-full ${theme.trackBg}`} />
+            <div className={`absolute bottom-6 w-20 rounded-full transition-all duration-500 ${theme.trackFill}`} style={{ height: `${Math.min(100, Math.max(8, pct))}%` }} />
+            <div className="absolute top-0 text-4xl z-10 animate-float-soft">
+              <ItemIcon icon={destination} size="text-4xl" />
+            </div>
+            <div className="absolute top-10 text-[11px] font-medium text-center px-2 text-muted-foreground max-w-[90px]">Goal</div>
+            <div className="absolute bottom-0 text-[11px] font-medium text-center px-2 text-muted-foreground max-w-[90px]">Start</div>
+            <div className="absolute left-1/2 -translate-x-1/2 z-20 transition-all duration-500" style={{ bottom: travelerBottom }}>
+              <div className="w-14 h-14 rounded-2xl bg-background/90 border shadow-sm grid place-items-center animate-journey-bob">
+                <ItemIcon icon={traveler} size="text-3xl" />
+              </div>
+            </div>
+          </div>
+
+          <div className="min-w-[96px] flex flex-col items-end gap-2">
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Theme</p>
+              <p className="text-sm font-medium">{preset.label}</p>
+            </div>
+            {canRedeem ? (
+              <Button size="sm" variant={confirming ? "destructive" : "default"} onClick={handleRedeem} disabled={busy}>
+                {busy ? "..." : confirming ? `Redeem?` : "Redeem"}
+              </Button>
+            ) : (
+              <div className="text-right">
+                <p className="text-xs text-muted-foreground">Next goal</p>
+                <p className="text-sm font-medium">{reward.point_cost - current} to go</p>
+              </div>
+            )}
           </div>
         </div>
-        {canRedeem ? (
-          <Button
-            size="sm"
-            variant={confirming ? "destructive" : "default"}
-            onClick={handleRedeem}
-            onBlur={() => setTimeout(() => setConfirming(false), 200)}
-            disabled={busy}
-            className="flex-shrink-0 h-7 text-xs"
-          >
-            {busy ? "..." : confirming ? `−${goal}?` : "Redeem"}
-          </Button>
-        ) : (
-          <span className="text-[11px] text-muted-foreground flex-shrink-0">{goal - current} to go</span>
-        )}
-      </div>
-    </div>
+      </CardContent>
+    </Card>
   );
 }
 
-function getRewardBarClasses(theme: string, styleVariant: string, pct: number) {
-  const rounded = styleVariant === "pill" ? "rounded-full" : styleVariant === "ticket" ? "rounded-lg border-2 border-dashed" : "rounded-md";
-
-  const themeMap: Record<string, { fill: string; chip: string; pattern?: string }> = {
-    rainbow: {
-      fill: "bg-gradient-to-r from-pink-500 via-yellow-400 to-sky-500",
-      chip: "bg-pink-100 text-pink-700",
-      pattern: "opacity-25 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.8)_25%,rgba(255,255,255,0.8)_50%,transparent_50%,transparent_75%,rgba(255,255,255,0.8)_75%)] bg-[length:14px_14px]"
-    },
-    stars: {
-      fill: "bg-gradient-to-r from-amber-400 to-yellow-300",
-      chip: "bg-amber-100 text-amber-800",
-      pattern: "opacity-30 bg-[radial-gradient(circle_at_8px_8px,rgba(255,255,255,0.95)_1.5px,transparent_2px)] bg-[length:18px_18px]"
-    },
-    ocean: {
-      fill: "bg-gradient-to-r from-cyan-500 to-blue-500",
-      chip: "bg-cyan-100 text-cyan-800"
-    },
-    candy: {
-      fill: "bg-gradient-to-r from-fuchsia-400 to-pink-400",
-      chip: "bg-fuchsia-100 text-fuchsia-800",
-      pattern: "opacity-20 bg-[linear-gradient(90deg,rgba(255,255,255,0.9)_0_8px,transparent_8px_16px)] bg-[length:16px_16px]"
-    },
-    rocket: {
-      fill: pct >= 100 ? "bg-gradient-to-r from-lime-400 to-emerald-500" : "bg-gradient-to-r from-violet-500 to-indigo-500",
-      chip: "bg-violet-100 text-violet-800"
-    },
+function getJourneyThemeStyles(theme: string) {
+  const themes: Record<string, { card: string; badge: string; trackBg: string; trackFill: string }> = {
+    space: { card: "bg-gradient-to-b from-slate-900/5 to-indigo-500/5", badge: "bg-indigo-100 text-indigo-700", trackBg: "bg-slate-200", trackFill: "bg-gradient-to-t from-violet-600 via-indigo-500 to-sky-400" },
+    princess: { card: "bg-gradient-to-b from-pink-50 to-rose-50", badge: "bg-pink-100 text-pink-700", trackBg: "bg-rose-100", trackFill: "bg-gradient-to-t from-pink-400 via-rose-300 to-fuchsia-300" },
+    train: { card: "bg-gradient-to-b from-amber-50 to-orange-50", badge: "bg-amber-100 text-amber-700", trackBg: "bg-amber-100", trackFill: "bg-gradient-to-t from-amber-600 via-orange-500 to-yellow-400" },
+    ocean: { card: "bg-gradient-to-b from-cyan-50 to-sky-50", badge: "bg-cyan-100 text-cyan-700", trackBg: "bg-cyan-100", trackFill: "bg-gradient-to-t from-cyan-500 via-sky-400 to-blue-300" },
+    dino: { card: "bg-gradient-to-b from-lime-50 to-green-50", badge: "bg-lime-100 text-lime-800", trackBg: "bg-lime-100", trackFill: "bg-gradient-to-t from-green-600 via-lime-500 to-emerald-300" },
+    unicorn: { card: "bg-gradient-to-b from-violet-50 to-fuchsia-50", badge: "bg-violet-100 text-violet-700", trackBg: "bg-violet-100", trackFill: "bg-gradient-to-t from-violet-500 via-fuchsia-400 to-pink-300" },
   };
-
-  const selected = themeMap[theme] ?? themeMap.rainbow;
-  return {
-    trackClass: `${rounded} bg-muted/80`,
-    trackFillClass: `${rounded} ${selected.fill}`,
-    labelChipClass: selected.chip,
-    fillPattern: selected.pattern ?? "",
-  };
+  return themes[theme] ?? themes.space;
 }
 
 function ProgressCustomizationPanel({ theme, style, animation, onChange }: {

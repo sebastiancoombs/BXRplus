@@ -52,6 +52,10 @@ export interface Reward {
   description: string | null;
   point_cost: number;
   icon: string;
+  journey_preset: string | null;
+  traveler_icon: string | null;
+  destination_icon: string | null;
+  journey_theme: string | null;
   is_active: boolean;
   created_by: string | null;
   created_at: string;
