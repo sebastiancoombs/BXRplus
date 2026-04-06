@@ -614,6 +614,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
   const positiveBehaviors = useMemo(() => behaviors.filter((behavior) => behavior.point_value >= 0), [behaviors]);
   const negativeBehaviors = useMemo(() => behaviors.filter((behavior) => behavior.point_value < 0), [behaviors]);
   const travelerIcon = client.traveler_icon || rewards[0]?.traveler_icon || "🚀";
+  const mobileActions = mobileTab === "earn" ? positiveBehaviors : mobileTab === "reduce" ? negativeBehaviors : rewards;
 
   return (
     <div className="fixed inset-0 z-40 bg-background/95 backdrop-blur-sm">
@@ -637,34 +638,84 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="space-y-5 lg:grid lg:grid-cols-[180px_1fr] lg:gap-4 lg:h-full lg:space-y-0">
-            <div className="self-start">
+            <div className="hidden lg:block self-start">
               <SessionProgressRail rewards={rewards} current={client.balance} travelerIcon={travelerIcon} />
             </div>
 
             <div className="space-y-5">
-              <div className="lg:hidden rounded-[22px] border bg-card p-2 shadow-sm">
-                <div className="grid grid-cols-3 gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setMobileTab("earn")}
-                    className={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${mobileTab === "earn" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
-                  >
-                    Earn Points
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMobileTab("reduce")}
-                    className={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${mobileTab === "reduce" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
-                  >
-                    Reduce Points
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setMobileTab("rewards")}
-                    className={`rounded-full px-3 py-2 text-sm font-medium transition-colors ${mobileTab === "rewards" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
-                  >
-                    Rewards
-                  </button>
+              <div className="lg:hidden grid grid-cols-[148px_minmax(0,1fr)] gap-3 items-start">
+                <div className="sticky top-[88px]">
+                  <SessionProgressRail rewards={rewards} current={client.balance} travelerIcon={travelerIcon} />
+                </div>
+
+                <div className="space-y-3 min-w-0">
+                  <div className="rounded-[22px] border bg-card p-2 shadow-sm">
+                    <div className="grid grid-cols-3 gap-2">
+                      <button
+                        type="button"
+                        onClick={() => setMobileTab("earn")}
+                        className={`rounded-full px-2 py-2 text-xs font-medium transition-colors ${mobileTab === "earn" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
+                      >
+                        Earn
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMobileTab("reduce")}
+                        className={`rounded-full px-2 py-2 text-xs font-medium transition-colors ${mobileTab === "reduce" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
+                      >
+                        Reduce
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => setMobileTab("rewards")}
+                        className={`rounded-full px-2 py-2 text-xs font-medium transition-colors ${mobileTab === "rewards" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
+                      >
+                        Rewards
+                      </button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2">
+                    {mobileTab !== "rewards" && mobileActions.map((behavior) => (
+                      <CompactSessionActionRow
+                        key={behavior.id}
+                        emoji={behavior.icon}
+                        title={behavior.name}
+                        value={`${behavior.point_value > 0 ? "+" : ""}${behavior.point_value}`}
+                        tone={behavior.point_value < 0 ? "loss" : "gain"}
+                        onClick={async () => {
+                          onOptimisticAward(behavior.point_value);
+                          await awardPoints(client.id, behavior.id, behavior.point_value);
+                          await onAwarded();
+                          onCelebrate(
+                            undefined,
+                            undefined,
+                            behavior.point_value < 0 ? "penalty" : undefined,
+                            behavior.point_value < 0 ? (behavior.feedback_loss_animation_id || "⚠️") : (behavior.feedback_gain_animation_id || "⭐")
+                          );
+                        }}
+                      />
+                    ))}
+
+                    {mobileTab === "rewards" && rewards.map((reward) => (
+                      <CompactSessionActionRow
+                        key={reward.id}
+                        emoji={reward.icon}
+                        title={reward.name}
+                        value={`${reward.point_cost}`}
+                        tone={client.balance >= reward.point_cost ? "reward" : "muted"}
+                        disabled={client.balance < reward.point_cost}
+                        subtitle={client.balance >= reward.point_cost ? "Tap to redeem" : `${Math.max(0, reward.point_cost - client.balance)} left`}
+                        onClick={async () => {
+                          if (client.balance < reward.point_cost) return;
+                          onOptimisticAward(-reward.point_cost);
+                          await redeemReward(client.id, reward.id);
+                          await onAwarded();
+                          onCelebrate(undefined, undefined, undefined, reward.icon || "🎁");
+                        }}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
 
@@ -685,46 +736,70 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
                   ))}
                 </div>
               </div>
-
-              <div className="lg:hidden">
-                {mobileTab === "earn" && (
-                  <div>
-                    <p className="text-sm font-semibold mb-3">Earn Points</p>
-                    <div className="grid grid-cols-1 gap-4 content-start">
-                      {positiveBehaviors.map((behavior) => (
-                        <QuickAwardSessionCard key={behavior.id} behavior={behavior} clientId={client.id} onDone={onAwarded} onCelebrate={onCelebrate} onOptimisticAward={onOptimisticAward} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {mobileTab === "reduce" && (
-                  <div>
-                    <p className="text-sm font-semibold mb-3">Reduce Points</p>
-                    <div className="grid grid-cols-1 gap-4 content-start">
-                      {negativeBehaviors.map((behavior) => (
-                        <QuickAwardSessionCard key={behavior.id} behavior={behavior} clientId={client.id} onDone={onAwarded} onCelebrate={onCelebrate} onOptimisticAward={onOptimisticAward} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-
-                {mobileTab === "rewards" && (
-                  <div>
-                    <p className="text-sm font-semibold mb-3">Rewards</p>
-                    <div className="grid grid-cols-1 gap-4 content-start">
-                      {rewards.map((reward) => (
-                        <QuickRedeemSessionCard key={reward.id} reward={reward} clientId={client.id} currentBalance={client.balance} onDone={onAwarded} onCelebrate={onCelebrate} onOptimisticRedeem={(amount) => onOptimisticAward(-amount)} />
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
             </div>
           </div>
         </div>
       </div>
     </div>
+  );
+}
+
+function CompactSessionActionRow({
+  emoji,
+  title,
+  value,
+  tone,
+  subtitle,
+  disabled,
+  onClick,
+}: {
+  emoji: string;
+  title: string;
+  value: string;
+  tone: "gain" | "loss" | "reward" | "muted";
+  subtitle?: string;
+  disabled?: boolean;
+  onClick: () => Promise<void>;
+}) {
+  const [busy, setBusy] = useState(false);
+
+  async function handleClick() {
+    if (disabled || busy) return;
+    setBusy(true);
+    try {
+      await onClick();
+    } finally {
+      setBusy(false);
+    }
+  }
+
+  const toneClasses =
+    tone === "gain"
+      ? "border-emerald-200 bg-emerald-50/70"
+      : tone === "loss"
+        ? "border-red-200 bg-red-50/70"
+        : tone === "reward"
+          ? "border-amber-200 bg-amber-50/70"
+          : "border-slate-200 bg-slate-50/70";
+
+  return (
+    <button
+      type="button"
+      onClick={handleClick}
+      disabled={disabled || busy}
+      className={`w-full rounded-[22px] border px-3 py-3 text-left transition-all active:scale-[0.98] ${toneClasses} ${disabled ? "opacity-60" : "hover:shadow-sm"}`}
+    >
+      <div className="flex items-center justify-between gap-3">
+        <div className="min-w-0 flex items-center gap-3">
+          <div className="h-11 w-11 rounded-[16px] bg-white/90 grid place-items-center text-2xl shrink-0 shadow-sm">{emoji}</div>
+          <div className="min-w-0">
+            <p className="text-sm font-semibold break-words">{title}</p>
+            {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
+          </div>
+        </div>
+        <div className="rounded-full bg-white/90 px-3 py-1 text-sm font-bold shadow-sm shrink-0">{busy ? "..." : value}</div>
+      </div>
+    </button>
   );
 }
 
