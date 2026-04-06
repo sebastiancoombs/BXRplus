@@ -719,20 +719,72 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
                 </div>
               </div>
 
-              <div className="hidden lg:block">
-                <p className="text-sm font-semibold mb-3">Behavior Programs</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 content-start">
-                  {behaviors.map((behavior) => (
-                    <QuickAwardSessionCard key={behavior.id} behavior={behavior} clientId={client.id} onDone={onAwarded} onCelebrate={onCelebrate} onOptimisticAward={onOptimisticAward} />
-                  ))}
+              <div className="hidden lg:block space-y-3">
+                <div className="rounded-[22px] border bg-card p-2 shadow-sm inline-flex">
+                  <div className="grid grid-cols-3 gap-2">
+                    <button
+                      type="button"
+                      onClick={() => setMobileTab("earn")}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${mobileTab === "earn" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
+                    >
+                      Earn
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileTab("reduce")}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${mobileTab === "reduce" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
+                    >
+                      Reduce
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setMobileTab("rewards")}
+                      className={`rounded-full px-4 py-2 text-sm font-medium transition-colors ${mobileTab === "rewards" ? "bg-primary text-primary-foreground" : "text-muted-foreground hover:bg-accent"}`}
+                    >
+                      Rewards
+                    </button>
+                  </div>
                 </div>
-              </div>
 
-              <div className="hidden lg:block">
-                <p className="text-sm font-semibold mb-3">Rewards</p>
-                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 content-start">
-                  {rewards.map((reward) => (
-                    <QuickRedeemSessionCard key={reward.id} reward={reward} clientId={client.id} currentBalance={client.balance} onDone={onAwarded} onCelebrate={onCelebrate} onOptimisticRedeem={(amount) => onOptimisticAward(-amount)} />
+                <div className="space-y-2">
+                  {mobileTab !== "rewards" && (mobileTab === "earn" ? positiveBehaviors : negativeBehaviors).map((behavior) => (
+                    <CompactSessionActionRow
+                      key={behavior.id}
+                      emoji={behavior.icon}
+                      title={behavior.name}
+                      value={`${behavior.point_value > 0 ? "+" : ""}${behavior.point_value}`}
+                      tone={behavior.point_value < 0 ? "loss" : "gain"}
+                      onClick={async () => {
+                        onOptimisticAward(behavior.point_value);
+                        await awardPoints(client.id, behavior.id, behavior.point_value);
+                        await onAwarded();
+                        onCelebrate(
+                          undefined,
+                          undefined,
+                          behavior.point_value < 0 ? "penalty" : undefined,
+                          behavior.point_value < 0 ? (behavior.feedback_loss_animation_id || "⚠️") : (behavior.feedback_gain_animation_id || "⭐")
+                        );
+                      }}
+                    />
+                  ))}
+
+                  {mobileTab === "rewards" && rewards.map((reward) => (
+                    <CompactSessionActionRow
+                      key={reward.id}
+                      emoji={reward.icon}
+                      title={reward.name}
+                      value={`${reward.point_cost}`}
+                      tone={client.balance >= reward.point_cost ? "reward" : "muted"}
+                      disabled={client.balance < reward.point_cost}
+                      subtitle={client.balance >= reward.point_cost ? "Tap to redeem" : `${Math.max(0, reward.point_cost - client.balance)} left`}
+                      onClick={async () => {
+                        if (client.balance < reward.point_cost) return;
+                        onOptimisticAward(-reward.point_cost);
+                        await redeemReward(client.id, reward.id);
+                        await onAwarded();
+                        onCelebrate(undefined, undefined, undefined, reward.icon || "🎁");
+                      }}
+                    />
                   ))}
                 </div>
               </div>
@@ -803,94 +855,3 @@ function CompactSessionActionRow({
   );
 }
 
-function QuickAwardSessionCard({ behavior, clientId, onDone, onCelebrate, onOptimisticAward }: {
-  behavior: any;
-  clientId: string;
-  onDone: () => Promise<void>;
-  onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty", emojiOverride?: string) => void;
-  onOptimisticAward: (amount: number) => void;
-}) {
-  const [busy, setBusy] = useState(false);
-
-  async function award() {
-    setBusy(true);
-    onOptimisticAward(behavior.point_value);
-    try {
-      await awardPoints(clientId, behavior.id, behavior.point_value);
-      await onDone();
-      onCelebrate(
-        undefined,
-        undefined,
-        behavior.point_value < 0 ? "penalty" : undefined,
-        behavior.point_value < 0 ? (behavior.feedback_loss_animation_id || "⚠️") : (behavior.feedback_gain_animation_id || "⭐")
-      );
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={award}
-      disabled={busy}
-      className="rounded-3xl border bg-card shadow-sm p-6 min-h-[180px] text-left transition-all active:scale-[0.98] hover:shadow-md"
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="w-14 h-14 rounded-2xl bg-primary/10 grid place-items-center text-3xl">{behavior.icon}</div>
-        <div className={`rounded-full px-3 py-1 text-sm font-bold ${behavior.point_value < 0 ? "bg-red-100 text-red-700" : "bg-primary text-primary-foreground"}`}>
-          {behavior.point_value > 0 ? "+" : ""}{behavior.point_value}
-        </div>
-      </div>
-      <div className="mt-5">
-        <p className="text-2xl font-bold leading-tight break-words">{behavior.name}</p>
-        <p className="text-sm text-muted-foreground mt-2">Tap anytime during the session to add points fast.</p>
-      </div>
-    </button>
-  );
-}
-
-function QuickRedeemSessionCard({ reward, clientId, currentBalance, onDone, onCelebrate, onOptimisticRedeem }: {
-  reward: any;
-  clientId: string;
-  currentBalance: number;
-  onDone: () => Promise<void>;
-  onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty", emojiOverride?: string) => void;
-  onOptimisticRedeem: (amount: number) => void;
-}) {
-  const [busy, setBusy] = useState(false);
-  const available = currentBalance >= reward.point_cost;
-
-  async function redeemNow() {
-    if (!available) return;
-    setBusy(true);
-    onOptimisticRedeem(reward.point_cost);
-    try {
-      await redeemReward(clientId, reward.id);
-      await onDone();
-      onCelebrate(undefined, undefined, undefined, reward.icon || "🎁");
-    } finally {
-      setBusy(false);
-    }
-  }
-
-  return (
-    <button
-      type="button"
-      onClick={redeemNow}
-      disabled={busy || !available}
-      className={`rounded-3xl border shadow-sm p-6 min-h-[180px] text-left transition-all active:scale-[0.98] ${available ? "bg-card hover:shadow-md" : "bg-muted/40 opacity-70"}`}
-    >
-      <div className="flex items-start justify-between gap-3">
-        <div className="w-14 h-14 rounded-2xl bg-amber-100 grid place-items-center text-3xl">{reward.icon}</div>
-        <div className="rounded-full px-3 py-1 text-sm font-bold bg-amber-100 text-amber-700">
-          {reward.point_cost}
-        </div>
-      </div>
-      <div className="mt-5 space-y-2">
-        <p className="text-2xl font-bold leading-tight break-words">{reward.name}</p>
-        <p className="text-sm text-muted-foreground">{available ? (busy ? "Redeeming..." : "Tap to redeem") : `${Math.max(0, reward.point_cost - currentBalance)} more points needed`}</p>
-      </div>
-    </button>
-  );
-}
