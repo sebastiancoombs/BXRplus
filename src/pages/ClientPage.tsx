@@ -225,71 +225,193 @@ function DashboardTab({ clientId }: { clientId: string }) {
           {transactions.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center py-4">No transactions yet.</p>
           ) : (
-            <>
-            <div className="md:hidden space-y-2">
-              {transactions.map((txn) => (
-                <div key={txn.id} className="flex items-center justify-between py-2 border-b last:border-0">
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium truncate">
-                      {txn.type === "credit" ? txn.behavior?.name ?? "Points" : txn.reward?.name ?? "Reward"}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">
-                      {new Date(txn.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                      {" · "}
-                      {new Date(txn.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                    </p>
-                  </div>
-                  <div className="text-right flex-shrink-0 ml-3">
-                    <p className={`text-sm font-bold ${txn.type === "credit" ? "text-green-600" : "text-red-500"}`}>
-                      {txn.type === "credit" ? "+" : "−"}{txn.amount}
-                    </p>
-                    <p className="text-[11px] text-muted-foreground">bal: {txn.balance_after}</p>
-                  </div>
-                </div>
-              ))}
-            </div>
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b text-left text-muted-foreground">
-                    <th className="pb-2 pr-4 font-medium">Date</th>
-                    <th className="pb-2 pr-4 font-medium">Description</th>
-                    <th className="pb-2 pr-4 font-medium text-right">Credit</th>
-                    <th className="pb-2 pr-4 font-medium text-right">Debit</th>
-                    <th className="pb-2 font-medium text-right">Balance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {transactions.map((txn) => (
-                    <tr key={txn.id} className="border-b last:border-0 hover:bg-muted/50">
-                      <td className="py-3 pr-4 whitespace-nowrap text-muted-foreground">
-                        {new Date(txn.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
-                        <span className="block text-xs">
-                          {new Date(txn.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-                        </span>
-                      </td>
-                      <td className="py-3 pr-4">
-                        <span className="font-medium">
-                          {txn.type === "credit" ? txn.behavior?.name ?? "Points awarded" : txn.reward?.name ?? "Reward redeemed"}
-                        </span>
-                      </td>
-                      <td className="py-3 pr-4 text-right">
-                        {txn.type === "credit" ? <span className="text-green-600 font-medium">+{txn.amount}</span> : <span className="text-muted-foreground">—</span>}
-                      </td>
-                      <td className="py-3 pr-4 text-right">
-                        {txn.type === "debit" ? <span className="text-red-500 font-medium">−{txn.amount}</span> : <span className="text-muted-foreground">—</span>}
-                      </td>
-                      <td className="py-3 text-right font-mono font-medium">{txn.balance_after}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-            </>
+            <TransactionHistory transactions={transactions} onRefresh={handleRefresh} />
           )}
         </CardContent>
       </Card>
     </div>
+  );
+}
+
+// ═══════════════════════════════════════
+// TRANSACTION HISTORY
+// ═══════════════════════════════════════
+
+function TransactionHistory({ transactions, onRefresh }: {
+  transactions: any[];
+  onRefresh: () => Promise<void>;
+}) {
+  return (
+    <>
+      <div className="md:hidden space-y-2">
+        {transactions.map((txn) => (
+          <TransactionCard key={txn.id} txn={txn} onRefresh={onRefresh} />
+        ))}
+      </div>
+      <div className="hidden md:block overflow-x-auto">
+        <table className="w-full text-sm">
+          <thead>
+            <tr className="border-b text-left text-muted-foreground">
+              <th className="pb-2 pr-4 font-medium">Date</th>
+              <th className="pb-2 pr-4 font-medium">Description</th>
+              <th className="pb-2 pr-4 font-medium text-right">Credit</th>
+              <th className="pb-2 pr-4 font-medium text-right">Debit</th>
+              <th className="pb-2 pr-4 font-medium text-right">Balance</th>
+              <th className="pb-2 font-medium text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {transactions.map((txn) => (
+              <TransactionRow key={txn.id} txn={txn} onRefresh={onRefresh} />
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+function TransactionCard({ txn, onRefresh }: { txn: any; onRefresh: () => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [amount, setAmount] = useState(txn.amount);
+  const [note, setNote] = useState(txn.note ?? "");
+  const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    await supabase.from("transactions").update({ amount, note: note || null }).eq("id", txn.id);
+    setBusy(false);
+    setEditing(false);
+    await onRefresh();
+  }
+
+  async function remove() {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    setBusy(true);
+    await supabase.from("transactions").delete().eq("id", txn.id);
+    setBusy(false);
+    await onRefresh();
+  }
+
+  if (editing) {
+    return (
+      <Card className="border-primary/30">
+        <CardContent className="py-3 space-y-2">
+          <p className="text-sm font-medium">Edit Transaction</p>
+          <div className="flex gap-2 items-center">
+            <Input type="number" min={1} value={amount} onChange={(e) => setAmount(+e.target.value)} className="h-8" />
+            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note" className="h-8" />
+          </div>
+          <div className="flex justify-end gap-2">
+            <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
+            <Button size="sm" onClick={save} disabled={busy}>{busy ? "..." : "Save"}</Button>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <div className="flex items-center justify-between py-2 border-b last:border-0 gap-3">
+      <div className="min-w-0 flex-1">
+        <p className="text-sm font-medium truncate">
+          {txn.type === "credit" ? txn.behavior?.name ?? "Points" : txn.reward?.name ?? "Reward"}
+        </p>
+        <p className="text-[11px] text-muted-foreground">
+          {new Date(txn.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          {" · "}
+          {new Date(txn.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+          {txn.note ? ` · ${txn.note}` : ""}
+        </p>
+      </div>
+      <div className="text-right flex-shrink-0">
+        <p className={`text-sm font-bold ${txn.type === "credit" ? "text-green-600" : "text-red-500"}`}>
+          {txn.type === "credit" ? "+" : "−"}{txn.amount}
+        </p>
+        <p className="text-[11px] text-muted-foreground">bal: {txn.balance_after}</p>
+        <div className="flex justify-end gap-1 mt-1">
+          <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setEditing(true)}>Edit</Button>
+          <Button variant="ghost" size="sm" className={`h-7 px-2 text-xs ${confirmDelete ? "text-destructive" : "text-muted-foreground hover:text-destructive"}`}
+            onClick={remove} onBlur={() => setTimeout(() => setConfirmDelete(false), 200)}>
+            {confirmDelete ? "Delete?" : "Delete"}
+          </Button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function TransactionRow({ txn, onRefresh }: { txn: any; onRefresh: () => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [amount, setAmount] = useState(txn.amount);
+  const [note, setNote] = useState(txn.note ?? "");
+  const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    await supabase.from("transactions").update({ amount, note: note || null }).eq("id", txn.id);
+    setBusy(false);
+    setEditing(false);
+    await onRefresh();
+  }
+
+  async function remove() {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    setBusy(true);
+    await supabase.from("transactions").delete().eq("id", txn.id);
+    setBusy(false);
+    await onRefresh();
+  }
+
+  return (
+    <tr className="border-b last:border-0 hover:bg-muted/50">
+      <td className="py-3 pr-4 whitespace-nowrap text-muted-foreground">
+        {new Date(txn.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+        <span className="block text-xs">
+          {new Date(txn.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
+        </span>
+      </td>
+      <td className="py-3 pr-4">
+        {editing ? (
+          <div className="space-y-2">
+            <Input type="number" min={1} value={amount} onChange={(e) => setAmount(+e.target.value)} className="h-8" />
+            <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note" className="h-8" />
+          </div>
+        ) : (
+          <div>
+            <span className="font-medium">
+              {txn.type === "credit" ? txn.behavior?.name ?? "Points awarded" : txn.reward?.name ?? "Reward redeemed"}
+            </span>
+            {txn.note && <p className="text-xs text-muted-foreground mt-1">{txn.note}</p>}
+          </div>
+        )}
+      </td>
+      <td className="py-3 pr-4 text-right">
+        {txn.type === "credit" ? <span className="text-green-600 font-medium">+{editing ? amount : txn.amount}</span> : <span className="text-muted-foreground">—</span>}
+      </td>
+      <td className="py-3 pr-4 text-right">
+        {txn.type === "debit" ? <span className="text-red-500 font-medium">−{editing ? amount : txn.amount}</span> : <span className="text-muted-foreground">—</span>}
+      </td>
+      <td className="py-3 text-right font-mono font-medium">{txn.balance_after}</td>
+      <td className="py-3 text-right">
+        {editing ? (
+          <div className="flex justify-end gap-1">
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEditing(false)}>Cancel</Button>
+            <Button size="sm" className="h-7 text-xs" onClick={save} disabled={busy}>{busy ? "..." : "Save"}</Button>
+          </div>
+        ) : (
+          <div className="flex justify-end gap-1">
+            <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={() => setEditing(true)}>Edit</Button>
+            <Button variant="ghost" size="sm" className={`h-7 text-xs ${confirmDelete ? "text-destructive" : "text-muted-foreground hover:text-destructive"}`}
+              onClick={remove} onBlur={() => setTimeout(() => setConfirmDelete(false), 200)}>
+              {confirmDelete ? "Delete?" : "Delete"}
+            </Button>
+          </div>
+        )}
+      </td>
+    </tr>
   );
 }
 
