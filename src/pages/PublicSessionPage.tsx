@@ -5,6 +5,7 @@ import { awardPoints, redeemReward } from "@/hooks/useClients";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
+import { getAnimationById } from "@/lib/animationCatalog";
 
 export default function PublicSessionPage() {
   const [params] = useSearchParams();
@@ -12,7 +13,7 @@ export default function PublicSessionPage() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
   const [confirmingReward, setConfirmingReward] = useState<any | null>(null);
-  const [feedback, setFeedback] = useState<null | { type: "gain" | "loss"; tick: number; theme?: string; intensity?: string; mode?: string }>(null);
+  const [feedback, setFeedback] = useState<null | { type: "gain" | "loss"; tick: number; theme?: string; intensity?: string; mode?: string; animationId?: string }>(null);
   const [pointsFlash, setPointsFlash] = useState<null | "gain" | "loss">(null);
 
   async function load() {
@@ -40,7 +41,8 @@ export default function PublicSessionPage() {
     const behaviorTheme = behavior.feedback_theme ?? client.session_feedback_theme ?? "stars";
     const behaviorIntensity = behavior.feedback_intensity ?? client.session_feedback_intensity ?? "standard";
     const behaviorMode = behavior.feedback_mode ?? client.session_feedback_mode ?? "playful";
-    setFeedback({ type: isLoss ? "loss" : "gain", tick: Date.now(), theme: behaviorTheme, intensity: behaviorIntensity, mode: behaviorMode } as any);
+    const animationId = isLoss ? behavior.feedback_loss_animation_id : behavior.feedback_gain_animation_id;
+    setFeedback({ type: isLoss ? "loss" : "gain", tick: Date.now(), theme: behaviorTheme, intensity: behaviorIntensity, mode: behaviorMode, animationId } as any);
     setPointsFlash(isLoss ? "loss" : "gain");
     setTimeout(() => setPointsFlash(null), 500);
     await awardPoints(client.id, behavior.id, behavior.point_value);
@@ -66,7 +68,7 @@ export default function PublicSessionPage() {
 
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 overflow-x-hidden relative">
-      {feedback && <SessionFeedbackBurst type={feedback.type} theme={feedback.theme ?? feedbackTheme} intensity={feedback.intensity ?? feedbackIntensity} mode={feedback.mode ?? feedbackMode} key={feedback.tick} />}
+      {feedback && <SessionFeedbackBurst type={feedback.type} theme={feedback.theme ?? feedbackTheme} intensity={feedback.intensity ?? feedbackIntensity} mode={feedback.mode ?? feedbackMode} animationId={feedback.animationId} key={feedback.tick} />}
       <div className="max-w-6xl mx-auto space-y-5 md:space-y-6">
         <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-5 md:p-7 shadow-sm overflow-hidden">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Live Session</p>
@@ -211,13 +213,15 @@ export default function PublicSessionPage() {
 }
 
 
-function SessionFeedbackBurst({ type, theme, intensity, mode }: {
+function SessionFeedbackBurst({ type, theme, intensity, mode, animationId }: {
   type: "gain" | "loss";
   theme: string;
   intensity: string;
   mode: string;
+  animationId?: string;
 }) {
-  const count = intensity === "calm" ? 10 : intensity === "lively" ? 26 : 18;
+  const preset = animationId ? getAnimationById(animationId) : null;
+  const count = (preset?.intensity ?? intensity) === "calm" ? 10 : (preset?.intensity ?? intensity) === "lively" ? 26 : 18;
   const glyphSets: Record<string, { gain: string[]; loss: string[] }> = {
     stars: { gain: ["⭐", "🌟", "✨", "💫"], loss: ["☆", "⬇️", "⚠️", "〰️"] },
     bubbles: { gain: ["🫧", "✨", "🔵", "💙"], loss: ["🫧", "⬇️", "⚪", "〰️"] },
@@ -228,9 +232,9 @@ function SessionFeedbackBurst({ type, theme, intensity, mode }: {
     candy: { gain: ["🍬", "🍭", "✨", "🎉"], loss: ["🫥", "⬇️", "〰️", "⚠️"] },
     glow: { gain: ["✨", "💫", "⭐", "🌟"], loss: ["〰️", "⬇️", "⚠️", "·"] },
   };
-  const set = glyphSets[theme] ?? glyphSets.stars;
-  const glyphs = type === "gain" ? set.gain : set.loss;
-  const animClass = type === "gain" ? (mode === "calm" ? "animate-session-gain-calm" : "animate-session-gain") : "animate-session-loss";
+  const set = glyphSets[preset?.theme ?? theme] ?? glyphSets.stars;
+  const glyphs = preset?.glyphs ?? (type === "gain" ? set.gain : set.loss);
+  const animClass = type === "gain" ? ((preset?.motion === "float" || mode === "calm") ? "animate-session-gain-calm" : "animate-session-gain") : "animate-session-loss";
 
   return (
     <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden">

@@ -9,6 +9,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { PrintableClientCard, PrintableRewardTicket } from "@/components/PrintableCard";
 import IconPicker from "@/components/IconPicker";
+import AnimationPicker from "@/components/AnimationPicker";
 import { cn } from "@/lib/utils";
 import type { AppRole } from "@/types/database";
 
@@ -668,6 +669,8 @@ function EditableItemCard({ item, type, onUpdate }: {
   const [feedbackTheme, setFeedbackTheme] = useState(item.feedback_theme ?? "");
   const [feedbackIntensity, setFeedbackIntensity] = useState(item.feedback_intensity ?? "");
   const [feedbackMode, setFeedbackMode] = useState(item.feedback_mode ?? "");
+  const [feedbackGainAnimationId, setFeedbackGainAnimationId] = useState(item.feedback_gain_animation_id ?? "");
+  const [feedbackLossAnimationId, setFeedbackLossAnimationId] = useState(item.feedback_loss_animation_id ?? "");
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -677,7 +680,7 @@ function EditableItemCard({ item, type, onUpdate }: {
   async function save() {
     setBusy(true);
     await supabase.from(table).update(type === "behavior"
-      ? { name, icon, [valueField]: value, feedback_theme: feedbackTheme || null, feedback_intensity: feedbackIntensity || null, feedback_mode: feedbackMode || null }
+      ? { name, icon, [valueField]: value, feedback_theme: feedbackTheme || null, feedback_intensity: feedbackIntensity || null, feedback_mode: feedbackMode || null, feedback_gain_animation_id: feedbackGainAnimationId || null, feedback_loss_animation_id: feedbackLossAnimationId || null }
       : { name, icon, [valueField]: value, journey_preset: journeyPreset, traveler_icon: travelerIcon, destination_icon: destinationIcon, journey_theme: journeyTheme }
     ).eq("id", item.id);
     setBusy(false);
@@ -735,29 +738,35 @@ function EditableItemCard({ item, type, onUpdate }: {
           )}
 
           {type === "behavior" && (
-            <div className="grid gap-2 sm:grid-cols-3">
-              <select value={feedbackTheme} onChange={(e) => setFeedbackTheme(e.target.value)} className="w-full h-8 rounded-md border bg-background px-3 text-sm">
-                <option value="">Use client default theme</option>
-                <option value="stars">Stars</option>
-                <option value="bubbles">Bubbles</option>
-                <option value="flowers">Flowers</option>
-                <option value="smileys">Smileys</option>
-                <option value="fireworks">Fireworks</option>
-                <option value="hearts">Hearts</option>
-                <option value="candy">Candy</option>
-                <option value="glow">Glow</option>
-              </select>
-              <select value={feedbackIntensity} onChange={(e) => setFeedbackIntensity(e.target.value)} className="w-full h-8 rounded-md border bg-background px-3 text-sm">
-                <option value="">Use client default intensity</option>
-                <option value="calm">Calm</option>
-                <option value="standard">Standard</option>
-                <option value="lively">Lively</option>
-              </select>
-              <select value={feedbackMode} onChange={(e) => setFeedbackMode(e.target.value)} className="w-full h-8 rounded-md border bg-background px-3 text-sm">
-                <option value="">Use client default mode</option>
-                <option value="playful">Playful</option>
-                <option value="calm">Calm Visuals</option>
-              </select>
+            <div className="space-y-2">
+              <div className="grid gap-2 sm:grid-cols-3">
+                <select value={feedbackTheme} onChange={(e) => setFeedbackTheme(e.target.value)} className="w-full h-8 rounded-md border bg-background px-3 text-sm">
+                  <option value="">Use client default theme</option>
+                  <option value="stars">Stars</option>
+                  <option value="bubbles">Bubbles</option>
+                  <option value="flowers">Flowers</option>
+                  <option value="smileys">Smileys</option>
+                  <option value="fireworks">Fireworks</option>
+                  <option value="hearts">Hearts</option>
+                  <option value="candy">Candy</option>
+                  <option value="glow">Glow</option>
+                </select>
+                <select value={feedbackIntensity} onChange={(e) => setFeedbackIntensity(e.target.value)} className="w-full h-8 rounded-md border bg-background px-3 text-sm">
+                  <option value="">Use client default intensity</option>
+                  <option value="calm">Calm</option>
+                  <option value="standard">Standard</option>
+                  <option value="lively">Lively</option>
+                </select>
+                <select value={feedbackMode} onChange={(e) => setFeedbackMode(e.target.value)} className="w-full h-8 rounded-md border bg-background px-3 text-sm">
+                  <option value="">Use client default mode</option>
+                  <option value="playful">Playful</option>
+                  <option value="calm">Calm Visuals</option>
+                </select>
+              </div>
+              <div className="grid gap-2 sm:grid-cols-2">
+                <AnimationPicker value={feedbackGainAnimationId} category="gain" onChange={setFeedbackGainAnimationId} label="Gain animation" />
+                <AnimationPicker value={feedbackLossAnimationId} category="loss" onChange={setFeedbackLossAnimationId} label="Loss animation" />
+              </div>
             </div>
           )}
         </CardContent>
