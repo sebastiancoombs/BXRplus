@@ -10,7 +10,19 @@ import AnimationPicker from "@/components/AnimationPicker";
 import { playEmojiBurst } from "@/lib/bursts";
 
 export default function RewardsTab({ clientId }: { clientId: string }) {
-  const { behaviors, rewards, loading, refresh, replaceBehavior, insertBehavior, removeBehavior, replaceReward, insertReward, removeReward } = useClientDetail(clientId);
+  const {
+    behaviors,
+    rewards,
+    loading,
+    refresh,
+    replaceBehavior,
+    insertBehavior,
+    removeBehavior,
+    replaceReward,
+    insertReward,
+    removeReward,
+  } = useClientDetail(clientId);
+
   const positiveBehaviors = behaviors.filter((b) => b.point_value >= 0);
   const negativeBehaviors = behaviors.filter((b) => b.point_value < 0);
 
@@ -18,91 +30,173 @@ export default function RewardsTab({ clientId }: { clientId: string }) {
 
   return (
     <div className="space-y-8">
-      <div className="rounded-[28px] border bg-gradient-to-br from-background via-background to-primary/5 p-5 md:p-7 shadow-sm">
+      <section className="space-y-3">
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Program Setup</p>
-        <div className="mt-2 flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
-          <div className="space-y-2">
+        <div className="flex flex-col gap-4 xl:flex-row xl:items-end xl:justify-between">
+          <div className="space-y-2 max-w-3xl">
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight">Programs & Rewards</h2>
-            <p className="text-sm text-muted-foreground max-w-2xl">
-              Set up the behaviors you want to reinforce, the behaviors that reduce points, and the rewards the learner can earn.
+            <p className="text-sm md:text-base text-muted-foreground">
+              Build the learner’s point system: define the behaviors staff track, choose how points change, and set the rewards the learner can earn.
             </p>
           </div>
           <div className="flex flex-wrap gap-2 text-xs text-muted-foreground">
-            <div className="rounded-full border bg-background/80 px-3 py-1.5">{behaviors.length} behaviors</div>
-            <div className="rounded-full border bg-background/80 px-3 py-1.5">{rewards.length} rewards</div>
+            <MetricChip label="Behavior programs" value={behaviors.length} />
+            <MetricChip label="Rewards" value={rewards.length} />
           </div>
-        </div>
-      </div>
-
-      <section className="rounded-[28px] border bg-card p-4 md:p-6 shadow-sm space-y-6">
-        <div className="space-y-1">
-          <p className="text-lg font-semibold tracking-tight">Behavior Programs</p>
-          <p className="text-sm text-muted-foreground">Define which behaviors earn points and which behaviors reduce points during teaching.</p>
-        </div>
-
-        <div className="grid gap-5 2xl:grid-cols-2">
-          <BehaviorColumn title="Behaviors That Earn Points" description="Use these for target behaviors you want to strengthen." clientId={clientId} items={positiveBehaviors} onRefresh={refresh} onReplace={replaceBehavior} onInsert={insertBehavior} onRemove={removeBehavior} />
-          <BehaviorColumn title="Behaviors That Reduce Points" description="Use these only when point loss is part of the plan." clientId={clientId} items={negativeBehaviors} onRefresh={refresh} onReplace={replaceBehavior} onInsert={insertBehavior} onRemove={removeBehavior} defaultNegative />
         </div>
       </section>
 
-      <section className="rounded-[28px] border bg-card p-4 md:p-6 shadow-sm space-y-6">
+      <section className="space-y-5">
         <div className="space-y-1">
-          <p className="text-lg font-semibold tracking-tight">Rewards</p>
-          <p className="text-sm text-muted-foreground">Create the rewards the learner can work for and redeem during the day.</p>
+          <h3 className="text-xl font-semibold tracking-tight">Behavior Programs</h3>
+          <p className="text-sm text-muted-foreground">
+            Keep behavior setup simple and easy for staff to use during teaching.
+          </p>
         </div>
-        <AddItemForm type="reward" clientId={clientId} onAdded={refresh} onInsertReward={insertReward} />
+
+        <div className="grid gap-6 2xl:grid-cols-2 items-start">
+          <BehaviorLane
+            title="Earn Points"
+            subtitle="Target behaviors you want to strengthen."
+            type="behavior"
+            clientId={clientId}
+            items={positiveBehaviors}
+            emptyText="No earn-point behaviors yet."
+            onAdded={refresh}
+            onInsertBehavior={insertBehavior}
+            onReplaceBehavior={replaceBehavior}
+            onRemoveBehavior={removeBehavior}
+          />
+
+          <BehaviorLane
+            title="Reduce Points"
+            subtitle="Use only when point loss is part of the plan."
+            type="behavior"
+            clientId={clientId}
+            items={negativeBehaviors}
+            emptyText="No reduce-point behaviors yet."
+            tone="loss"
+            defaultNegative
+            onAdded={refresh}
+            onInsertBehavior={insertBehavior}
+            onReplaceBehavior={replaceBehavior}
+            onRemoveBehavior={removeBehavior}
+          />
+        </div>
+      </section>
+
+      <section className="space-y-5">
+        <div className="space-y-1">
+          <h3 className="text-xl font-semibold tracking-tight">Rewards</h3>
+          <p className="text-sm text-muted-foreground">
+            Add rewards the learner can work for and redeem during the day.
+          </p>
+        </div>
+
+        <AddItemPanel
+          type="reward"
+          clientId={clientId}
+          onAdded={refresh}
+          onInsertReward={insertReward}
+        />
+
         {rewards.length > 0 ? (
-          <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3 mt-1 items-stretch">
+          <div className="grid gap-4 sm:grid-cols-2 2xl:grid-cols-3 items-start">
             {rewards.map((reward) => (
-              <EditableItemCard key={reward.id} item={reward} type="reward" onUpdate={refresh} onReplaceReward={replaceReward} onRemoveReward={removeReward} />
+              <ItemCard
+                key={reward.id}
+                item={reward}
+                type="reward"
+                onUpdate={refresh}
+                onReplaceReward={replaceReward}
+                onRemoveReward={removeReward}
+              />
             ))}
           </div>
         ) : (
-          <EmptyState text="No rewards yet. Add a reward to start building the child’s progress path." />
+          <EmptyState text="No rewards yet. Add the rewards the learner can work toward." />
         )}
       </section>
     </div>
   );
 }
 
-function BehaviorColumn({ title, description, clientId, items, onRefresh, onReplace, onInsert, onRemove, defaultNegative = false }: {
+function BehaviorLane({
+  title,
+  subtitle,
+  type,
+  clientId,
+  items,
+  emptyText,
+  tone = "gain",
+  defaultNegative = false,
+  onAdded,
+  onInsertBehavior,
+  onReplaceBehavior,
+  onRemoveBehavior,
+}: {
   title: string;
-  description: string;
+  subtitle: string;
+  type: "behavior";
   clientId: string;
   items: any[];
-  onRefresh: () => void;
-  onReplace: (behavior: any) => void;
-  onInsert: (behavior: any) => void;
-  onRemove: (id: string) => void;
+  emptyText: string;
+  tone?: "gain" | "loss";
   defaultNegative?: boolean;
+  onAdded: () => void;
+  onInsertBehavior: (behavior: any) => void;
+  onReplaceBehavior: (behavior: any) => void;
+  onRemoveBehavior: (id: string) => void;
 }) {
   return (
-    <div className={`space-y-4 rounded-[24px] border p-4 md:p-5 ${defaultNegative ? "bg-red-50/50 border-red-100" : "bg-emerald-50/40 border-emerald-100"}`}>
-      <div className="space-y-1">
-        <div className="flex items-center gap-2">
-          <div className={`h-8 w-8 rounded-full grid place-items-center text-sm ${defaultNegative ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
-            {defaultNegative ? "−" : "+"}
-          </div>
-          <p className="text-base font-semibold tracking-tight">{title}</p>
+    <div className="space-y-4">
+      <div className="flex items-center gap-3">
+        <div className={`h-10 w-10 rounded-2xl grid place-items-center text-base font-semibold ${tone === "loss" ? "bg-red-100 text-red-700" : "bg-emerald-100 text-emerald-700"}`}>
+          {tone === "loss" ? "−" : "+"}
         </div>
-        <p className="text-sm text-muted-foreground">{description}</p>
+        <div>
+          <p className="text-lg font-semibold tracking-tight">{title}</p>
+          <p className="text-sm text-muted-foreground">{subtitle}</p>
+        </div>
       </div>
-      <AddItemForm type="behavior" clientId={clientId} onAdded={onRefresh} onInsertBehavior={onInsert} defaultNegative={defaultNegative} />
+
+      <AddItemPanel
+        type={type}
+        clientId={clientId}
+        onAdded={onAdded}
+        onInsertBehavior={onInsertBehavior}
+        defaultNegative={defaultNegative}
+      />
+
       {items.length > 0 ? (
-        <div className="grid gap-4 sm:grid-cols-2 items-stretch">
+        <div className="grid gap-4 sm:grid-cols-2 items-start">
           {items.map((item) => (
-            <EditableItemCard key={item.id} item={item} type="behavior" onUpdate={onRefresh} onReplaceBehavior={onReplace} onRemoveBehavior={onRemove} />
+            <ItemCard
+              key={item.id}
+              item={item}
+              type="behavior"
+              onUpdate={onAdded}
+              onReplaceBehavior={onReplaceBehavior}
+              onRemoveBehavior={onRemoveBehavior}
+            />
           ))}
         </div>
       ) : (
-        <EmptyState text="No items yet." compact />
+        <EmptyState text={emptyText} compact />
       )}
     </div>
   );
 }
 
-function EditableItemCard({ item, type, onUpdate, onReplaceBehavior, onRemoveBehavior, onReplaceReward, onRemoveReward }: {
+function ItemCard({
+  item,
+  type,
+  onUpdate,
+  onReplaceBehavior,
+  onRemoveBehavior,
+  onReplaceReward,
+  onRemoveReward,
+}: {
   item: any;
   type: "behavior" | "reward";
   onUpdate: () => void;
@@ -112,13 +206,13 @@ function EditableItemCard({ item, type, onUpdate, onReplaceBehavior, onRemoveBeh
   onRemoveReward?: (id: string) => void;
 }) {
   const [editing, setEditing] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [busy, setBusy] = useState(false);
   const [name, setName] = useState(item.name);
   const [icon, setIcon] = useState(item.icon);
   const [value, setValue] = useState(type === "behavior" ? item.point_value : item.point_cost);
-  const [feedbackGainAnimationId, setFeedbackGainAnimationId] = useState(item.feedback_gain_animation_id ?? "");
-  const [feedbackLossAnimationId, setFeedbackLossAnimationId] = useState(item.feedback_loss_animation_id ?? "");
-  const [busy, setBusy] = useState(false);
-  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [gainEmoji, setGainEmoji] = useState(item.feedback_gain_animation_id ?? "");
+  const [lossEmoji, setLossEmoji] = useState(item.feedback_loss_animation_id ?? "");
 
   const table = type === "behavior" ? "behaviors" : "rewards";
   const valueField = type === "behavior" ? "point_value" : "point_cost";
@@ -126,7 +220,13 @@ function EditableItemCard({ item, type, onUpdate, onReplaceBehavior, onRemoveBeh
   async function save() {
     setBusy(true);
     const patch = type === "behavior"
-      ? { name, icon, [valueField]: value, feedback_gain_animation_id: feedbackGainAnimationId || null, feedback_loss_animation_id: feedbackLossAnimationId || null }
+      ? {
+          name,
+          icon,
+          [valueField]: value,
+          feedback_gain_animation_id: gainEmoji || null,
+          feedback_loss_animation_id: lossEmoji || null,
+        }
       : { name, icon, [valueField]: value };
 
     const { data } = await supabase.from(table).update(patch).eq("id", item.id).select("*").single();
@@ -146,6 +246,7 @@ function EditableItemCard({ item, type, onUpdate, onReplaceBehavior, onRemoveBeh
       setConfirmDelete(true);
       return;
     }
+
     await supabase.from(table).update({ is_active: false }).eq("id", item.id);
     if (type === "behavior") onRemoveBehavior?.(item.id);
     else onRemoveReward?.(item.id);
@@ -153,71 +254,64 @@ function EditableItemCard({ item, type, onUpdate, onReplaceBehavior, onRemoveBeh
 
   if (editing) {
     return (
-      <Card className="border-primary/30 shadow-sm overflow-hidden">
+      <Card className="rounded-[26px] border-2 border-primary/20 shadow-sm overflow-hidden bg-background">
         <CardContent className="p-4 md:p-5 space-y-5">
-          <div className="space-y-1">
-            <div className="flex items-center justify-between gap-3">
-              <p className="text-base font-semibold">Edit {type === "behavior" ? "behavior" : "reward"}</p>
-              <Badge variant="outline" className="shrink-0 text-xs">{type === "behavior" ? "Behavior" : "Reward"}</Badge>
+          <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
+            <div className="space-y-1">
+              <p className="text-lg font-semibold tracking-tight">{type === "behavior" ? "Edit behavior program" : "Edit reward"}</p>
+              <p className="text-sm text-muted-foreground">
+                {type === "behavior"
+                  ? "Update the behavior label, point value, and learner feedback."
+                  : "Update the reward label, icon, and point cost."}
+              </p>
             </div>
-            <p className="text-sm text-muted-foreground">
-              {type === "behavior" ? "Update the label, point value, and burst feedback." : "Update the reward name, icon, and point cost."}
-            </p>
+            <Badge variant="outline" className="self-start shrink-0">{type === "behavior" ? "Behavior" : "Reward"}</Badge>
           </div>
 
-          <div className="grid gap-5 lg:grid-cols-[120px_1fr] items-start">
+          <div className="grid gap-4 xl:grid-cols-[96px_minmax(0,1fr)] items-start">
             <div className="space-y-2">
               <label className="text-xs font-medium text-muted-foreground">Icon</label>
-              <div className="rounded-2xl border bg-background p-3 flex justify-center lg:justify-start">
+              <div className="rounded-[22px] border bg-muted/20 p-3 flex justify-center">
                 <IconPicker value={icon} onChange={setIcon} clientId={item.client_id} />
               </div>
             </div>
 
-            <div className="space-y-4 min-w-0">
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">Name</label>
-                <Input value={name} onChange={(e) => setName(e.target.value)} className="h-11 text-sm" />
-              </div>
-
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-muted-foreground">{type === "behavior" ? "Point change" : "Point cost"}</label>
-                <div className="flex items-center gap-2">
-                  <Input type="number" min={type === "behavior" ? -99 : 1} value={value} onChange={(e) => setValue(+e.target.value)} className="w-32 h-11 text-sm" />
-                  <span className="text-sm text-muted-foreground">points</span>
-                </div>
-              </div>
+            <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_140px] items-start">
+              <FieldBlock label="Name">
+                <Input value={name} onChange={(e) => setName(e.target.value)} className="h-11" />
+              </FieldBlock>
+              <FieldBlock label={type === "behavior" ? "Point change" : "Point cost"}>
+                <Input type="number" min={type === "behavior" ? -99 : 1} value={value} onChange={(e) => setValue(+e.target.value)} className="h-11" />
+              </FieldBlock>
             </div>
           </div>
 
           {type === "behavior" && (
-            <div className="space-y-4 rounded-2xl border bg-muted/20 p-4">
+            <div className="space-y-4 border-t pt-4">
               <div className="space-y-1">
-                <p className="text-sm font-medium">Learner feedback</p>
-                <p className="text-sm text-muted-foreground">Choose what the learner sees when points are earned or removed for this behavior.</p>
+                <p className="text-sm font-semibold">What the learner sees</p>
+                <p className="text-sm text-muted-foreground">Choose the emoji feedback shown when this behavior earns or removes points.</p>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2">
-                <div className="rounded-2xl border bg-background p-3 md:p-4 space-y-3 min-w-0">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">When points are added</p>
-                    <p className="text-xs text-muted-foreground">This burst appears after a successful behavior is tracked.</p>
-                  </div>
-                  <AnimationPicker value={feedbackGainAnimationId} category="gain" onChange={setFeedbackGainAnimationId} label="Gain burst emoji" />
-                  <Button type="button" variant="outline" className="w-full h-10" onClick={() => playEmojiBurst({ emoji: feedbackGainAnimationId || "⭐", mode: "gain" })}>
-                    Preview gain burst
-                  </Button>
-                </div>
-
-                <div className="rounded-2xl border bg-background p-3 md:p-4 space-y-3 min-w-0">
-                  <div className="space-y-1">
-                    <p className="text-sm font-medium">When points are removed</p>
-                    <p className="text-xs text-muted-foreground">This burst appears when points are taken away for this behavior.</p>
-                  </div>
-                  <AnimationPicker value={feedbackLossAnimationId} category="loss" onChange={setFeedbackLossAnimationId} label="Loss burst emoji" />
-                  <Button type="button" variant="outline" className="w-full h-10" onClick={() => playEmojiBurst({ emoji: feedbackLossAnimationId || "⚠️", mode: "loss" })}>
-                    Preview loss burst
-                  </Button>
-                </div>
+              <div className="grid gap-4 xl:grid-cols-2 items-start">
+                <FeedbackPanel
+                  title="When points are earned"
+                  description="Shown after the learner earns points for this behavior."
+                  value={gainEmoji}
+                  category="gain"
+                  onChange={setGainEmoji}
+                  onPreview={() => playEmojiBurst({ emoji: gainEmoji || "⭐", mode: "gain" })}
+                  previewLabel="Preview earned-points feedback"
+                />
+                <FeedbackPanel
+                  title="When points are removed"
+                  description="Shown if points are reduced for this behavior."
+                  value={lossEmoji}
+                  category="loss"
+                  onChange={setLossEmoji}
+                  onPreview={() => playEmojiBurst({ emoji: lossEmoji || "⚠️", mode: "loss" })}
+                  previewLabel="Preview point-loss feedback"
+                />
               </div>
             </div>
           )}
@@ -232,30 +326,28 @@ function EditableItemCard({ item, type, onUpdate, onReplaceBehavior, onRemoveBeh
   }
 
   return (
-    <Card className="group rounded-[24px] border bg-background shadow-sm overflow-hidden h-full transition-shadow hover:shadow-md">
-      <CardContent className="p-4 md:p-5 h-full flex flex-col justify-between gap-5">
+    <Card className="rounded-[26px] border bg-background shadow-sm overflow-hidden h-full hover:shadow-md transition-shadow">
+      <CardContent className="p-4 md:p-5 h-full flex flex-col gap-5 justify-between">
         <div className="space-y-4 min-w-0">
           <div className="flex items-start gap-3 min-w-0">
-            <div className="h-14 w-14 rounded-[20px] bg-muted flex items-center justify-center text-3xl shrink-0">
+            <div className="h-14 w-14 rounded-[20px] bg-muted/50 flex items-center justify-center text-3xl shrink-0">
               <span className="leading-none">{item.icon}</span>
             </div>
             <div className="min-w-0 flex-1 space-y-2">
-              <div className="space-y-2 min-w-0">
-                <p className="font-semibold text-base leading-6 break-words whitespace-normal">{item.name}</p>
-                <div className="flex flex-wrap items-center gap-2">
-                  <Badge variant={type === "behavior" ? (item.point_value < 0 ? "destructive" : "secondary") : "default"} className="text-xs shrink-0">
-                    {type === "behavior" ? `${item.point_value > 0 ? "+" : ""}${item.point_value} pts` : `${item.point_cost} pts`}
-                  </Badge>
-                  <span className="text-xs text-muted-foreground">{type === "behavior" ? "Behavior" : "Reward"}</span>
-                </div>
+              <p className="text-base font-semibold leading-6 break-words whitespace-normal">{item.name}</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <Badge variant={type === "behavior" ? (item.point_value < 0 ? "destructive" : "secondary") : "default"}>
+                  {type === "behavior" ? `${item.point_value > 0 ? "+" : ""}${item.point_value} pts` : `${item.point_cost} pts`}
+                </Badge>
+                <span className="text-xs text-muted-foreground">{type === "behavior" ? "Behavior program" : "Reward"}</span>
               </div>
             </div>
           </div>
 
           {type === "behavior" && (
             <div className="flex flex-wrap gap-2">
-              <MiniEmojiPill label="Gain" emoji={feedbackGainAnimationId || "⭐"} />
-              <MiniEmojiPill label="Loss" emoji={feedbackLossAnimationId || "⚠️"} />
+              <MiniEmojiPill label="Earned" emoji={gainEmoji || "⭐"} />
+              <MiniEmojiPill label="Removed" emoji={lossEmoji || "⚠️"} />
             </div>
           )}
         </div>
@@ -271,7 +363,14 @@ function EditableItemCard({ item, type, onUpdate, onReplaceBehavior, onRemoveBeh
   );
 }
 
-function AddItemForm({ type, clientId, onAdded, onInsertBehavior, onInsertReward, defaultNegative = false }: {
+function AddItemPanel({
+  type,
+  clientId,
+  onAdded,
+  onInsertBehavior,
+  onInsertReward,
+  defaultNegative = false,
+}: {
   type: "behavior" | "reward";
   clientId: string;
   onAdded: () => void;
@@ -288,49 +387,105 @@ function AddItemForm({ type, clientId, onAdded, onInsertBehavior, onInsertReward
     e.preventDefault();
     if (!name.trim()) return;
     setBusy(true);
+
     if (type === "behavior") {
-      const { data } = await supabase.from("behaviors").insert({ client_id: clientId, name, point_value: value, icon, is_active: true, description: null, created_by: null }).select("*").single();
+      const { data } = await supabase
+        .from("behaviors")
+        .insert({ client_id: clientId, name, point_value: value, icon, is_active: true, description: null, created_by: null })
+        .select("*")
+        .single();
       if (data) onInsertBehavior?.(data); else onAdded();
     } else {
-      const { data } = await supabase.from("rewards").insert({ client_id: clientId, name, point_cost: value, icon, is_active: true, description: null, created_by: null }).select("*").single();
+      const { data } = await supabase
+        .from("rewards")
+        .insert({ client_id: clientId, name, point_cost: value, icon, is_active: true, description: null, created_by: null })
+        .select("*")
+        .single();
       if (data) onInsertReward?.(data); else onAdded();
     }
+
     setName("");
     setValue(type === "reward" ? 10 : defaultNegative ? -1 : 1);
     setBusy(false);
   }
 
   return (
-    <form onSubmit={submit} className="space-y-4 rounded-[24px] border bg-background/80 p-4 md:p-5 shadow-sm">
-      <div className="grid gap-4 lg:grid-cols-[88px_1fr_auto] lg:items-end">
-        <div className="space-y-1.5">
+    <form onSubmit={submit} className="rounded-[26px] border bg-muted/15 p-4 md:p-5 shadow-sm">
+      <div className="flex flex-col gap-4 xl:flex-row xl:items-end">
+        <div className="space-y-1.5 shrink-0">
           <label className="text-xs font-medium text-muted-foreground">Icon</label>
-          <div className="rounded-2xl border bg-background p-2.5 flex justify-center">
+          <div className="rounded-[20px] border bg-background p-2.5 flex justify-center">
             <IconPicker value={icon} onChange={setIcon} clientId={clientId} />
           </div>
         </div>
 
-        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_120px] min-w-0">
-          <div className="space-y-1.5 min-w-0">
-            <label className="text-xs font-medium text-muted-foreground">{type === "behavior" ? "Name of behavior" : "Reward name"}</label>
-            <Input value={name} onChange={(e) => setName(e.target.value)} placeholder={type === "behavior" ? "e.g. Followed instructions" : "e.g. iPad time"} className="h-11" required />
-          </div>
+        <div className="grid gap-4 sm:grid-cols-[minmax(0,1fr)_140px] flex-1 min-w-0">
+          <FieldBlock label={type === "behavior" ? "Behavior name" : "Reward name"}>
+            <Input
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder={type === "behavior" ? "e.g. Followed instructions" : "e.g. iPad time"}
+              className="h-11"
+              required
+            />
+          </FieldBlock>
 
-          <div className="space-y-1.5">
-            <label className="text-xs font-medium text-muted-foreground">{type === "behavior" ? "Point change" : "Point cost"}</label>
+          <FieldBlock label={type === "behavior" ? "Point change" : "Point cost"}>
             <Input type="number" min={type === "behavior" ? -99 : 1} value={value} onChange={(e) => setValue(+e.target.value)} className="h-11" />
-          </div>
+          </FieldBlock>
         </div>
 
-        <Button type="submit" className="h-11 min-w-32" disabled={busy}>{busy ? "Adding..." : `Add ${type === "behavior" ? "behavior" : "reward"}`}</Button>
+        <Button type="submit" className="h-11 xl:min-w-36" disabled={busy}>
+          {busy ? "Adding..." : `Add ${type === "behavior" ? "program" : "reward"}`}
+        </Button>
       </div>
     </form>
   );
 }
 
+function FeedbackPanel({
+  title,
+  description,
+  value,
+  category,
+  onChange,
+  onPreview,
+  previewLabel,
+}: {
+  title: string;
+  description: string;
+  value: string;
+  category: "gain" | "loss" | "unlock";
+  onChange: (value: string) => void;
+  onPreview: () => void;
+  previewLabel: string;
+}) {
+  return (
+    <div className="rounded-[22px] border bg-muted/10 p-4 space-y-3 min-w-0">
+      <div className="space-y-1">
+        <p className="text-sm font-semibold">{title}</p>
+        <p className="text-xs text-muted-foreground">{description}</p>
+      </div>
+      <AnimationPicker value={value} category={category} onChange={onChange} label="Emoji shown to the learner" />
+      <Button type="button" variant="outline" className="w-full h-10" onClick={onPreview}>
+        {previewLabel}
+      </Button>
+    </div>
+  );
+}
+
+function FieldBlock({ label, children }: { label: string; children: React.ReactNode }) {
+  return (
+    <div className="space-y-1.5 min-w-0">
+      <label className="text-xs font-medium text-muted-foreground">{label}</label>
+      {children}
+    </div>
+  );
+}
+
 function EmptyState({ text, compact = false }: { text: string; compact?: boolean }) {
   return (
-    <div className={`rounded-2xl border border-dashed text-sm text-muted-foreground ${compact ? "p-4" : "p-6"}`}>
+    <div className={`rounded-[24px] border border-dashed text-sm text-muted-foreground bg-muted/10 ${compact ? "p-4" : "p-6"}`}>
       {text}
     </div>
   );
@@ -338,9 +493,17 @@ function EmptyState({ text, compact = false }: { text: string; compact?: boolean
 
 function MiniEmojiPill({ label, emoji }: { label: string; emoji: string }) {
   return (
-    <div className="inline-flex items-center gap-1.5 rounded-full border bg-muted/40 px-2.5 py-1 text-[11px] text-muted-foreground">
+    <div className="inline-flex items-center gap-1.5 rounded-full border bg-muted/30 px-3 py-1.5 text-xs text-muted-foreground">
       <span className="font-medium">{label}</span>
       <span className="text-sm leading-none">{emoji}</span>
+    </div>
+  );
+}
+
+function MetricChip({ label, value }: { label: string; value: number }) {
+  return (
+    <div className="rounded-full border bg-background/80 px-3 py-1.5">
+      {value} {label}
     </div>
   );
 }
