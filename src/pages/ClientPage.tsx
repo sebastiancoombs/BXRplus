@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useClientContext } from "@/contexts/ClientContext";
-import { useClientDetail, awardPoints, redeemReward } from "@/hooks/useClients";
+import { useClientDetail, awardPoints, redeemReward, updateTransactionAndRebalance, deleteTransactionAndRebalance } from "@/hooks/useClients";
 import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
@@ -105,7 +105,7 @@ function DashboardTab({ clientId }: { clientId: string }) {
   const [showProgressSettings, setShowProgressSettings] = useState(false);
   const [sessionMode, setSessionMode] = useState(false);
   const [optimisticBalance, setOptimisticBalance] = useState<number | null>(null);
-  const [celebration, setCelebration] = useState<null | { type: "confetti" | "stars" | "sparkles"; x?: number; y?: number }>(null);
+  const [celebration, setCelebration] = useState<null | { type: "confetti" | "stars" | "sparkles" | "penalty"; x?: number; y?: number }>(null);
 
   const displayBalance = optimisticBalance ?? client?.balance ?? 0;
 
@@ -115,8 +115,8 @@ function DashboardTab({ clientId }: { clientId: string }) {
 
   async function handleRefresh() { await refresh({ silent: true }); }
 
-  function triggerCelebration(x?: number, y?: number) {
-    const anim = (client?.reward_success_animation as "confetti" | "stars" | "sparkles" | null) ?? "confetti";
+  function triggerCelebration(x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") {
+    const anim = type ?? ((client?.reward_success_animation as "confetti" | "stars" | "sparkles" | null) ?? "confetti");
     setCelebration({ type: anim, x, y });
     window.setTimeout(() => setCelebration(null), 900);
   }
@@ -140,7 +140,7 @@ function DashboardTab({ clientId }: { clientId: string }) {
           onClose={() => setSessionMode(false)}
           onAwarded={handleRefresh}
           onCelebrate={triggerCelebration}
-          onOptimisticAward={(amount) => setOptimisticBalance((b) => (b ?? client.balance) + amount)}
+          onOptimisticAward={(amount) => setOptimisticBalance((b) => Math.max(0, (b ?? client.balance) + amount))}
         />
       )}
       {/* Balance + Quick Award */}
@@ -168,7 +168,7 @@ function DashboardTab({ clientId }: { clientId: string }) {
               <div className="flex flex-wrap gap-2">
                 {behaviors.map((b) => (
                   <QuickAwardBtn key={b.id} behavior={b} clientId={client.id} onDone={handleRefresh} onCelebrate={triggerCelebration}
-                    onOptimisticAward={(amount) => setOptimisticBalance((b) => (b ?? client.balance) + amount)} />
+                    onOptimisticAward={(amount) => setOptimisticBalance((b) => Math.max(0, (b ?? client.balance) + amount))} />
                 ))}
               </div>
             )}
@@ -280,7 +280,7 @@ function TransactionCard({ txn, onRefresh }: { txn: any; onRefresh: () => Promis
 
   async function save() {
     setBusy(true);
-    await supabase.from("transactions").update({ amount, note: note || null }).eq("id", txn.id);
+    await updateTransactionAndRebalance(txn.id, amount, note || null);
     setBusy(false);
     setEditing(false);
     await onRefresh();
@@ -289,7 +289,7 @@ function TransactionCard({ txn, onRefresh }: { txn: any; onRefresh: () => Promis
   async function remove() {
     if (!confirmDelete) { setConfirmDelete(true); return; }
     setBusy(true);
-    await supabase.from("transactions").delete().eq("id", txn.id);
+    await deleteTransactionAndRebalance(txn.id);
     setBusy(false);
     await onRefresh();
   }
@@ -351,7 +351,7 @@ function TransactionRow({ txn, onRefresh }: { txn: any; onRefresh: () => Promise
 
   async function save() {
     setBusy(true);
-    await supabase.from("transactions").update({ amount, note: note || null }).eq("id", txn.id);
+    await updateTransactionAndRebalance(txn.id, amount, note || null);
     setBusy(false);
     setEditing(false);
     await onRefresh();
@@ -360,7 +360,7 @@ function TransactionRow({ txn, onRefresh }: { txn: any; onRefresh: () => Promise
   async function remove() {
     if (!confirmDelete) { setConfirmDelete(true); return; }
     setBusy(true);
-    await supabase.from("transactions").delete().eq("id", txn.id);
+    await deleteTransactionAndRebalance(txn.id);
     setBusy(false);
     await onRefresh();
   }
@@ -430,7 +430,7 @@ function RewardsTab({ clientId }: { clientId: string }) {
     <div className="space-y-8">
       {/* Behaviors */}
       <div>
-        <h3 className="font-semibold mb-3">⭐ Behaviors <span className="text-muted-foreground font-normal text-sm">— what earns points</span></h3>
+        <h3 className="font-semibold mb-3">⭐ Behaviors <span className="text-muted-foreground font-normal text-sm">— what adds or removes points</span></h3>
         <AddItemForm type="behavior" clientId={clientId} onAdded={refresh} />
         {behaviors.length > 0 && (
           <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
@@ -503,8 +503,8 @@ function EditableItemCard({ item, type, onUpdate }: {
           </div>
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center gap-1">
-              <span className="text-xs text-muted-foreground">{type === "behavior" ? "+" : ""}</span>
-              <Input type="number" min={1} value={value} onChange={(e) => setValue(+e.target.value)} className="w-20 h-8 text-sm" />
+              <span className="text-xs text-muted-foreground">{type === "behavior" ? "±" : ""}</span>
+              <Input type="number" min={type === "behavior" ? -99 : 1} value={value} onChange={(e) => setValue(+e.target.value)} className="w-20 h-8 text-sm" />
               <span className="text-xs text-muted-foreground">pts</span>
             </div>
             <div className="flex gap-1 ml-auto">
@@ -549,7 +549,7 @@ function EditableItemCard({ item, type, onUpdate }: {
             <div className="min-w-0">
               <p className="font-medium text-sm truncate">{item.name}</p>
               <Badge variant={type === "behavior" ? "secondary" : "default"} className="text-xs">
-                {type === "behavior" ? `+${item.point_value}` : `${item.point_cost} pts`}
+                {type === "behavior" ? `${item.point_value > 0 ? "+" : ""}${item.point_value}` : `${item.point_cost} pts`}
               </Badge>
             </div>
           </div>
@@ -613,8 +613,8 @@ function AddItemForm({ type, clientId, onAdded }: { type: "behavior" | "reward";
       </div>
       <div className="flex gap-2 items-center">
         <div className="flex items-center gap-1">
-          <span className="text-xs text-muted-foreground">{type === "behavior" ? "+" : ""}</span>
-          <Input type="number" min={1} value={value} onChange={(e) => setValue(+e.target.value)} className="w-16 h-9" />
+          <span className="text-xs text-muted-foreground">{type === "behavior" ? "±" : ""}</span>
+          <Input type="number" min={type === "behavior" ? -99 : 1} value={value} onChange={(e) => setValue(+e.target.value)} className="w-16 h-9" />
           <span className="text-xs text-muted-foreground">pts</span>
         </div>
         <Button type="submit" size="sm" className="h-9 ml-auto" disabled={busy}>Add</Button>
@@ -1676,7 +1676,11 @@ function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate, onOptimisticAw
       setTimeout(() => setFlash(false), 600);
       onDone();
       const rect = e?.currentTarget.getBoundingClientRect();
-      onCelebrate?.(rect ? rect.left + rect.width / 2 : undefined, rect ? rect.top + rect.height / 2 : undefined);
+      onCelebrate?.(
+        rect ? rect.left + rect.width / 2 : undefined,
+        rect ? rect.top + rect.height / 2 : undefined,
+        behavior.point_value < 0 ? "penalty" : undefined
+      );
     } finally {
       setBusy(false);
     }
@@ -1689,12 +1693,12 @@ function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate, onOptimisticAw
       onClick={go}
       onBlur={() => setTimeout(() => setConfirming(false), 200)}
       disabled={busy}
-      className={`transition-all ${flash ? "ring-2 ring-green-400 bg-green-50" : ""}`}
+      className={`transition-all ${flash ? behavior.point_value < 0 ? "ring-2 ring-red-300 bg-red-50" : "ring-2 ring-green-400 bg-green-50" : ""}`}
     >
       {confirming ? (
-        <><ItemIcon icon={behavior.icon} size="text-base" /> Award +{behavior.point_value}?</>
+        <><ItemIcon icon={behavior.icon} size="text-base" /> {behavior.point_value < 0 ? `Remove ${Math.abs(behavior.point_value)}?` : `Award +${behavior.point_value}?`}</>
       ) : (
-        <><ItemIcon icon={behavior.icon} size="text-base" /> {behavior.name} <Badge variant="secondary" className="ml-1.5 text-xs">+{behavior.point_value}</Badge></>
+        <><ItemIcon icon={behavior.icon} size="text-base" /> {behavior.name} <Badge variant={behavior.point_value < 0 ? "destructive" : "secondary"} className="ml-1.5 text-xs">{behavior.point_value > 0 ? "+" : ""}{behavior.point_value}</Badge></>
       )}
     </Button>
   );
@@ -1717,7 +1721,7 @@ function UnifiedRewardPath({ rewards, current, onRedeem, onCelebrate }: {
   rewards: any[];
   current: number;
   onRedeem: (reward: any) => Promise<void>;
-  onCelebrate?: (x?: number, y?: number) => void;
+  onCelebrate?: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") => void;
 }) {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
@@ -1909,9 +1913,9 @@ function ProgressCustomizationPanel({ theme, style, animation, onChange }: {
   );
 }
 
-function RewardCelebration({ type, x, y }: { type: "confetti" | "stars" | "sparkles"; x?: number; y?: number }) {
+function RewardCelebration({ type, x, y }: { type: "confetti" | "stars" | "sparkles" | "penalty"; x?: number; y?: number }) {
   const pieces = Array.from({ length: 8 });
-  const glyph = type === "confetti" ? ["🎉", "✨", "🎊"] : type === "stars" ? ["⭐", "🌟", "💫"] : ["✨", "💖", "⚡"];
+  const glyph = type === "confetti" ? ["🎉", "✨", "🎊"] : type === "stars" ? ["⭐", "🌟", "💫"] : type === "penalty" ? ["💥", "⬇️", "⚠️"] : ["✨", "💖", "⚡"];
   const left = x ?? (typeof window !== "undefined" ? window.innerWidth / 2 : 200);
   const top = y ?? 180;
 
@@ -1920,7 +1924,7 @@ function RewardCelebration({ type, x, y }: { type: "confetti" | "stars" | "spark
       {pieces.map((_, i) => (
         <span
           key={i}
-          className="absolute animate-reward-pop text-lg"
+          className={`absolute ${type === "penalty" ? "animate-penalty-pop" : "animate-reward-pop"} text-lg`}
           style={{
             left,
             top,
@@ -1940,7 +1944,7 @@ function QuickAwardSessionView({ client, behaviors, onClose, onAwarded, onCelebr
   behaviors: any[];
   onClose: () => void;
   onAwarded: () => Promise<void>;
-  onCelebrate: (x?: number, y?: number) => void;
+  onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") => void;
   onOptimisticAward: (amount: number) => void;
 }) {
   return (
@@ -1985,7 +1989,7 @@ function QuickAwardSessionCard({ behavior, clientId, onDone, onCelebrate, onOpti
   behavior: any;
   clientId: string;
   onDone: () => Promise<void>;
-  onCelebrate: (x?: number, y?: number) => void;
+  onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") => void;
   onOptimisticAward: (amount: number) => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -1998,7 +2002,7 @@ function QuickAwardSessionCard({ behavior, clientId, onDone, onCelebrate, onOpti
       await awardPoints(clientId, behavior.id, behavior.point_value);
       await onDone();
       const rect = e.currentTarget.getBoundingClientRect();
-      onCelebrate(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      onCelebrate(rect.left + rect.width / 2, rect.top + rect.height / 2, behavior.point_value < 0 ? "penalty" : undefined);
       setPulse(true);
       setTimeout(() => setPulse(false), 220);
     } finally {
@@ -2011,14 +2015,14 @@ function QuickAwardSessionCard({ behavior, clientId, onDone, onCelebrate, onOpti
       type="button"
       onClick={award}
       disabled={busy}
-      className={`rounded-3xl border bg-card shadow-sm p-6 min-h-[180px] text-left transition-all active:scale-[0.98] hover:shadow-md ${pulse ? "ring-4 ring-primary/20 scale-[1.01]" : ""}`}
+      className={`rounded-3xl border bg-card shadow-sm p-6 min-h-[180px] text-left transition-all active:scale-[0.98] hover:shadow-md ${pulse ? behavior.point_value < 0 ? "ring-4 ring-red-200 scale-[1.01]" : "ring-4 ring-primary/20 scale-[1.01]" : ""}`}
     >
       <div className="flex items-start justify-between gap-3">
         <div className="w-14 h-14 rounded-2xl bg-primary/10 grid place-items-center text-3xl">
           <ItemIcon icon={behavior.icon} size="text-3xl" />
         </div>
-        <div className="rounded-full bg-primary text-primary-foreground px-3 py-1 text-sm font-bold">
-          +{behavior.point_value}
+        <div className={`rounded-full px-3 py-1 text-sm font-bold ${behavior.point_value < 0 ? "bg-red-100 text-red-700" : "bg-primary text-primary-foreground"}`}>
+          {behavior.point_value > 0 ? "+" : ""}{behavior.point_value}
         </div>
       </div>
       <div className="mt-5">

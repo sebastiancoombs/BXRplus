@@ -72,10 +72,11 @@ export function useClientByQR(qrCode: string | undefined) {
 }
 
 export async function awardPoints(clientId: string, behaviorId: string, amount: number, note?: string) {
-  const { data, error } = await supabase.rpc("award_points", {
+  const rpc = amount >= 0 ? "award_points" : "penalty_points";
+  const { data, error } = await supabase.rpc(rpc, {
     p_client_id: clientId,
     p_behavior_id: behaviorId,
-    p_amount: amount,
+    p_amount: Math.abs(amount),
     p_note: note ?? null,
   });
   if (error) throw error;
@@ -90,4 +91,20 @@ export async function redeemReward(clientId: string, rewardId: string, note?: st
   });
   if (error) throw error;
   return data;
+}
+
+export async function updateTransactionAndRebalance(transactionId: string, amount: number, note?: string) {
+  const { error } = await supabase.rpc("update_transaction_and_rebalance", {
+    p_transaction_id: transactionId,
+    p_amount: amount,
+    p_note: note ?? null,
+  });
+  if (error) throw error;
+}
+
+export async function deleteTransactionAndRebalance(transactionId: string) {
+  const { error } = await supabase.rpc("delete_transaction_and_rebalance", {
+    p_transaction_id: transactionId,
+  });
+  if (error) throw error;
 }

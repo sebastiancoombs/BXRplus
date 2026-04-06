@@ -139,6 +139,11 @@
   animation: reward-pop 0.55s cubic-bezier(.2,.9,.2,1) forwards;
 }
 
+.animate-penalty-pop {
+  animation: reward-pop 0.45s cubic-bezier(.2,.9,.2,1) forwards;
+  filter: saturate(0.9);
+}
+
 .animate-journey-bob {
   animation: journey-bob 1.8s ease-in-out infinite;
 }
