@@ -113,7 +113,7 @@ function DashboardTab({ clientId }: { clientId: string }) {
     if (client) setOptimisticBalance(client.balance);
   }, [client?.id, client?.balance]);
 
-  async function handleRefresh() { await refresh({ silent: true }); await refreshClients(); }
+  async function handleRefresh() { await refresh({ silent: true }); }
 
   function triggerCelebration(x?: number, y?: number) {
     const anim = (client?.reward_success_animation as "confetti" | "stars" | "sparkles" | null) ?? "confetti";
