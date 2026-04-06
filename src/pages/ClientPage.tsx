@@ -665,6 +665,9 @@ function EditableItemCard({ item, type, onUpdate }: {
   const [travelerIcon, setTravelerIcon] = useState(item.traveler_icon ?? "🚀");
   const [destinationIcon, setDestinationIcon] = useState(item.destination_icon ?? "🌙");
   const [journeyTheme, setJourneyTheme] = useState(item.journey_theme ?? "space");
+  const [feedbackTheme, setFeedbackTheme] = useState(item.feedback_theme ?? "");
+  const [feedbackIntensity, setFeedbackIntensity] = useState(item.feedback_intensity ?? "");
+  const [feedbackMode, setFeedbackMode] = useState(item.feedback_mode ?? "");
   const [busy, setBusy] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
 
@@ -674,7 +677,7 @@ function EditableItemCard({ item, type, onUpdate }: {
   async function save() {
     setBusy(true);
     await supabase.from(table).update(type === "behavior"
-      ? { name, icon, [valueField]: value }
+      ? { name, icon, [valueField]: value, feedback_theme: feedbackTheme || null, feedback_intensity: feedbackIntensity || null, feedback_mode: feedbackMode || null }
       : { name, icon, [valueField]: value, journey_preset: journeyPreset, traveler_icon: travelerIcon, destination_icon: destinationIcon, journey_theme: journeyTheme }
     ).eq("id", item.id);
     setBusy(false);
@@ -729,6 +732,33 @@ function EditableItemCard({ item, type, onUpdate }: {
                 </div>
               </div>
             </>
+          )}
+
+          {type === "behavior" && (
+            <div className="grid gap-2 sm:grid-cols-3">
+              <select value={feedbackTheme} onChange={(e) => setFeedbackTheme(e.target.value)} className="w-full h-8 rounded-md border bg-background px-3 text-sm">
+                <option value="">Use client default theme</option>
+                <option value="stars">Stars</option>
+                <option value="bubbles">Bubbles</option>
+                <option value="flowers">Flowers</option>
+                <option value="smileys">Smileys</option>
+                <option value="fireworks">Fireworks</option>
+                <option value="hearts">Hearts</option>
+                <option value="candy">Candy</option>
+                <option value="glow">Glow</option>
+              </select>
+              <select value={feedbackIntensity} onChange={(e) => setFeedbackIntensity(e.target.value)} className="w-full h-8 rounded-md border bg-background px-3 text-sm">
+                <option value="">Use client default intensity</option>
+                <option value="calm">Calm</option>
+                <option value="standard">Standard</option>
+                <option value="lively">Lively</option>
+              </select>
+              <select value={feedbackMode} onChange={(e) => setFeedbackMode(e.target.value)} className="w-full h-8 rounded-md border bg-background px-3 text-sm">
+                <option value="">Use client default mode</option>
+                <option value="playful">Playful</option>
+                <option value="calm">Calm Visuals</option>
+              </select>
+            </div>
           )}
         </CardContent>
       </Card>

@@ -12,7 +12,7 @@ export default function PublicSessionPage() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
   const [confirmingReward, setConfirmingReward] = useState<any | null>(null);
-  const [feedback, setFeedback] = useState<null | { type: "gain" | "loss"; tick: number }>(null);
+  const [feedback, setFeedback] = useState<null | { type: "gain" | "loss"; tick: number; theme?: string; intensity?: string; mode?: string }>(null);
   const [pointsFlash, setPointsFlash] = useState<null | "gain" | "loss">(null);
 
   async function load() {
@@ -37,7 +37,10 @@ export default function PublicSessionPage() {
   async function applyBehavior(behavior: any) {
     if (!client) return;
     const isLoss = behavior.point_value < 0;
-    setFeedback({ type: isLoss ? "loss" : "gain", tick: Date.now() });
+    const behaviorTheme = behavior.feedback_theme ?? client.session_feedback_theme ?? "stars";
+    const behaviorIntensity = behavior.feedback_intensity ?? client.session_feedback_intensity ?? "standard";
+    const behaviorMode = behavior.feedback_mode ?? client.session_feedback_mode ?? "playful";
+    setFeedback({ type: isLoss ? "loss" : "gain", tick: Date.now(), theme: behaviorTheme, intensity: behaviorIntensity, mode: behaviorMode } as any);
     setPointsFlash(isLoss ? "loss" : "gain");
     setTimeout(() => setPointsFlash(null), 500);
     await awardPoints(client.id, behavior.id, behavior.point_value);
@@ -63,7 +66,7 @@ export default function PublicSessionPage() {
 
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 overflow-x-hidden relative">
-      {feedback && <SessionFeedbackBurst type={feedback.type} theme={feedbackTheme} intensity={feedbackIntensity} mode={feedbackMode} key={feedback.tick} />}
+      {feedback && <SessionFeedbackBurst type={feedback.type} theme={feedback.theme ?? feedbackTheme} intensity={feedback.intensity ?? feedbackIntensity} mode={feedback.mode ?? feedbackMode} key={feedback.tick} />}
       <div className="max-w-6xl mx-auto space-y-5 md:space-y-6">
         <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-5 md:p-7 shadow-sm overflow-hidden">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Live Session</p>
