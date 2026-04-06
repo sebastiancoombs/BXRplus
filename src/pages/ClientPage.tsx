@@ -130,8 +130,13 @@ function DashboardTab({ clientId }: { clientId: string }) {
   if (loading) return <p className="text-muted-foreground">Loading...</p>;
   if (!client) return null;
 
+  const availableRewards = rewards.filter((r) => displayBalance >= r.point_cost).length;
+  const nextReward = [...rewards].sort((a, b) => a.point_cost - b.point_cost).find((r) => displayBalance < r.point_cost) ?? null;
+  const positiveBehaviors = behaviors.filter((b) => b.point_value >= 0);
+  const negativeBehaviors = behaviors.filter((b) => b.point_value < 0);
+
   return (
-    <div className="space-y-6 relative">
+    <div className="space-y-8 relative">
       {celebration && <RewardCelebration type={celebration.type} x={celebration.x} y={celebration.y} />}
       {sessionMode && (
         <QuickAwardSessionView
@@ -143,92 +148,141 @@ function DashboardTab({ clientId }: { clientId: string }) {
           onOptimisticAward={(amount) => setOptimisticBalance((b) => Math.max(0, (b ?? client.balance) + amount))}
         />
       )}
-      {/* Balance + Quick Award */}
-      <div className="grid gap-4 md:grid-cols-3">
-        <Card className="md:col-span-1 bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
-          <CardContent className="py-6 text-center">
-            <p className="text-sm opacity-80 uppercase tracking-wider">Balance</p>
-            <p className="text-5xl font-bold mt-1">{displayBalance}</p>
-            <p className="text-sm opacity-80 mt-1">points</p>
-          </CardContent>
-        </Card>
-        <Card className="md:col-span-2">
-          <CardContent className="py-4">
-            <div className="flex items-start justify-between gap-3 mb-3">
-              <p className="text-sm font-medium text-muted-foreground">Quick Award</p>
+
+      <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-5 md:p-7 shadow-sm">
+        <div className="grid gap-6 xl:grid-cols-[1.2fr_0.8fr] items-start">
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Dashboard</p>
+              <h1 className="text-2xl md:text-3xl font-bold tracking-tight mt-1">{client.full_name}</h1>
+              <p className="text-sm text-muted-foreground mt-2 max-w-xl">
+                Run reinforcement in real time, keep progress visible, and make rewards easy to understand at a glance.
+              </p>
+            </div>
+
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+              <div className="rounded-2xl bg-card border px-4 py-4">
+                <p className="text-xs text-muted-foreground">Current points</p>
+                <p className="text-3xl font-extrabold mt-1">{displayBalance}</p>
+              </div>
+              <div className="rounded-2xl bg-card border px-4 py-4">
+                <p className="text-xs text-muted-foreground">Available now</p>
+                <p className="text-3xl font-extrabold mt-1">{availableRewards}</p>
+              </div>
+              <div className="rounded-2xl bg-card border px-4 py-4">
+                <p className="text-xs text-muted-foreground">Next reward</p>
+                <p className="text-base font-bold mt-1 truncate">{nextReward?.name ?? "All unlocked"}</p>
+              </div>
+              <div className="rounded-2xl bg-card border px-4 py-4">
+                <p className="text-xs text-muted-foreground">Next target</p>
+                <p className="text-base font-bold mt-1">{nextReward ? `${Math.max(0, nextReward.point_cost - displayBalance)} left` : "Ready now"}</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="rounded-3xl bg-card border p-4 md:p-5 shadow-sm">
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <p className="text-sm font-semibold">Quick Actions</p>
+                <p className="text-xs text-muted-foreground mt-1">The fastest way to run a live session.</p>
+              </div>
               {behaviors.length > 0 && (
-                <Button size="sm" variant="outline" onClick={() => setSessionMode(true)}>
-                  Start Session Mode
+                <Button onClick={() => setSessionMode(true)} className="shadow-sm">
+                  Start Live Session
                 </Button>
               )}
             </div>
+
             {behaviors.length === 0 ? (
               <p className="text-sm text-muted-foreground">Add behaviors in the Rewards tab to start awarding points.</p>
             ) : (
-              <div className="flex flex-wrap gap-2">
-                {behaviors.map((b) => (
-                  <QuickAwardBtn key={b.id} behavior={b} clientId={client.id} onDone={handleRefresh} onCelebrate={triggerCelebration}
-                    onOptimisticAward={(amount) => setOptimisticBalance((b) => Math.max(0, (b ?? client.balance) + amount))} />
-                ))}
+              <div className="space-y-4">
+                {positiveBehaviors.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Earn Points</p>
+                    <div className="flex flex-wrap gap-2">
+                      {positiveBehaviors.map((b) => (
+                        <QuickAwardBtn key={b.id} behavior={b} clientId={client.id} onDone={handleRefresh} onCelebrate={triggerCelebration}
+                          onOptimisticAward={(amount) => setOptimisticBalance((bal) => Math.max(0, (bal ?? client.balance) + amount))} />
+                      ))}
+                    </div>
+                  </div>
+                )}
+                {negativeBehaviors.length > 0 && (
+                  <div>
+                    <p className="text-xs font-medium text-muted-foreground mb-2">Remove Points</p>
+                    <div className="flex flex-wrap gap-2">
+                      {negativeBehaviors.map((b) => (
+                        <QuickAwardBtn key={b.id} behavior={b} clientId={client.id} onDone={handleRefresh} onCelebrate={triggerCelebration}
+                          onOptimisticAward={(amount) => setOptimisticBalance((bal) => Math.max(0, (bal ?? client.balance) + amount))} />
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </div>
 
-      {/* Thermometers */}
-      {rewards.length > 0 && (
-        <Card>
-          <CardContent className="py-5">
+      <div className="grid gap-6 xl:grid-cols-[1.35fr_0.65fr] items-start">
+        <div className="space-y-6">
+          {rewards.length > 0 && (
+            <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm">
+              <div className="flex items-start justify-between gap-3 mb-4">
+                <div>
+                  <p className="text-sm font-semibold">Reward Progress</p>
+                  <p className="text-xs text-muted-foreground mt-1">See what is available now, what is next to unlock, and how close they are to each reward.</p>
+                </div>
+                <Button variant={showProgressSettings ? "secondary" : "outline"} size="sm" onClick={() => setShowProgressSettings((v) => !v)}>
+                  {showProgressSettings ? "Hide options" : "Customize"}
+                </Button>
+              </div>
+
+              {showProgressSettings && (
+                <ProgressCustomizationPanel
+                  theme={client.reward_bar_theme ?? "rainbow"}
+                  style={client.reward_bar_style ?? "rounded"}
+                  animation={client.reward_success_animation ?? "confetti"}
+                  onChange={saveProgressPrefs}
+                />
+              )}
+
+              <UnifiedRewardPath
+                rewards={rewards}
+                current={displayBalance}
+                onCelebrate={triggerCelebration}
+                onRedeem={async (reward) => {
+                  setOptimisticBalance((b) => Math.max(0, (b ?? client.balance) - reward.point_cost));
+                  try {
+                    await redeemReward(client.id, reward.id);
+                    await handleRefresh();
+                  } catch (e) {
+                    setOptimisticBalance(client.balance);
+                    throw e;
+                  }
+                }}
+              />
+            </section>
+          )}
+        </div>
+
+        <aside className="space-y-6">
+          <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm">
             <div className="flex items-start justify-between gap-3 mb-4">
               <div>
-                <p className="text-sm font-medium text-muted-foreground">Reward Progress</p>
-                <p className="text-xs text-muted-foreground mt-1">See what is available now, what is next to unlock, and how close they are to each reward.</p>
+                <p className="text-sm font-semibold">Recent Activity</p>
+                <p className="text-xs text-muted-foreground mt-1">Clear, trustworthy record of points earned, removed, and rewards redeemed.</p>
               </div>
-              <Button variant={showProgressSettings ? "secondary" : "outline"} size="sm" onClick={() => setShowProgressSettings((v) => !v)}>
-                {showProgressSettings ? "Hide options" : "Customize"}
-              </Button>
             </div>
-
-            {showProgressSettings && (
-              <ProgressCustomizationPanel
-                theme={client.reward_bar_theme ?? "rainbow"}
-                style={client.reward_bar_style ?? "rounded"}
-                animation={client.reward_success_animation ?? "confetti"}
-                onChange={saveProgressPrefs}
-              />
+            {transactions.length === 0 ? (
+              <p className="text-sm text-muted-foreground py-4">No activity yet.</p>
+            ) : (
+              <TransactionHistory transactions={transactions} onRefresh={handleRefresh} compact />
             )}
-
-            <UnifiedRewardPath
-              rewards={rewards}
-              current={displayBalance}
-              onCelebrate={triggerCelebration}
-              onRedeem={async (reward) => {
-                setOptimisticBalance((b) => Math.max(0, (b ?? client.balance) - reward.point_cost));
-                try {
-                  await redeemReward(client.id, reward.id);
-                  await handleRefresh();
-                } catch (e) {
-                  setOptimisticBalance(client.balance);
-                  throw e;
-                }
-              }}
-            />
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Transactions */}
-      <Card>
-        <CardContent className="py-5">
-          <p className="text-sm font-medium text-muted-foreground mb-4">Transaction History</p>
-          {transactions.length === 0 ? (
-            <p className="text-sm text-muted-foreground text-center py-4">No transactions yet.</p>
-          ) : (
-            <TransactionHistory transactions={transactions} onRefresh={handleRefresh} />
-          )}
-        </CardContent>
-      </Card>
+          </section>
+        </aside>
+      </div>
     </div>
   );
 }
@@ -237,10 +291,21 @@ function DashboardTab({ clientId }: { clientId: string }) {
 // TRANSACTION HISTORY
 // ═══════════════════════════════════════
 
-function TransactionHistory({ transactions, onRefresh }: {
+function TransactionHistory({ transactions, onRefresh, compact = false }: {
   transactions: any[];
   onRefresh: () => Promise<void>;
+  compact?: boolean;
 }) {
+  if (compact) {
+    return (
+      <div className="space-y-3 max-h-[720px] overflow-y-auto pr-1">
+        {transactions.map((txn) => (
+          <TransactionFeedItem key={txn.id} txn={txn} onRefresh={onRefresh} />
+        ))}
+      </div>
+    );
+  }
+
   return (
     <>
       <div className="md:hidden space-y-2">
@@ -268,6 +333,72 @@ function TransactionHistory({ transactions, onRefresh }: {
         </table>
       </div>
     </>
+  );
+}
+
+function TransactionFeedItem({ txn, onRefresh }: { txn: any; onRefresh: () => Promise<void> }) {
+  const [editing, setEditing] = useState(false);
+  const [amount, setAmount] = useState(txn.amount);
+  const [note, setNote] = useState(txn.note ?? "");
+  const [busy, setBusy] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  async function save() {
+    setBusy(true);
+    await updateTransactionAndRebalance(txn.id, amount, note || null);
+    setBusy(false);
+    setEditing(false);
+    await onRefresh();
+  }
+
+  async function remove() {
+    if (!confirmDelete) { setConfirmDelete(true); return; }
+    setBusy(true);
+    await deleteTransactionAndRebalance(txn.id);
+    setBusy(false);
+    await onRefresh();
+  }
+
+  const icon = txn.reward_id ? "🎁" : txn.behavior?.point_value && txn.behavior.point_value < 0 ? "⚠️" : "✨";
+  const color = txn.reward_id ? "text-amber-600" : txn.behavior?.point_value && txn.behavior.point_value < 0 ? "text-red-500" : "text-green-600";
+
+  return (
+    <div className="rounded-2xl border bg-background px-4 py-3">
+      <div className="flex items-start gap-3">
+        <div className={`w-10 h-10 rounded-2xl bg-muted grid place-items-center text-lg ${color}`}>{icon}</div>
+        <div className="min-w-0 flex-1">
+          <p className="text-sm font-medium">
+            {txn.type === "credit"
+              ? `${txn.amount} point${txn.amount === 1 ? "" : "s"} ${txn.behavior?.point_value && txn.behavior.point_value < 0 ? "removed" : "earned"}`
+              : txn.reward_id
+                ? `${txn.amount} point${txn.amount === 1 ? "" : "s"} redeemed`
+                : `${txn.amount} point${txn.amount === 1 ? "" : "s"} removed`}
+          </p>
+          <p className="text-xs text-muted-foreground mt-1">
+            {txn.behavior?.name ?? txn.reward?.name ?? "Manual change"} · {new Date(txn.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
+          </p>
+          {txn.edited_at && <p className="text-[11px] text-muted-foreground mt-1">Edited{txn.original_amount && txn.original_amount !== txn.amount ? ` · originally ${txn.original_amount}` : ""}</p>}
+          {editing ? (
+            <div className="mt-3 space-y-2">
+              <Input type="number" min={1} value={amount} onChange={(e) => setAmount(+e.target.value)} className="h-8" />
+              <Input value={note} onChange={(e) => setNote(e.target.value)} placeholder="Optional note" className="h-8" />
+              <div className="flex justify-end gap-2">
+                <Button variant="ghost" size="sm" onClick={() => setEditing(false)}>Cancel</Button>
+                <Button size="sm" onClick={save} disabled={busy}>{busy ? "..." : "Save"}</Button>
+              </div>
+            </div>
+          ) : (
+            <div className="flex justify-end gap-1 mt-2">
+              <Button variant="ghost" size="sm" className="h-7 px-2 text-xs" onClick={() => setEditing(true)}>Edit</Button>
+              <Button variant="ghost" size="sm" className={`h-7 px-2 text-xs ${confirmDelete ? "text-destructive" : "text-muted-foreground hover:text-destructive"}`}
+                onClick={remove} onBlur={() => setTimeout(() => setConfirmDelete(false), 200)}>
+                {confirmDelete ? "Delete?" : "Delete"}
+              </Button>
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   );
 }
 
