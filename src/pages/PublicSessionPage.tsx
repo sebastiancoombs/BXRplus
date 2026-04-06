@@ -6,6 +6,8 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { getAnimationById } from "@/lib/animationCatalog";
+import { motion } from "framer-motion";
+import Lottie from "lottie-react";
 
 export default function PublicSessionPage() {
   const [params] = useSearchParams();
@@ -235,6 +237,16 @@ function SessionFeedbackBurst({ type, theme, intensity, mode, animationId }: {
   const set = glyphSets[preset?.theme ?? theme] ?? glyphSets.stars;
   const glyphs = preset?.glyphs ?? (type === "gain" ? set.gain : set.loss);
   const animClass = type === "gain" ? ((preset?.motion === "float" || mode === "calm") ? "animate-session-gain-calm" : "animate-session-gain") : "animate-session-loss";
+
+  if (preset?.lottieData) {
+    return (
+      <div className="pointer-events-none fixed inset-0 z-40 grid place-items-center">
+        <motion.div initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: [0.9, 1.08, 1], opacity: [0, 1, 0] }} transition={{ duration: 1.2, ease: "easeOut" }} className="w-48 h-48 sm:w-56 sm:h-56">
+          <Lottie animationData={preset.lottieData} loop={false} autoplay style={{ width: "100%", height: "100%" }} />
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden">

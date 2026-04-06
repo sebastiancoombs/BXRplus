@@ -1,3 +1,6 @@
+import starsSoft from "@/assets/animations/stars-soft.json";
+import bubblesCalm from "@/assets/animations/bubbles-calm.json";
+
 export type AnimationCatalogItem = {
   id: string;
   label: string;
@@ -7,12 +10,13 @@ export type AnimationCatalogItem = {
   intensity: "calm" | "standard" | "lively";
   glyphs: string[];
   motion: "float" | "burst" | "bloom" | "drift";
+  lottieData?: any;
 };
 
 export const animationCatalog: AnimationCatalogItem[] = [
-  { id: "stars-soft", label: "Soft Stars", tags: ["stars", "sparkle", "calm"], category: "gain", theme: "stars", intensity: "calm", glyphs: ["⭐", "🌟", "✨", "💫"], motion: "float" },
+  { id: "stars-soft", label: "Soft Stars", tags: ["stars", "sparkle", "calm"], category: "gain", theme: "stars", intensity: "calm", glyphs: ["⭐", "🌟", "✨", "💫"], motion: "float", lottieData: starsSoft },
   { id: "stars-party", label: "Party Stars", tags: ["stars", "celebration", "bright"], category: "gain", theme: "stars", intensity: "lively", glyphs: ["⭐", "🌟", "✨", "🎉"], motion: "burst" },
-  { id: "bubbles-calm", label: "Calm Bubbles", tags: ["bubbles", "blue", "soothing"], category: "gain", theme: "bubbles", intensity: "calm", glyphs: ["🫧", "🔵", "✨", "💙"], motion: "drift" },
+  { id: "bubbles-calm", label: "Calm Bubbles", tags: ["bubbles", "blue", "soothing"], category: "gain", theme: "bubbles", intensity: "calm", glyphs: ["🫧", "🔵", "✨", "💙"], motion: "drift", lottieData: bubblesCalm },
   { id: "flowers-bloom", label: "Flower Bloom", tags: ["flowers", "pink", "pretty"], category: "gain", theme: "flowers", intensity: "standard", glyphs: ["🌸", "🌼", "✨", "💖"], motion: "bloom" },
   { id: "smileys-pop", label: "Happy Smileys", tags: ["smileys", "faces", "fun"], category: "gain", theme: "smileys", intensity: "standard", glyphs: ["😊", "😄", "🥳", "✨"], motion: "burst" },
   { id: "hearts-glow", label: "Heart Glow", tags: ["hearts", "love", "pink"], category: "gain", theme: "hearts", intensity: "standard", glyphs: ["💖", "💗", "💕", "✨"], motion: "float" },

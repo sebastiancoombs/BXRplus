@@ -1,4 +1,6 @@
 import { useMemo, useState } from "react";
+import { motion } from "framer-motion";
+import Lottie from "lottie-react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { getAnimationById, searchAnimations } from "@/lib/animationCatalog";
@@ -42,7 +44,13 @@ export default function AnimationPicker({
                     <p className="text-sm font-medium">{item.label}</p>
                     <p className="text-[11px] text-muted-foreground">{item.tags.join(" · ")}</p>
                   </div>
-                  <div className="text-lg">{item.glyphs[0]}</div>
+                  <div className="w-10 h-10 grid place-items-center">
+                    {item.lottieData ? (
+                      <Lottie animationData={item.lottieData} loop autoplay style={{ width: 36, height: 36 }} />
+                    ) : (
+                      <motion.div initial={{ scale: 0.85, opacity: 0.7 }} animate={{ scale: [0.9, 1.05, 0.95], opacity: 1 }} transition={{ repeat: Infinity, duration: 1.4 }} className="text-lg">{item.glyphs[0]}</motion.div>
+                    )}
+                  </div>
                 </div>
               </button>
             ))}
