@@ -221,10 +221,12 @@ function ProgramRow({
             </div>
           </div>
 
-          <div className="grid gap-4 lg:grid-cols-[88px_minmax(0,1fr)] items-start">
+          <div className="grid gap-4 lg:grid-cols-[120px_minmax(0,1fr)] items-start">
             <FieldBlock label="Icon">
-              <div className="rounded-[20px] border bg-muted/10 p-3 flex justify-center">
-                <IconPicker value={icon} onChange={setIcon} clientId={item.client_id} />
+              <div className="rounded-[20px] border bg-muted/10 p-3 flex justify-center overflow-visible">
+                <div className="shrink-0 min-w-[48px]">
+                  <IconPicker value={icon} onChange={setIcon} clientId={item.client_id} />
+                </div>
               </div>
             </FieldBlock>
 

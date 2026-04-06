@@ -533,15 +533,46 @@ function OptionRow({ title, values, selected, savingKey, prefix, onSelect }: {
   );
 }
 
-function SessionProgressRail({ rewards, current }: { rewards: any[]; current: number }) {
+function SessionProgressRail({ rewards, current, travelerIcon }: { rewards: any[]; current: number; travelerIcon: string }) {
+  const sorted = [...rewards].sort((a, b) => a.point_cost - b.point_cost);
+  const maxCost = Math.max(...sorted.map((reward) => reward.point_cost), 1);
+  const progressPct = Math.min(96, Math.max(8, (current / maxCost) * 100));
+
   return (
-    <Card>
-      <CardContent className="py-4 px-3">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Reward Progress</p>
-        <p className="text-2xl font-extrabold mb-1">{current}</p>
-        <p className="text-xs text-muted-foreground mb-3">Points available</p>
-        <div className="space-y-2">
-          {[...rewards].sort((a, b) => a.point_cost - b.point_cost).map((reward) => (
+    <Card className="overflow-hidden">
+      <CardContent className="py-4 px-3 space-y-4">
+        <div>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Reward Progress</p>
+          <p className="text-2xl font-extrabold mb-1">{current}</p>
+          <p className="text-xs text-muted-foreground">Points available</p>
+        </div>
+
+        <div className="hidden lg:flex justify-center">
+          <div className="relative h-[420px] w-[110px]">
+            <div className="absolute left-1/2 top-5 bottom-5 -translate-x-1/2 w-4 rounded-full bg-slate-200" />
+            <div
+              className="absolute left-1/2 bottom-5 -translate-x-1/2 w-4 rounded-full bg-gradient-to-t from-violet-600 via-indigo-500 to-sky-400 transition-all duration-500"
+              style={{ height: `calc(${progressPct}% - 10px)` }}
+            />
+            <div className="absolute left-1/2 -translate-x-1/2 text-3xl transition-all duration-500" style={{ bottom: `calc(${progressPct}% - 2px)` }}>
+              {travelerIcon}
+            </div>
+            {sorted.map((reward) => {
+              const stopPct = Math.min(96, Math.max(8, (reward.point_cost / maxCost) * 100));
+              const unlocked = current >= reward.point_cost;
+              return (
+                <div key={reward.id} className="absolute left-1/2 -translate-x-1/2" style={{ bottom: `calc(${stopPct}% - 16px)` }}>
+                  <div className={`h-12 w-12 rounded-[18px] border-2 grid place-items-center text-2xl shadow-sm ${unlocked ? "bg-background border-primary" : "bg-muted border-border"}`}>
+                    {reward.icon}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-2 lg:hidden">
+          {sorted.map((reward) => (
             <div key={reward.id} className="flex items-center justify-between rounded-xl border bg-background px-3 py-2 text-sm">
               <span>{reward.icon} {reward.name}</span>
               <span className="font-medium">{reward.point_cost}</span>
@@ -583,7 +614,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
           <div className="grid lg:grid-cols-[180px_1fr] gap-4 h-full">
             <div className="lg:sticky lg:top-0 self-start">
-              <SessionProgressRail rewards={rewards} current={client.balance} />
+              <SessionProgressRail rewards={rewards} current={client.balance} travelerIcon={client.traveler_icon || rewards[0]?.traveler_icon || "🚀"} />
             </div>
             <div className="space-y-5">
               <div>
