@@ -373,7 +373,7 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
   const [busyId, setBusyId] = useState<string | null>(null);
   const sorted = [...rewards].sort((a, b) => a.point_cost - b.point_cost);
   const maxCost = Math.max(...sorted.map((reward) => reward.point_cost), 1);
-  const avatarPct = Math.min(96, Math.max(8, (current / maxCost) * 100));
+  const progressPct = Math.min(96, Math.max(8, (current / maxCost) * 100));
   const unlockedCount = sorted.filter((reward) => current >= reward.point_cost).length;
 
   async function handleRedeem(reward: any, e: React.MouseEvent<HTMLButtonElement>) {
@@ -385,147 +385,103 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
   }
 
   return (
-    <Card className="overflow-hidden border-0 bg-gradient-to-b from-slate-900/[0.03] via-background to-indigo-500/[0.06] shadow-none">
-      <CardContent className="px-0 py-0">
-        <div className="space-y-5">
-          <div className="rounded-[24px] border bg-background/80 p-4 md:p-5">
-            <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
-              <div className="space-y-3 min-w-0">
-                <div className="flex items-center gap-3 text-sm text-muted-foreground">
-                  <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-2xl">{travelerIcon}</span>
-                  <span>{unlockedCount} of {sorted.length} rewards unlocked</span>
-                </div>
-                <div>
-                  <p className="text-2xl md:text-3xl font-bold tracking-tight">{current} points available</p>
-                  <p className="text-sm text-muted-foreground mt-1">
-                    {sorted.length === 0
-                      ? "Add rewards to create the learner’s path."
-                      : current >= maxCost
-                        ? "Everything on the path is unlocked and ready."
-                        : `${Math.max(0, maxCost - current)} more points to complete the full path.`}
-                  </p>
-                </div>
-              </div>
-
-              <div className="rounded-[22px] border bg-muted/20 p-4">
-                <div className="flex items-end justify-between gap-4">
-                  <div>
-                    <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Path progress</p>
-                    <p className="text-lg font-semibold mt-2">{Math.round((current / maxCost) * 100)}%</p>
-                  </div>
-                  <span className="text-4xl leading-none">{travelerIcon}</span>
-                </div>
-                <div className="mt-4 h-3 rounded-full bg-slate-200 overflow-hidden">
-                  <div
-                    className="h-full rounded-full bg-gradient-to-r from-violet-600 via-indigo-500 to-sky-400 transition-all duration-500"
-                    style={{ width: `${avatarPct}%` }}
-                  />
-                </div>
-              </div>
+    <div className="space-y-5">
+      <div className="rounded-[24px] border bg-background/80 p-4 md:p-5">
+        <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
+          <div className="space-y-3 min-w-0">
+            <div className="flex items-center gap-3 text-sm text-muted-foreground">
+              <span className="inline-flex h-10 w-10 items-center justify-center rounded-2xl bg-primary/10 text-2xl">{travelerIcon}</span>
+              <span>{unlockedCount} of {sorted.length} rewards unlocked</span>
+            </div>
+            <div>
+              <p className="text-2xl md:text-3xl font-bold tracking-tight">{current} points available</p>
+              <p className="text-sm text-muted-foreground mt-1">
+                {sorted.length === 0
+                  ? "Add rewards to create the learner’s path."
+                  : current >= maxCost
+                    ? "Everything on the path is unlocked and ready."
+                    : `${Math.max(0, maxCost - current)} more points to complete the full path.`}
+              </p>
             </div>
           </div>
 
-          <div className="rounded-[24px] border bg-background p-4 md:p-5">
-            <div className="flex gap-4 overflow-x-auto pb-2 md:hidden">
-              {sorted.map((reward, index) => {
-                const unlocked = current >= reward.point_cost;
-                return (
-                  <div key={reward.id} className={`min-w-[240px] rounded-[22px] border p-4 ${unlocked ? "bg-background shadow-sm" : "bg-muted/25"}`}>
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="space-y-3 min-w-0">
-                        <div className="flex items-center gap-3">
-                          <div className="h-12 w-12 rounded-2xl border bg-background grid place-items-center text-2xl">{reward.icon}</div>
-                          <div>
-                            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Stop {index + 1}</p>
-                            <p className="font-semibold break-words">{reward.name}</p>
-                          </div>
-                        </div>
-                        <p className="text-xs text-muted-foreground">
-                          {unlocked ? "Available now" : `${Math.max(0, reward.point_cost - current)} points to unlock`}
-                        </p>
-                      </div>
-                      <Badge>{reward.point_cost} pts</Badge>
-                    </div>
-                    {unlocked && (
-                      <Button size="sm" className="mt-4 w-full" onClick={(e) => handleRedeem(reward, e)} disabled={busyId === reward.id}>
-                        {busyId === reward.id ? "Redeeming..." : "Redeem reward"}
-                      </Button>
-                    )}
-                  </div>
-                );
-              })}
+          <div className="rounded-[22px] border bg-muted/20 p-4">
+            <div className="flex items-end justify-between gap-4">
+              <div>
+                <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Path progress</p>
+                <p className="text-lg font-semibold mt-2">{Math.round((current / maxCost) * 100)}%</p>
+              </div>
+              <span className="text-4xl leading-none">{travelerIcon}</span>
             </div>
-
-            <div className="hidden md:block space-y-4">
-              <div className="relative px-6 py-8">
-                <div className="absolute left-6 right-6 top-[56px] h-1.5 rounded-full bg-slate-200" />
-                <div
-                  className="absolute left-6 top-[56px] h-1.5 rounded-full bg-gradient-to-r from-violet-600 via-indigo-500 to-sky-400 transition-all duration-500"
-                  style={{ width: `calc(${avatarPct}% - 12px)` }}
-                />
-                <div className="absolute top-[28px] -translate-x-1/2 text-3xl transition-all duration-500" style={{ left: `${avatarPct}%` }}>
-                  {travelerIcon}
-                </div>
-                <div className="grid gap-4" style={{ gridTemplateColumns: `repeat(${Math.max(sorted.length, 1)}, minmax(0, 1fr))` }}>
-                  {sorted.map((reward, index) => {
-                    const unlocked = current >= reward.point_cost;
-                    return (
-                      <div key={reward.id} className="relative pt-10">
-                        <div className={`mx-auto h-14 w-14 rounded-[20px] border-2 grid place-items-center text-2xl relative z-10 ${unlocked ? "bg-background border-primary shadow-sm" : "bg-muted border-border"}`}>
-                          {reward.icon}
-                        </div>
-                        <div className={`mt-4 rounded-[22px] border p-4 min-h-[156px] ${unlocked ? "bg-background shadow-sm" : "bg-muted/25"}`}>
-                          <div className="flex items-start justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Stop {index + 1}</p>
-                              <p className="mt-2 font-semibold break-words">{reward.name}</p>
-                              <p className="mt-2 text-xs text-muted-foreground">
-                                {unlocked ? "Available now" : `${Math.max(0, reward.point_cost - current)} points to unlock`}
-                              </p>
-                            </div>
-                            <Badge>{reward.point_cost} pts</Badge>
-                          </div>
-                          {unlocked && (
-                            <Button size="sm" className="mt-4" onClick={(e) => handleRedeem(reward, e)} disabled={busyId === reward.id}>
-                              {busyId === reward.id ? "Redeeming..." : "Redeem"}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-              </div>
-
-              <div className="space-y-3">
-                {sorted.map((reward, index) => {
-                  const unlocked = current >= reward.point_cost;
-                  return (
-                    <div key={`${reward.id}-row`} className={`rounded-[22px] border px-4 py-4 ${unlocked ? "bg-background" : "bg-muted/20"}`}>
-                      <div className="flex items-start justify-between gap-3">
-                        <div className="min-w-0 flex items-start gap-3">
-                          <div className="h-11 w-11 rounded-2xl border bg-background grid place-items-center text-2xl shrink-0">{reward.icon}</div>
-                          <div className="min-w-0">
-                            <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Reward {index + 1}</p>
-                            <p className="font-semibold break-words mt-1">{reward.name}</p>
-                            <p className="text-xs text-muted-foreground mt-1">
-                              {unlocked ? "Available now" : `${Math.max(0, reward.point_cost - current)} points to unlock`}
-                            </p>
-                          </div>
-                        </div>
-                        <div className="shrink-0 text-right">
-                          <Badge>{reward.point_cost} pts</Badge>
-                        </div>
-                      </div>
-                    </div>
-                  );
-                })}
-              </div>
+            <div className="mt-4 h-3 rounded-full bg-slate-200 overflow-hidden lg:hidden">
+              <div
+                className="h-full rounded-full bg-gradient-to-r from-violet-600 via-indigo-500 to-sky-400 transition-all duration-500"
+                style={{ width: `${progressPct}%` }}
+              />
             </div>
           </div>
         </div>
-      </CardContent>
-    </Card>
+      </div>
+
+      <div className="grid gap-5 xl:grid-cols-[180px_minmax(0,1fr)] items-start">
+        <div className="hidden xl:flex justify-center">
+          <div className="relative h-[520px] w-[120px]">
+            <div className="absolute left-1/2 top-5 bottom-5 -translate-x-1/2 w-5 rounded-full bg-slate-200" />
+            <div
+              className="absolute left-1/2 bottom-5 -translate-x-1/2 w-5 rounded-full bg-gradient-to-t from-violet-600 via-indigo-500 to-sky-400 transition-all duration-500"
+              style={{ height: `calc(${progressPct}% - 10px)` }}
+            />
+            <div className="absolute left-1/2 -translate-x-1/2 text-4xl transition-all duration-500" style={{ bottom: `calc(${progressPct}% - 6px)` }}>
+              {travelerIcon}
+            </div>
+            {sorted.map((reward) => {
+              const stopPct = Math.min(96, Math.max(8, (reward.point_cost / maxCost) * 100));
+              const unlocked = current >= reward.point_cost;
+              return (
+                <div key={reward.id} className="absolute left-1/2 -translate-x-1/2" style={{ bottom: `calc(${stopPct}% - 18px)` }}>
+                  <div className={`h-14 w-14 rounded-[20px] border-2 grid place-items-center text-2xl shadow-sm ${unlocked ? "bg-background border-primary" : "bg-muted border-border"}`}>
+                    {reward.icon}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+
+        <div className="space-y-3">
+          {sorted.map((reward, index) => {
+            const unlocked = current >= reward.point_cost;
+            return (
+              <div key={reward.id} className={`rounded-[24px] border p-4 md:p-5 ${unlocked ? "bg-background shadow-sm" : "bg-muted/20"}`}>
+                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                  <div className="min-w-0 flex items-start gap-3 flex-1">
+                    <div className="h-12 w-12 rounded-[18px] border bg-background grid place-items-center text-2xl shrink-0">{reward.icon}</div>
+                    <div className="min-w-0 space-y-1">
+                      <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Reward stop {index + 1}</p>
+                      <p className="font-semibold break-words">{reward.name}</p>
+                      <p className="text-sm text-muted-foreground">
+                        {unlocked ? "Available now" : `${Math.max(0, reward.point_cost - current)} points to unlock`}
+                      </p>
+                    </div>
+                  </div>
+
+                  <div className="sm:text-right shrink-0 space-y-2">
+                    <Badge>{reward.point_cost} pts</Badge>
+                    {unlocked && (
+                      <div>
+                        <Button size="sm" onClick={(e) => handleRedeem(reward, e)} disabled={busyId === reward.id}>
+                          {busyId === reward.id ? "Redeeming..." : "Redeem"}
+                        </Button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    </div>
   );
 }
 

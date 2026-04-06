@@ -243,11 +243,13 @@ function ProgramRow({
               <div>
                 <p className="text-sm font-semibold">What the learner sees</p>
                 <p className="text-sm text-muted-foreground mt-1">
-                  Choose the feedback shown when this behavior earns or removes points.
+                  {value >= 0
+                    ? "Choose the feedback shown when this behavior earns points."
+                    : "Choose the feedback shown when this behavior removes points."}
                 </p>
               </div>
 
-              <div className="grid gap-4 lg:grid-cols-2 items-start">
+              {value >= 0 ? (
                 <FeedbackPanel
                   title="When points are earned"
                   value={gainEmoji}
@@ -255,6 +257,7 @@ function ProgramRow({
                   onChange={setGainEmoji}
                   onPreview={() => playEmojiBurst({ emoji: gainEmoji || "⭐", mode: "gain" })}
                 />
+              ) : (
                 <FeedbackPanel
                   title="When points are removed"
                   value={lossEmoji}
@@ -262,7 +265,7 @@ function ProgramRow({
                   onChange={setLossEmoji}
                   onPreview={() => playEmojiBurst({ emoji: lossEmoji || "⚠️", mode: "loss" })}
                 />
-              </div>
+              )}
             </div>
           )}
 
@@ -297,8 +300,11 @@ function ProgramRow({
               </p>
               {type === "behavior" && (
                 <div className="flex flex-wrap gap-2 pt-1">
-                  <MiniEmojiPill label="Earned" emoji={gainEmoji || "⭐"} />
-                  <MiniEmojiPill label="Removed" emoji={lossEmoji || "⚠️"} />
+                  {item.point_value >= 0 ? (
+                    <MiniEmojiPill label="Earned" emoji={gainEmoji || "⭐"} />
+                  ) : (
+                    <MiniEmojiPill label="Removed" emoji={lossEmoji || "⚠️"} />
+                  )}
                 </div>
               )}
             </div>
