@@ -56,6 +56,17 @@ export default function DataTab({ clientId, clientName }: { clientId: string; cl
   });
   const timelineData = Array.from(dailyMap.values()).reverse();
 
+  const behaviorCountDailyMap = new Map<string, { date: string; count: number }>();
+  filtered
+    .filter((t) => t.type === "credit" && t.behavior_id && (filterBehavior === "all" || t.behavior_id === filterBehavior))
+    .forEach((t) => {
+      const day = new Date(t.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" });
+      const prev = behaviorCountDailyMap.get(day) ?? { date: day, count: 0 };
+      prev.count += 1;
+      behaviorCountDailyMap.set(day, prev);
+    });
+  const behaviorCountLineData = Array.from(behaviorCountDailyMap.values()).reverse();
+
   function exportCSV() {
     const rows = behaviorFiltered.map((t) => ({
       Date: new Date(t.created_at).toISOString(),
@@ -107,21 +118,51 @@ export default function DataTab({ clientId, clientName }: { clientId: string; cl
         </div>
       </div>
 
-      {timelineData.length > 1 && (
-        <ChartCard title="Points Over Time">
-          <ResponsiveContainer width="100%" height={250}>
-            <LineChart data={timelineData}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
-              <XAxis dataKey="date" tick={{ fontSize: 11 }} />
-              <YAxis tick={{ fontSize: 11 }} />
-              <Tooltip />
-              <Legend />
-              <Line type="monotone" dataKey="earned" stroke="#22c55e" strokeWidth={2} name="Earned" dot={{ r: 3 }} />
-              <Line type="monotone" dataKey="spent" stroke="#ef4444" strokeWidth={2} name="Spent" dot={{ r: 3 }} />
-            </LineChart>
-          </ResponsiveContainer>
-        </ChartCard>
-      )}
+      <div className="grid gap-4 xl:grid-cols-2">
+        {timelineData.length > 1 && (
+          <ChartCard title="Points Over Time">
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={timelineData}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                <YAxis tick={{ fontSize: 11 }} />
+                <Tooltip />
+                <Legend />
+                <Line type="monotone" dataKey="earned" stroke="#22c55e" strokeWidth={2} name="Earned" dot={{ r: 3 }} />
+                <Line type="monotone" dataKey="spent" stroke="#ef4444" strokeWidth={2} name="Spent" dot={{ r: 3 }} />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        )}
+
+        {behaviorCountLineData.length > 0 && (
+          <ChartCard title="Behavior Count by Day">
+            <ResponsiveContainer width="100%" height={250}>
+              <LineChart data={behaviorCountLineData}>
+                <defs>
+                  <linearGradient id="behaviorCountFill" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="0%" stopColor="#8b5cf6" stopOpacity={0.28} />
+                    <stop offset="100%" stopColor="#8b5cf6" stopOpacity={0.02} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
+                <XAxis dataKey="date" tick={{ fontSize: 11 }} />
+                <YAxis allowDecimals={false} tick={{ fontSize: 11 }} />
+                <Tooltip formatter={(val: number) => [`${val}`, "Behavior count"]} />
+                <Line
+                  type="monotone"
+                  dataKey="count"
+                  stroke="#8b5cf6"
+                  strokeWidth={3}
+                  name="Behavior count"
+                  dot={{ r: 3, fill: "#8b5cf6" }}
+                  activeDot={{ r: 5 }}
+                />
+              </LineChart>
+            </ResponsiveContainer>
+          </ChartCard>
+        )}
+      </div>
 
       <div className="grid gap-4 md:grid-cols-2">
         {barData.length > 0 && (
