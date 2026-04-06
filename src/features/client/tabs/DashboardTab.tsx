@@ -24,8 +24,8 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
     await refresh({ silent: true });
   }
 
-  function triggerCelebration(_x?: number, _y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") {
-    const emoji = type === "penalty" ? "⚠️" : client?.reward_success_animation || "🎉";
+  function triggerCelebration(_x?: number, _y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty", emojiOverride?: string) {
+    const emoji = emojiOverride || (type === "penalty" ? "⚠️" : client?.reward_success_animation || "🎉");
     void playEmojiBurst({ emoji, mode: type === "penalty" ? "loss" : "gain" });
   }
 
@@ -204,7 +204,7 @@ function QuickActionGroup({
   behaviors: any[];
   clientId: string;
   onDone: () => Promise<void>;
-  onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") => void;
+  onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty", emojiOverride?: string) => void;
   onOptimisticAward: (amount: number) => void;
 }) {
   return (
@@ -321,7 +321,7 @@ function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate, onOptimisticAw
   behavior: any;
   clientId: string;
   onDone: () => Promise<void>;
-  onCelebrate?: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") => void;
+  onCelebrate?: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty", emojiOverride?: string) => void;
   onOptimisticAward?: (amount: number) => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -339,7 +339,8 @@ function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate, onOptimisticAw
       onCelebrate?.(
         rect ? rect.left + rect.width / 2 : undefined,
         rect ? rect.top + rect.height / 2 : undefined,
-        behavior.point_value < 0 ? "penalty" : undefined
+        behavior.point_value < 0 ? "penalty" : undefined,
+        behavior.point_value < 0 ? (behavior.feedback_loss_animation_id || "⚠️") : (behavior.feedback_gain_animation_id || "⭐")
       );
     } finally {
       setBusy(false);
@@ -590,7 +591,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
   rewards: any[];
   onClose: () => void;
   onAwarded: () => Promise<void>;
-  onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") => void;
+  onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty", emojiOverride?: string) => void;
   onOptimisticAward: (amount: number) => void;
 }) {
   return (
@@ -646,7 +647,7 @@ function QuickAwardSessionCard({ behavior, clientId, onDone, onCelebrate, onOpti
   behavior: any;
   clientId: string;
   onDone: () => Promise<void>;
-  onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") => void;
+  onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty", emojiOverride?: string) => void;
   onOptimisticAward: (amount: number) => void;
 }) {
   const [busy, setBusy] = useState(false);
@@ -657,7 +658,12 @@ function QuickAwardSessionCard({ behavior, clientId, onDone, onCelebrate, onOpti
     try {
       await awardPoints(clientId, behavior.id, behavior.point_value);
       await onDone();
-      onCelebrate(undefined, undefined, behavior.point_value < 0 ? "penalty" : undefined);
+      onCelebrate(
+        undefined,
+        undefined,
+        behavior.point_value < 0 ? "penalty" : undefined,
+        behavior.point_value < 0 ? (behavior.feedback_loss_animation_id || "⚠️") : (behavior.feedback_gain_animation_id || "⭐")
+      );
     } finally {
       setBusy(false);
     }
@@ -689,7 +695,7 @@ function QuickRedeemSessionCard({ reward, clientId, currentBalance, onDone, onCe
   clientId: string;
   currentBalance: number;
   onDone: () => Promise<void>;
-  onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") => void;
+  onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty", emojiOverride?: string) => void;
   onOptimisticRedeem: (amount: number) => void;
 }) {
   const [busy, setBusy] = useState(false);
