@@ -104,7 +104,14 @@ function DashboardTab({ clientId }: { clientId: string }) {
   const { refresh: refreshClients } = useClientContext();
   const [showProgressSettings, setShowProgressSettings] = useState(false);
   const [sessionMode, setSessionMode] = useState(false);
+  const [optimisticBalance, setOptimisticBalance] = useState<number | null>(null);
   const [celebration, setCelebration] = useState<null | { type: "confetti" | "stars" | "sparkles"; x?: number; y?: number }>(null);
+
+  const displayBalance = optimisticBalance ?? client?.balance ?? 0;
+
+  useEffect(() => {
+    if (client) setOptimisticBalance(client.balance);
+  }, [client?.id, client?.balance]);
 
   async function handleRefresh() { await refresh({ silent: true }); await refreshClients(); }
 
@@ -128,11 +135,12 @@ function DashboardTab({ clientId }: { clientId: string }) {
       {celebration && <RewardCelebration type={celebration.type} x={celebration.x} y={celebration.y} />}
       {sessionMode && (
         <QuickAwardSessionView
-          client={client}
+          client={{ ...client, balance: displayBalance }}
           behaviors={behaviors}
           onClose={() => setSessionMode(false)}
           onAwarded={handleRefresh}
           onCelebrate={triggerCelebration}
+          onOptimisticAward={(amount) => setOptimisticBalance((b) => (b ?? client.balance) + amount)}
         />
       )}
       {/* Balance + Quick Award */}
@@ -140,7 +148,7 @@ function DashboardTab({ clientId }: { clientId: string }) {
         <Card className="md:col-span-1 bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
           <CardContent className="py-6 text-center">
             <p className="text-sm opacity-80 uppercase tracking-wider">Balance</p>
-            <p className="text-5xl font-bold mt-1">{client.balance}</p>
+            <p className="text-5xl font-bold mt-1">{displayBalance}</p>
             <p className="text-sm opacity-80 mt-1">points</p>
           </CardContent>
         </Card>
@@ -159,7 +167,8 @@ function DashboardTab({ clientId }: { clientId: string }) {
             ) : (
               <div className="flex flex-wrap gap-2">
                 {behaviors.map((b) => (
-                  <QuickAwardBtn key={b.id} behavior={b} clientId={client.id} onDone={handleRefresh} onCelebrate={triggerCelebration} />
+                  <QuickAwardBtn key={b.id} behavior={b} clientId={client.id} onDone={handleRefresh} onCelebrate={triggerCelebration}
+                    onOptimisticAward={(amount) => setOptimisticBalance((b) => (b ?? client.balance) + amount)} />
                 ))}
               </div>
             )}
@@ -192,14 +201,23 @@ function DashboardTab({ clientId }: { clientId: string }) {
 
             <div className="space-y-4">
               {rewards.map((r) => {
-                const pct = Math.min(100, (client.balance / r.point_cost) * 100);
+                const pct = Math.min(100, (displayBalance / r.point_cost) * 100);
                 return (
-                  <ThermometerRow key={r.id} icon={r.icon} name={r.name} current={client.balance}
-                    goal={r.point_cost} pct={pct} canRedeem={client.balance >= r.point_cost}
+                  <ThermometerRow key={r.id} icon={r.icon} name={r.name} current={displayBalance}
+                    goal={r.point_cost} pct={pct} canRedeem={displayBalance >= r.point_cost}
                     theme={client.reward_bar_theme ?? "rainbow"}
                     styleVariant={client.reward_bar_style ?? "rounded"}
                     onCelebrate={triggerCelebration}
-                    onRedeem={async () => { await redeemReward(client.id, r.id); await handleRefresh(); }}
+                    onRedeem={async () => {
+                      setOptimisticBalance((b) => Math.max(0, (b ?? client.balance) - r.point_cost));
+                      try {
+                        await redeemReward(client.id, r.id);
+                        await handleRefresh();
+                      } catch (e) {
+                        setOptimisticBalance(client.balance);
+                        throw e;
+                      }
+                    }}
                   />
                 );
               })}
@@ -1475,7 +1493,7 @@ function ItemIcon({ icon, size = "text-xl" }: { icon: string; size?: string }) {
   return <span className={`${size} flex-shrink-0`}>{icon}</span>;
 }
 
-function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate }: { behavior: any; clientId: string; onDone: () => void; onCelebrate?: (x?: number, y?: number) => void }) {
+function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate, onOptimisticAward }: { behavior: any; clientId: string; onDone: () => void; onCelebrate?: (x?: number, y?: number) => void; onOptimisticAward?: (amount: number) => void }) {
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -1483,13 +1501,17 @@ function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate }: { behavior: 
   async function go(e?: React.MouseEvent<HTMLButtonElement>) {
     if (!confirming) { setConfirming(true); return; }
     setBusy(true);
-    await awardPoints(clientId, behavior.id, behavior.point_value);
-    setFlash(true); setConfirming(false);
-    setTimeout(() => setFlash(false), 600);
-    onDone();
-    const rect = e?.currentTarget.getBoundingClientRect();
-    onCelebrate?.(rect ? rect.left + rect.width / 2 : undefined, rect ? rect.top + rect.height / 2 : undefined);
-    setBusy(false);
+    onOptimisticAward?.(behavior.point_value);
+    try {
+      await awardPoints(clientId, behavior.id, behavior.point_value);
+      setFlash(true); setConfirming(false);
+      setTimeout(() => setFlash(false), 600);
+      onDone();
+      const rect = e?.currentTarget.getBoundingClientRect();
+      onCelebrate?.(rect ? rect.left + rect.width / 2 : undefined, rect ? rect.top + rect.height / 2 : undefined);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
@@ -1691,12 +1713,13 @@ function RewardCelebration({ type, x, y }: { type: "confetti" | "stars" | "spark
   );
 }
 
-function QuickAwardSessionView({ client, behaviors, onClose, onAwarded, onCelebrate }: {
+function QuickAwardSessionView({ client, behaviors, onClose, onAwarded, onCelebrate, onOptimisticAward }: {
   client: any;
   behaviors: any[];
   onClose: () => void;
   onAwarded: () => Promise<void>;
   onCelebrate: (x?: number, y?: number) => void;
+  onOptimisticAward: (amount: number) => void;
 }) {
   return (
     <div className="fixed inset-0 z-40 bg-background/95 backdrop-blur-sm">
@@ -1726,7 +1749,7 @@ function QuickAwardSessionView({ client, behaviors, onClose, onAwarded, onCelebr
           ) : (
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
               {behaviors.map((b) => (
-                <QuickAwardSessionCard key={b.id} behavior={b} clientId={client.id} onDone={onAwarded} onCelebrate={onCelebrate} />
+                <QuickAwardSessionCard key={b.id} behavior={b} clientId={client.id} onDone={onAwarded} onCelebrate={onCelebrate} onOptimisticAward={onOptimisticAward} />
               ))}
             </div>
           )}
@@ -1736,24 +1759,29 @@ function QuickAwardSessionView({ client, behaviors, onClose, onAwarded, onCelebr
   );
 }
 
-function QuickAwardSessionCard({ behavior, clientId, onDone, onCelebrate }: {
+function QuickAwardSessionCard({ behavior, clientId, onDone, onCelebrate, onOptimisticAward }: {
   behavior: any;
   clientId: string;
   onDone: () => Promise<void>;
   onCelebrate: (x?: number, y?: number) => void;
+  onOptimisticAward: (amount: number) => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [pulse, setPulse] = useState(false);
 
-  async function award(e: React.MouseEvent<HTMLButtonElement>) {
+  async function award(e: React.MouseEvent<HTMLButtonElement | HTMLDivElement>) {
     setBusy(true);
-    await awardPoints(clientId, behavior.id, behavior.point_value);
-    await onDone();
-    const rect = e.currentTarget.getBoundingClientRect();
-    onCelebrate(rect.left + rect.width / 2, rect.top + rect.height / 2);
-    setPulse(true);
-    setTimeout(() => setPulse(false), 220);
-    setBusy(false);
+    onOptimisticAward(behavior.point_value);
+    try {
+      await awardPoints(clientId, behavior.id, behavior.point_value);
+      await onDone();
+      const rect = e.currentTarget.getBoundingClientRect();
+      onCelebrate(rect.left + rect.width / 2, rect.top + rect.height / 2);
+      setPulse(true);
+      setTimeout(() => setPulse(false), 220);
+    } finally {
+      setBusy(false);
+    }
   }
 
   return (
