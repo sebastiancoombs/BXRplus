@@ -45,36 +45,36 @@ export default function PublicSessionPage() {
   if (!client) return <div className="min-h-screen grid place-items-center text-muted-foreground">Session not found.</div>;
 
   return (
-    <div className="min-h-screen bg-background p-4 md:p-6">
-      <div className="max-w-6xl mx-auto space-y-6">
-        <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-5 md:p-7 shadow-sm">
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 overflow-x-hidden">
+      <div className="max-w-6xl mx-auto space-y-5 md:space-y-6">
+        <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-5 md:p-7 shadow-sm overflow-hidden">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Live Session</p>
-          <div className="flex flex-wrap items-end justify-between gap-4 mt-2">
+          <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-end justify-between gap-4 mt-2">
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight">{client.full_name}</h1>
+              <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight break-words">{client.full_name}</h1>
               <p className="text-sm text-muted-foreground mt-2">Tap a behavior to add or remove points. Tap a reward to redeem when it is available.</p>
             </div>
-            <div className="rounded-3xl bg-card border px-6 py-4 text-center shadow-sm min-w-[160px]">
+            <div className="rounded-3xl bg-card border px-5 py-4 text-center shadow-sm min-w-[140px] w-full sm:w-auto">
               <p className="text-xs text-muted-foreground">Current points</p>
-              <p className="text-5xl font-extrabold mt-1">{balance}</p>
+              <p className="text-4xl sm:text-5xl font-extrabold mt-1">{balance}</p>
             </div>
           </div>
         </div>
 
-        <div className="grid gap-6 xl:grid-cols-[1.15fr_0.85fr] items-start">
+        <div className="grid gap-5 md:gap-6 xl:grid-cols-[1.15fr_0.85fr] items-start">
           <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-4">
             <div>
               <p className="text-sm font-semibold">Behaviors</p>
               <p className="text-xs text-muted-foreground mt-1">Tap once to add or remove points quickly during a session.</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
               {behaviors.map((b: any) => (
-                <button key={b.id} type="button" onClick={() => applyBehavior(b)} className="rounded-3xl border bg-background p-5 text-left shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
+                <button key={b.id} type="button" onClick={() => applyBehavior(b)} className="rounded-3xl border bg-background p-4 md:p-5 text-left shadow-sm hover:shadow-md transition-all active:scale-[0.98] min-w-0">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="text-4xl">{b.icon}</div>
-                    <Badge variant={b.point_value < 0 ? "destructive" : "secondary"}>{b.point_value > 0 ? "+" : ""}{b.point_value}</Badge>
+                    <div className="text-3xl sm:text-4xl flex-shrink-0">{b.icon}</div>
+                    <Badge variant={b.point_value < 0 ? "destructive" : "secondary"} className="flex-shrink-0">{b.point_value > 0 ? "+" : ""}{b.point_value}</Badge>
                   </div>
-                  <p className="text-xl font-bold mt-4 leading-tight">{b.name}</p>
+                  <p className="text-lg sm:text-xl font-bold mt-4 leading-tight break-words">{b.name}</p>
                 </button>
               ))}
             </div>
@@ -91,14 +91,14 @@ export default function PublicSessionPage() {
                 return (
                   <div key={r.id} className={`rounded-2xl border p-4 ${available ? "bg-background shadow-sm" : "bg-muted/30"}`}>
                     <div className="flex items-center justify-between gap-3">
-                      <div className="flex items-center gap-3 min-w-0">
-                        <div className="text-3xl">{r.icon}</div>
+                      <div className="flex items-center gap-3 min-w-0 flex-1">
+                        <div className="text-3xl flex-shrink-0">{r.icon}</div>
                         <div className="min-w-0">
                           <p className="font-semibold truncate">{r.name}</p>
                           <p className="text-xs text-muted-foreground mt-1">{available ? "Available now" : `${r.point_cost - balance} points to unlock`}</p>
                         </div>
                       </div>
-                      <div className="text-right">
+                      <div className="text-right flex-shrink-0">
                         <Badge>{r.point_cost} pts</Badge>
                         {available && (
                           <div className="mt-2">
@@ -123,7 +123,7 @@ export default function PublicSessionPage() {
                 <p className="text-xl font-bold">{confirmingReward.name}</p>
                 <p className="text-sm text-muted-foreground mt-1">Redeem this reward for {confirmingReward.point_cost} points?</p>
               </div>
-              <div className="flex justify-center gap-3">
+              <div className="flex flex-col sm:flex-row justify-center gap-3">
                 <Button variant="outline" onClick={() => setConfirmingReward(null)}>Cancel</Button>
                 <Button onClick={confirmReward}>Confirm</Button>
               </div>
