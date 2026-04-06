@@ -117,7 +117,7 @@ export default function DataTab({ clientId, clientName }: { clientId: string; cl
                 <button key={r} onClick={() => setRange(r)} className={cn("px-3 py-2 text-xs font-medium transition-colors", range === r ? "bg-primary text-primary-foreground" : "hover:bg-accent")}>{r === "all" ? "All time" : r}</button>
               ))}
             </div>
-            <select value={filterBehavior} onChange={(e) => setFilterBehavior(e.target.value)} className="rounded-xl border border-input bg-card px-3 py-2 text-xs h-9">
+            <select value={filterBehavior} onChange={(e) => setFilterBehavior(e.target.value)} className="rounded-xl border border-input bg-card px-3 py-2 text-base h-10">
               <option value="all">All activity</option>
               <option value="debits">Rewards redeemed</option>
               {behaviors.map((b) => <option key={b.id} value={b.id}>{b.icon} {b.name}</option>)}

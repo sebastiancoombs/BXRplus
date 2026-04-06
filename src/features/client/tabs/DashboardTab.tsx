@@ -613,8 +613,8 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
-          <div className="grid lg:grid-cols-[180px_1fr] gap-4 h-full">
-            <div className="lg:sticky lg:top-0 self-start">
+          <div className="space-y-5 lg:grid lg:grid-cols-[180px_1fr] lg:gap-4 lg:h-full lg:space-y-0">
+            <div className="self-start">
               <SessionProgressRail rewards={rewards} current={client.balance} travelerIcon={client.traveler_icon || rewards[0]?.traveler_icon || "🚀"} />
             </div>
             <div className="space-y-5">

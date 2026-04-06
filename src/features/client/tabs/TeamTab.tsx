@@ -130,7 +130,7 @@ export default function TeamTab({ clientId, isOwner }: { clientId: string; isOwn
                 </div>
               )}
             </div>
-            <select value={role} onChange={(e) => setRole(e.target.value as AppRole)} className="rounded-xl border border-input bg-background px-3 py-2 text-sm h-10">
+            <select value={role} onChange={(e) => setRole(e.target.value as AppRole)} className="rounded-xl border border-input bg-background px-3 py-2 text-base h-10">
               <option value="rbt">RBT</option>
               <option value="parent">Parent</option>
               <option value="bcba">BCBA</option>
@@ -176,7 +176,7 @@ function StaffRow({ staff, isOwner, onChangeRole, onMakeOwner, onRemove }: {
       <div>
         <p className="text-sm font-medium">{staff.profile?.full_name ?? "Unknown"}</p>
         {isOwner ? (
-          <select value={staff.relationship} onChange={(e) => onChangeRole(e.target.value as AppRole)} className="text-xs font-medium rounded-full px-2 py-0.5 border-0 cursor-pointer bg-muted">
+          <select value={staff.relationship} onChange={(e) => onChangeRole(e.target.value as AppRole)} className="text-base sm:text-xs font-medium rounded-full px-2 py-0.5 border-0 cursor-pointer bg-muted">
             <option value="bcba">BCBA</option>
             <option value="rbt">RBT</option>
             <option value="parent">Parent</option>
