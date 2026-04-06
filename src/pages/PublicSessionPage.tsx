@@ -49,7 +49,7 @@ export default function PublicSessionPage() {
     setRedeemingRewardId(reward.id);
     setPointsFlash("loss");
     setTimeout(() => setPointsFlash(null), 500);
-    await playEmojiBurst({ emoji: reward.icon || "🎁", mode: "loss", count: 16 });
+    await playEmojiBurst({ emoji: reward.icon || "🎁", mode: "gain", count: 16 });
     await redeemReward(client.id, reward.id);
     setRedeemingRewardId(null);
     await load();

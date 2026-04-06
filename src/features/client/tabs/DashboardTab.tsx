@@ -369,7 +369,7 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
   current: number;
   travelerIcon: string;
   onRedeem: (reward: any) => Promise<void>;
-  onCelebrate?: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") => void;
+  onCelebrate?: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty", emojiOverride?: string) => void;
 }) {
   const [busyId, setBusyId] = useState<string | null>(null);
   const sorted = [...rewards].sort((a, b) => a.point_cost - b.point_cost);
@@ -381,7 +381,7 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
     setBusyId(reward.id);
     await onRedeem(reward);
     const rect = e.currentTarget.getBoundingClientRect();
-    onCelebrate?.(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    onCelebrate?.(rect.left + rect.width / 2, rect.top + rect.height / 2, undefined, reward.icon || "🎁");
     setBusyId(null);
   }
 
@@ -708,7 +708,7 @@ function QuickRedeemSessionCard({ reward, clientId, currentBalance, onDone, onCe
     try {
       await redeemReward(clientId, reward.id);
       await onDone();
-      onCelebrate(undefined, undefined);
+      onCelebrate(undefined, undefined, undefined, reward.icon || "🎁");
     } finally {
       setBusy(false);
     }
