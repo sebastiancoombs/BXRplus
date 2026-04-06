@@ -43,6 +43,7 @@ export default function AnimationPicker({
                   <div>
                     <p className="text-sm font-medium">{item.label}</p>
                     <p className="text-[11px] text-muted-foreground">{item.tags.join(" · ")}</p>
+                    <p className="text-[10px] text-muted-foreground mt-0.5">{item.source === "lottie" ? "Base animated asset" : "Curated preset"}</p>
                   </div>
                   <div className="w-10 h-10 grid place-items-center">
                     {item.lottieData ? (
