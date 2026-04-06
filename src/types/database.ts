@@ -22,6 +22,7 @@ export interface Client {
   reward_bar_theme: string | null;
   reward_bar_style: string | null;
   reward_success_animation: string | null;
+  traveler_icon: string | null;
   session_feedback_theme: string | null;
   session_feedback_intensity: string | null;
   session_feedback_mode: string | null;
