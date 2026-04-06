@@ -7,6 +7,7 @@ import LoginPage from "@/pages/LoginPage";
 import ClientPage from "@/pages/ClientPage";
 import ScanPage from "@/pages/ScanPage";
 import ProfilePage from "@/pages/ProfilePage";
+import PublicSessionPage from "@/pages/PublicSessionPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -29,6 +30,7 @@ export default function App() {
         <Routes>
           <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/session" element={<PublicSessionPage />} />
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<ClientPage />} />
             <Route path="/scan" element={<ScanPage />} />

@@ -43,23 +43,10 @@ export default function ScanPage() {
       // Not JSON — treat as client QR code
     }
 
-    // Client QR code — look up by qr_code value
-    setStatusMsg("Looking up client...");
-    const { data: clients } = await (await import("@/lib/supabase")).supabase
-      .from("clients")
-      .select("id")
-      .eq("qr_code", text)
-      .limit(1);
-
-    if (clients && clients.length > 0) {
-      setActiveClientId(clients[0].id);
-      setStatus("success");
-      setStatusMsg("Client found! Redirecting...");
-      setTimeout(() => navigate("/dashboard"), 500);
-    } else {
-      setStatus("error");
-      setStatusMsg("No client found for this code.");
-    }
+    // Client QR code — open public live session by QR
+    setStatus("success");
+    setStatusMsg("Opening live session...");
+    setTimeout(() => navigate(`/session?qr=${encodeURIComponent(text)}`), 300);
   }
 
   async function confirmRedeem() {
