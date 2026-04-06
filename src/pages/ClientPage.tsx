@@ -575,38 +575,79 @@ function TransactionRow({ txn, onRefresh }: { txn: any; onRefresh: () => Promise
 
 function RewardsTab({ clientId }: { clientId: string }) {
   const { behaviors, rewards, loading, refresh: refreshDetail } = useClientDetail(clientId);
-  // Only refresh local detail data, NOT the global client context (avoids remounts)
   const refresh = refreshDetail;
+  const positiveBehaviors = behaviors.filter((b) => b.point_value >= 0);
+  const negativeBehaviors = behaviors.filter((b) => b.point_value < 0);
 
   if (loading) return <p className="text-muted-foreground">Loading...</p>;
 
   return (
     <div className="space-y-8">
-      {/* Behaviors */}
-      <div>
-        <h3 className="font-semibold mb-3">⭐ Behaviors <span className="text-muted-foreground font-normal text-sm">— what adds or removes points</span></h3>
-        <AddItemForm type="behavior" clientId={clientId} onAdded={refresh} />
-        {behaviors.length > 0 && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
-            {behaviors.map((b) => (
-              <EditableItemCard key={b.id} item={b} type="behavior" onUpdate={refresh} />
-            ))}
-          </div>
-        )}
+      <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-5 md:p-7 shadow-sm">
+        <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Setup Studio</p>
+        <h2 className="text-2xl md:text-3xl font-bold tracking-tight mt-1">Rewards & Behaviors</h2>
+        <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
+          Define what changes points, what points unlock, and how the reward path feels for the child.
+        </p>
       </div>
 
-      {/* Rewards */}
-      <div>
-        <h3 className="font-semibold mb-3">🎁 Rewards <span className="text-muted-foreground font-normal text-sm">— what points buy</span></h3>
+      <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-6">
+        <div>
+          <p className="text-sm font-semibold">Behaviors</p>
+          <p className="text-xs text-muted-foreground mt-1">Set up the actions that add points or remove points during a session.</p>
+        </div>
+
+        <div className="grid gap-6 xl:grid-cols-2">
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Earn Points</p>
+              <AddItemForm type="behavior" clientId={clientId} onAdded={refresh} defaultPositive />
+              {positiveBehaviors.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2 mt-4">
+                  {positiveBehaviors.map((b) => (
+                    <EditableItemCard key={b.id} item={b} type="behavior" onUpdate={refresh} />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">No point-earning behaviors yet.</div>
+              )}
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div>
+              <p className="text-xs font-medium text-muted-foreground mb-2">Remove Points</p>
+              <AddItemForm type="behavior" clientId={clientId} onAdded={refresh} defaultNegative />
+              {negativeBehaviors.length > 0 ? (
+                <div className="grid gap-3 sm:grid-cols-2 mt-4">
+                  {negativeBehaviors.map((b) => (
+                    <EditableItemCard key={b.id} item={b} type="behavior" onUpdate={refresh} />
+                  ))}
+                </div>
+              ) : (
+                <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">No point-removal behaviors yet.</div>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-6">
+        <div>
+          <p className="text-sm font-semibold">Rewards</p>
+          <p className="text-xs text-muted-foreground mt-1">Create rewards, choose themes, and shape how progress appears on the reward path.</p>
+        </div>
         <AddItemForm type="reward" clientId={clientId} onAdded={refresh} />
-        {rewards.length > 0 && (
-          <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3 mt-4">
+        {rewards.length > 0 ? (
+          <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 mt-2">
             {rewards.map((r) => (
               <EditableItemCard key={r.id} item={r} type="reward" onUpdate={refresh} />
             ))}
           </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed p-6 text-sm text-muted-foreground">No rewards yet. Add a reward to start building the child’s progress path.</div>
         )}
-      </div>
+      </section>
     </div>
   );
 }
@@ -695,16 +736,19 @@ function EditableItemCard({ item, type, onUpdate }: {
   }
 
   return (
-    <Card className="group">
-      <CardContent className="py-3">
+    <Card className="group rounded-2xl border bg-background shadow-sm">
+      <CardContent className="py-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2 min-w-0">
             <ItemIcon icon={item.icon} />
             <div className="min-w-0">
               <p className="font-medium text-sm truncate">{item.name}</p>
-              <Badge variant={type === "behavior" ? "secondary" : "default"} className="text-xs">
+              <Badge variant={type === "behavior" ? (item.point_value < 0 ? "destructive" : "secondary") : "default"} className="text-xs">
                 {type === "behavior" ? `${item.point_value > 0 ? "+" : ""}${item.point_value}` : `${item.point_cost} pts`}
               </Badge>
+              {type === "reward" && (
+                <p className="text-[11px] text-muted-foreground mt-1">{getJourneyPreset(item.journey_preset ?? item.journey_theme ?? "space").label}</p>
+              )}
             </div>
           </div>
           <div className="flex gap-0.5 md:opacity-0 md:group-hover:opacity-100 transition-opacity flex-shrink-0">
@@ -727,10 +771,16 @@ function EditableItemCard({ item, type, onUpdate }: {
   );
 }
 
-function AddItemForm({ type, clientId, onAdded }: { type: "behavior" | "reward"; clientId: string; onAdded: () => void }) {
+function AddItemForm({ type, clientId, onAdded, defaultPositive = false, defaultNegative = false }: {
+  type: "behavior" | "reward";
+  clientId: string;
+  onAdded: () => void;
+  defaultPositive?: boolean;
+  defaultNegative?: boolean;
+}) {
   const [name, setName] = useState("");
-  const [value, setValue] = useState(type === "reward" ? 10 : 1);
-  const [icon, setIcon] = useState(type === "reward" ? "🎁" : "⭐");
+  const [value, setValue] = useState(type === "reward" ? 10 : defaultNegative ? -1 : 1);
+  const [icon, setIcon] = useState(type === "reward" ? "🎁" : defaultNegative ? "⚠️" : "⭐");
   const [journeyPreset, setJourneyPreset] = useState("space");
   const [travelerIcon, setTravelerIcon] = useState("🚀");
   const [destinationIcon, setDestinationIcon] = useState("🌙");
@@ -758,11 +808,15 @@ function AddItemForm({ type, clientId, onAdded }: { type: "behavior" | "reward";
   }
 
   return (
-    <form onSubmit={submit} className="space-y-2">
+    <form onSubmit={submit} className="space-y-3 rounded-2xl border bg-muted/20 p-4">
       <div className="flex gap-2 items-center">
         <IconPicker value={icon} onChange={setIcon} clientId={clientId} />
         <Input value={name} onChange={(e) => setName(e.target.value)}
-          placeholder={type === "behavior" ? "e.g. Followed instructions" : "e.g. iPad time"}
+          placeholder={type === "behavior"
+            ? defaultNegative
+              ? "e.g. Throwing toys"
+              : "e.g. Followed instructions"
+            : "e.g. iPad time"}
           className="flex-1 min-w-0 h-9" required />
       </div>
       <div className="flex gap-2 items-center">
@@ -900,61 +954,79 @@ function DataTab({ clientId, clientName }: { clientId: string; clientName: strin
     URL.revokeObjectURL(url);
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Controls */}
-      <div className="space-y-2">
-        <div className="flex flex-wrap gap-2">
-          <div className="flex rounded-lg border overflow-hidden flex-shrink-0">
-            {(["7d", "30d", "90d", "all"] as DateRange[]).map((r) => (
-              <button
-                key={r}
-                onClick={() => setRange(r)}
-                className={cn(
-                  "px-2.5 py-1.5 text-xs font-medium transition-colors",
-                  range === r ? "bg-primary text-primary-foreground" : "hover:bg-accent"
-                )}
-              >
-                {r === "all" ? "All" : r}
-              </button>
-            ))}
-          </div>
-          <select
-            value={filterBehavior}
-            onChange={(e) => setFilterBehavior(e.target.value)}
-            className="rounded-md border border-input bg-background px-2 py-1.5 text-xs h-8 min-w-0 flex-1 sm:flex-none sm:w-auto"
-          >
-            <option value="all">All transactions</option>
-            <option value="debits">Redemptions only</option>
-            {behaviors.map((b) => (
-              <option key={b.id} value={b.id}>{b.icon} {b.name}</option>
-            ))}
-          </select>
-          <Button variant="outline" size="sm" onClick={exportCSV} disabled={behaviorFiltered.length === 0}
-            className="ml-auto flex-shrink-0">
-            📥 CSV
-          </Button>
-        </div>
-      </div>
+  const topBehavior = barData[0];
+  const topReward = pieData[0];
 
-      {/* Summary Cards */}
-      <div className="grid gap-2 grid-cols-2 md:grid-cols-4">
-        <Card><CardContent className="py-3 md:py-4 text-center">
-          <p className="text-xl md:text-2xl font-bold text-green-600">+{totalCredits}</p>
-          <p className="text-[10px] md:text-xs text-muted-foreground">Earned</p>
-        </CardContent></Card>
-        <Card><CardContent className="py-3 md:py-4 text-center">
-          <p className="text-xl md:text-2xl font-bold text-red-500">−{totalDebits}</p>
-          <p className="text-[10px] md:text-xs text-muted-foreground">Spent</p>
-        </CardContent></Card>
-        <Card><CardContent className="py-3 md:py-4 text-center">
-          <p className="text-xl md:text-2xl font-bold">{creditCount}</p>
-          <p className="text-[10px] md:text-xs text-muted-foreground">Awards</p>
-        </CardContent></Card>
-        <Card><CardContent className="py-3 md:py-4 text-center">
-          <p className="text-xl md:text-2xl font-bold">{debitCount}</p>
-          <p className="text-[10px] md:text-xs text-muted-foreground">Redeemed</p>
-        </CardContent></Card>
+  return (
+    <div className="space-y-8">
+      <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-5 md:p-7 shadow-sm">
+        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+          <div>
+            <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Progress Insights</p>
+            <h2 className="text-2xl md:text-3xl font-bold tracking-tight mt-1">Data & Trends</h2>
+            <p className="text-sm text-muted-foreground mt-2 max-w-2xl">
+              Review point trends, reinforcement patterns, and reward use over time.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="flex rounded-xl border overflow-hidden flex-shrink-0 bg-card">
+              {(["7d", "30d", "90d", "all"] as DateRange[]).map((r) => (
+                <button
+                  key={r}
+                  onClick={() => setRange(r)}
+                  className={cn(
+                    "px-3 py-2 text-xs font-medium transition-colors",
+                    range === r ? "bg-primary text-primary-foreground" : "hover:bg-accent"
+                  )}
+                >
+                  {r === "all" ? "All time" : r}
+                </button>
+              ))}
+            </div>
+            <select
+              value={filterBehavior}
+              onChange={(e) => setFilterBehavior(e.target.value)}
+              className="rounded-xl border border-input bg-card px-3 py-2 text-xs h-9 min-w-0 flex-1 sm:flex-none sm:w-auto"
+            >
+              <option value="all">All activity</option>
+              <option value="debits">Rewards redeemed</option>
+              {behaviors.map((b) => (
+                <option key={b.id} value={b.id}>{b.icon} {b.name}</option>
+              ))}
+            </select>
+            <Button variant="outline" size="sm" onClick={exportCSV} disabled={behaviorFiltered.length === 0} className="h-9">
+              Download CSV
+            </Button>
+          </div>
+        </div>
+
+        <div className="grid gap-3 grid-cols-2 xl:grid-cols-6 mt-6">
+          <div className="rounded-2xl bg-card border px-4 py-4 xl:col-span-1">
+            <p className="text-xs text-muted-foreground">Points earned</p>
+            <p className="text-3xl font-extrabold text-green-600 mt-1">+{totalCredits}</p>
+          </div>
+          <div className="rounded-2xl bg-card border px-4 py-4 xl:col-span-1">
+            <p className="text-xs text-muted-foreground">Points spent/removed</p>
+            <p className="text-3xl font-extrabold text-red-500 mt-1">−{totalDebits}</p>
+          </div>
+          <div className="rounded-2xl bg-card border px-4 py-4 xl:col-span-1">
+            <p className="text-xs text-muted-foreground">Point events</p>
+            <p className="text-3xl font-extrabold mt-1">{creditCount}</p>
+          </div>
+          <div className="rounded-2xl bg-card border px-4 py-4 xl:col-span-1">
+            <p className="text-xs text-muted-foreground">Reward events</p>
+            <p className="text-3xl font-extrabold mt-1">{debitCount}</p>
+          </div>
+          <div className="rounded-2xl bg-card border px-4 py-4 xl:col-span-1">
+            <p className="text-xs text-muted-foreground">Top behavior</p>
+            <p className="text-sm font-bold mt-2 truncate">{topBehavior ? `${topBehavior.icon} ${topBehavior.name}` : "—"}</p>
+          </div>
+          <div className="rounded-2xl bg-card border px-4 py-4 xl:col-span-1">
+            <p className="text-xs text-muted-foreground">Top reward</p>
+            <p className="text-sm font-bold mt-2 truncate">{topReward ? `${topReward.icon} ${topReward.name}` : "—"}</p>
+          </div>
+        </div>
       </div>
 
       {/* Timeline Chart — earned vs spent */}
