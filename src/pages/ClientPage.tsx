@@ -103,14 +103,15 @@ function DashboardTab({ clientId }: { clientId: string }) {
   const { client, behaviors, rewards, transactions, loading, refresh } = useClientDetail(clientId);
   const { refresh: refreshClients } = useClientContext();
   const [showProgressSettings, setShowProgressSettings] = useState(false);
-  const [celebration, setCelebration] = useState<null | "confetti" | "stars" | "sparkles">(null);
+  const [sessionMode, setSessionMode] = useState(false);
+  const [celebration, setCelebration] = useState<null | { type: "confetti" | "stars" | "sparkles"; x?: number; y?: number }>(null);
 
   async function handleRefresh() { await refresh(); await refreshClients(); }
 
-  function triggerCelebration() {
+  function triggerCelebration(x?: number, y?: number) {
     const anim = (client?.reward_success_animation as "confetti" | "stars" | "sparkles" | null) ?? "confetti";
-    setCelebration(anim);
-    window.setTimeout(() => setCelebration(null), 1600);
+    setCelebration({ type: anim, x, y });
+    window.setTimeout(() => setCelebration(null), 900);
   }
 
   async function saveProgressPrefs(patch: { reward_bar_theme?: string; reward_bar_style?: string; reward_success_animation?: string }) {
@@ -123,7 +124,16 @@ function DashboardTab({ clientId }: { clientId: string }) {
 
   return (
     <div className="space-y-6 relative">
-      {celebration && <RewardCelebration type={celebration} />}
+      {celebration && <RewardCelebration type={celebration.type} x={celebration.x} y={celebration.y} />}
+      {sessionMode && (
+        <QuickAwardSessionView
+          client={client}
+          behaviors={behaviors}
+          onClose={() => setSessionMode(false)}
+          onAwarded={handleRefresh}
+          onCelebrate={triggerCelebration}
+        />
+      )}
       {/* Balance + Quick Award */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="md:col-span-1 bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
@@ -135,7 +145,14 @@ function DashboardTab({ clientId }: { clientId: string }) {
         </Card>
         <Card className="md:col-span-2">
           <CardContent className="py-4">
-            <p className="text-sm font-medium text-muted-foreground mb-3">Quick Award</p>
+            <div className="flex items-start justify-between gap-3 mb-3">
+              <p className="text-sm font-medium text-muted-foreground">Quick Award</p>
+              {behaviors.length > 0 && (
+                <Button size="sm" variant="outline" onClick={() => setSessionMode(true)}>
+                  Start Session Mode
+                </Button>
+              )}
+            </div>
             {behaviors.length === 0 ? (
               <p className="text-sm text-muted-foreground">Add behaviors in the Rewards tab to start awarding points.</p>
             ) : (
@@ -1455,19 +1472,20 @@ function ItemIcon({ icon, size = "text-xl" }: { icon: string; size?: string }) {
   return <span className={`${size} flex-shrink-0`}>{icon}</span>;
 }
 
-function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate }: { behavior: any; clientId: string; onDone: () => void; onCelebrate?: () => void }) {
+function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate }: { behavior: any; clientId: string; onDone: () => void; onCelebrate?: (x?: number, y?: number) => void }) {
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
   const [confirming, setConfirming] = useState(false);
 
-  async function go() {
+  async function go(e?: React.MouseEvent<HTMLButtonElement>) {
     if (!confirming) { setConfirming(true); return; }
     setBusy(true);
     await awardPoints(clientId, behavior.id, behavior.point_value);
     setFlash(true); setConfirming(false);
     setTimeout(() => setFlash(false), 600);
     onDone();
-    onCelebrate?.();
+    const rect = e?.currentTarget.getBoundingClientRect();
+    onCelebrate?.(rect ? rect.left + rect.width / 2 : undefined, rect ? rect.top + rect.height / 2 : undefined);
     setBusy(false);
   }
 
@@ -1644,25 +1662,116 @@ function ProgressCustomizationPanel({ theme, style, animation, onChange }: {
   );
 }
 
-function RewardCelebration({ type }: { type: "confetti" | "stars" | "sparkles" }) {
-  const pieces = Array.from({ length: type === "confetti" ? 18 : 14 });
-  const glyph = type === "confetti" ? ["🎉", "🎊", "✨"] : type === "stars" ? ["⭐", "🌟", "💫"] : ["✨", "💖", "⚡"];
+function RewardCelebration({ type, x, y }: { type: "confetti" | "stars" | "sparkles"; x?: number; y?: number }) {
+  const pieces = Array.from({ length: 8 });
+  const glyph = type === "confetti" ? ["🎉", "✨", "🎊"] : type === "stars" ? ["⭐", "🌟", "💫"] : ["✨", "💖", "⚡"];
+  const left = x ?? (typeof window !== "undefined" ? window.innerWidth / 2 : 200);
+  const top = y ?? 180;
 
   return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden z-20">
+    <div className="pointer-events-none fixed inset-0 overflow-hidden z-30">
       {pieces.map((_, i) => (
         <span
           key={i}
-          className="absolute animate-reward-burst text-xl"
+          className="absolute animate-reward-pop text-lg"
           style={{
-            left: `${(i * 97) % 100}%`,
-            top: `${(i * 37) % 25}%`,
-            animationDelay: `${i * 40}ms`,
+            left,
+            top,
+            ["--dx" as any]: `${(i - 3.5) * 10}px`,
+            animationDelay: `${i * 30}ms`,
           }}
         >
           {glyph[i % glyph.length]}
         </span>
       ))}
     </div>
+  );
+}
+
+function QuickAwardSessionView({ client, behaviors, onClose, onAwarded, onCelebrate }: {
+  client: any;
+  behaviors: any[];
+  onClose: () => void;
+  onAwarded: () => Promise<void>;
+  onCelebrate: (x?: number, y?: number) => void;
+}) {
+  return (
+    <div className="fixed inset-0 z-40 bg-background/95 backdrop-blur-sm">
+      <div className="h-full flex flex-col">
+        <div className="flex items-center justify-between px-4 py-3 border-b bg-background/90 backdrop-blur">
+          <div>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Session Mode</p>
+            <h2 className="text-lg font-bold">{client.full_name}</h2>
+          </div>
+          <div className="flex items-center gap-2">
+            <div className="text-right">
+              <p className="text-xs text-muted-foreground">Current balance</p>
+              <p className="text-2xl font-extrabold">{client.balance}</p>
+            </div>
+            <Button variant="outline" onClick={onClose}>Done</Button>
+          </div>
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-4 md:p-6">
+          {behaviors.length === 0 ? (
+            <div className="h-full grid place-items-center text-center text-muted-foreground">
+              <div>
+                <p className="text-lg font-medium">No behaviors yet</p>
+                <p className="text-sm mt-1">Add behaviors in the Rewards tab to start a session.</p>
+              </div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {behaviors.map((b) => (
+                <QuickAwardSessionCard key={b.id} behavior={b} clientId={client.id} onDone={onAwarded} onCelebrate={onCelebrate} />
+              ))}
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function QuickAwardSessionCard({ behavior, clientId, onDone, onCelebrate }: {
+  behavior: any;
+  clientId: string;
+  onDone: () => Promise<void>;
+  onCelebrate: (x?: number, y?: number) => void;
+}) {
+  const [busy, setBusy] = useState(false);
+  const [pulse, setPulse] = useState(false);
+
+  async function award(e: React.MouseEvent<HTMLButtonElement>) {
+    setBusy(true);
+    await awardPoints(clientId, behavior.id, behavior.point_value);
+    await onDone();
+    const rect = e.currentTarget.getBoundingClientRect();
+    onCelebrate(rect.left + rect.width / 2, rect.top + rect.height / 2);
+    setPulse(true);
+    setTimeout(() => setPulse(false), 220);
+    setBusy(false);
+  }
+
+  return (
+    <button
+      type="button"
+      onClick={award}
+      disabled={busy}
+      className={`rounded-3xl border bg-card shadow-sm p-6 min-h-[180px] text-left transition-all active:scale-[0.98] hover:shadow-md ${pulse ? "ring-4 ring-primary/20 scale-[1.01]" : ""}`}
+    >
+      <div className="flex items-start justify-between gap-3">
+        <div className="w-14 h-14 rounded-2xl bg-primary/10 grid place-items-center text-3xl">
+          <ItemIcon icon={behavior.icon} size="text-3xl" />
+        </div>
+        <div className="rounded-full bg-primary text-primary-foreground px-3 py-1 text-sm font-bold">
+          +{behavior.point_value}
+        </div>
+      </div>
+      <div className="mt-5">
+        <p className="text-2xl font-bold leading-tight">{behavior.name}</p>
+        <p className="text-sm text-muted-foreground mt-2">Tap anytime during the session to add points fast.</p>
+      </div>
+    </button>
   );
 }
