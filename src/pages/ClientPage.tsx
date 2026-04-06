@@ -316,14 +316,26 @@ function TransactionCard({ txn, onRefresh }: { txn: any; onRefresh: () => Promis
     <div className="flex items-center justify-between py-2 border-b last:border-0 gap-3">
       <div className="min-w-0 flex-1">
         <p className="text-sm font-medium truncate">
-          {txn.type === "credit" ? txn.behavior?.name ?? "Points" : txn.reward?.name ?? "Reward"}
+          {txn.type === "credit"
+            ? `${txn.amount} point${txn.amount === 1 ? "" : "s"} ${txn.behavior?.point_value && txn.behavior.point_value < 0 ? "removed" : "earned"}`
+            : txn.reward_id
+              ? `${txn.amount} point${txn.amount === 1 ? "" : "s"} redeemed`
+              : `${txn.amount} point${txn.amount === 1 ? "" : "s"} removed`}
         </p>
         <p className="text-[11px] text-muted-foreground">
+          {txn.behavior?.name ?? txn.reward?.name ?? "Manual change"}
+          {" · "}
           {new Date(txn.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric" })}
           {" · "}
           {new Date(txn.created_at).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" })}
-          {txn.note ? ` · ${txn.note}` : ""}
         </p>
+        {(txn.note || txn.edited_at) && (
+          <p className="text-[11px] text-muted-foreground mt-0.5">
+            {txn.note ? txn.note : ""}
+            {txn.note && txn.edited_at ? " · " : ""}
+            {txn.edited_at ? `edited` : ""}
+          </p>
+        )}
       </div>
       <div className="text-right flex-shrink-0">
         <p className={`text-sm font-bold ${txn.type === "credit" ? "text-green-600" : "text-red-500"}`}>
@@ -382,9 +394,20 @@ function TransactionRow({ txn, onRefresh }: { txn: any; onRefresh: () => Promise
         ) : (
           <div>
             <span className="font-medium">
-              {txn.type === "credit" ? txn.behavior?.name ?? "Points awarded" : txn.reward?.name ?? "Reward redeemed"}
+              {txn.type === "credit"
+                ? `${txn.amount} point${txn.amount === 1 ? "" : "s"} ${txn.behavior?.point_value && txn.behavior.point_value < 0 ? "removed" : "earned"}`
+                : txn.reward_id
+                  ? `${txn.amount} point${txn.amount === 1 ? "" : "s"} redeemed`
+                  : `${txn.amount} point${txn.amount === 1 ? "" : "s"} removed`}
             </span>
-            {txn.note && <p className="text-xs text-muted-foreground mt-1">{txn.note}</p>}
+            <p className="text-xs text-muted-foreground mt-1">
+              {txn.behavior?.name ?? txn.reward?.name ?? "Manual change"}
+              {txn.note ? ` · ${txn.note}` : ""}
+              {txn.edited_at ? ` · edited` : ""}
+            </p>
+            {txn.edited_at && txn.original_amount && txn.original_amount !== txn.amount && (
+              <p className="text-[11px] text-muted-foreground mt-1">Originally {txn.original_amount}</p>
+            )}
           </div>
         )}
       </td>
@@ -1962,8 +1985,12 @@ function SessionProgressRail({ rewards, current }: { rewards: any[]; current: nu
   return (
     <Card className={`overflow-hidden ${theme.card}`}>
       <CardContent className="py-4 px-3">
-        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Live Progress</p>
-        <p className="text-2xl font-extrabold mb-3">{current}</p>
+        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Live Reward Progress</p>
+        <p className="text-2xl font-extrabold mb-1">{current}</p>
+        <p className="text-xs text-muted-foreground mb-3">Current points</p>
+        <div className="mb-3 rounded-xl bg-background/70 border px-3 py-2 text-xs text-muted-foreground">
+          <span className="font-medium text-foreground">Reward status:</span> watch the icon move as points change.
+        </div>
         <div className="relative h-[340px] lg:h-[560px] flex justify-center">
           <div className={`absolute inset-y-3 w-14 rounded-full ${theme.trackBg}`} />
           <div className={`absolute bottom-3 w-14 rounded-full transition-all duration-500 ${theme.trackFill}`} style={{ height: `${avatarPct}%` }} />
@@ -2004,8 +2031,9 @@ function QuickAwardSessionView({ client, behaviors, onClose, onAwarded, onCelebr
       <div className="h-full flex flex-col">
         <div className="flex items-center justify-between px-4 py-3 border-b bg-background/90 backdrop-blur">
           <div>
-            <p className="text-xs uppercase tracking-wide text-muted-foreground">Session Mode</p>
+            <p className="text-xs uppercase tracking-wide text-muted-foreground">Live Session</p>
             <h2 className="text-lg font-bold">{client.full_name}</h2>
+            <p className="text-xs text-muted-foreground mt-0.5">Tap behaviors to update points and watch reward progress move in real time.</p>
           </div>
           <div className="flex items-center gap-2">
             <div className="text-right">

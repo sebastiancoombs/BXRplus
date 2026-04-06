@@ -70,6 +70,9 @@ export interface Transaction {
   behavior_id: string | null;
   reward_id: string | null;
   note: string | null;
+  edited_at?: string | null;
+  original_amount?: number | null;
+  original_note?: string | null;
   created_by: string;
   created_at: string;
   behavior?: Behavior;
