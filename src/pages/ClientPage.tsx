@@ -106,7 +106,7 @@ function DashboardTab({ clientId }: { clientId: string }) {
   const [sessionMode, setSessionMode] = useState(false);
   const [celebration, setCelebration] = useState<null | { type: "confetti" | "stars" | "sparkles"; x?: number; y?: number }>(null);
 
-  async function handleRefresh() { await refresh(); await refreshClients(); }
+  async function handleRefresh() { await refresh({ silent: true }); await refreshClients(); }
 
   function triggerCelebration(x?: number, y?: number) {
     const anim = (client?.reward_success_animation as "confetti" | "stars" | "sparkles" | null) ?? "confetti";
@@ -116,7 +116,8 @@ function DashboardTab({ clientId }: { clientId: string }) {
 
   async function saveProgressPrefs(patch: { reward_bar_theme?: string; reward_bar_style?: string; reward_success_animation?: string }) {
     await supabase.from("clients").update(patch).eq("id", clientId);
-    await handleRefresh();
+    await refresh({ silent: true });
+    await refreshClients();
   }
 
   if (loading) return <p className="text-muted-foreground">Loading...</p>;
@@ -198,7 +199,7 @@ function DashboardTab({ clientId }: { clientId: string }) {
                     theme={client.reward_bar_theme ?? "rainbow"}
                     styleVariant={client.reward_bar_style ?? "rounded"}
                     onCelebrate={triggerCelebration}
-                    onRedeem={async () => { await redeemReward(client.id, r.id); await handleRefresh(); triggerCelebration(); }}
+                    onRedeem={async () => { await redeemReward(client.id, r.id); await handleRefresh(); }}
                   />
                 );
               })}
@@ -1057,6 +1058,7 @@ function PrintablesTab({ clientId, client }: { clientId: string; client: any }) 
 
 function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) {
   const { user } = useAuth();
+  const { refresh: refreshClients } = useClientContext();
   const [staff, setStaff] = useState<any[]>([]);
   const [client, setClient] = useState<any>(null);
   const [loading, setLoading] = useState(true);
@@ -1142,7 +1144,8 @@ function TeamTab({ clientId, isOwner }: { clientId: string; isOwner: boolean }) 
 
   async function transferOwnership(newOwnerId: string) {
     await supabase.rpc("transfer_ownership", { p_client_id: clientId, p_new_owner_id: newOwnerId });
-    window.location.reload();
+    await fetchTeam();
+    await refreshClients();
   }
 
   if (loading) return <p className="text-muted-foreground">Loading team...</p>;

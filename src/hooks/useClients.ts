@@ -24,9 +24,9 @@ export function useClientDetail(clientId: string | undefined) {
   const [transactions, setTransactions] = useState<Transaction[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetch = useCallback(async () => {
+  const fetch = useCallback(async (options?: { silent?: boolean }) => {
     if (!clientId) return;
-    setLoading(true);
+    if (!options?.silent) setLoading(true);
 
     const [clientRes, behaviorRes, rewardRes, txnRes] = await Promise.all([
       supabase.from("clients").select("*").eq("id", clientId).single(),
@@ -44,7 +44,7 @@ export function useClientDetail(clientId: string | undefined) {
     setBehaviors(behaviorRes.data ?? []);
     setRewards(rewardRes.data ?? []);
     setTransactions(txnRes.data ?? []);
-    setLoading(false);
+    if (!options?.silent) setLoading(false);
   }, [clientId]);
 
   useEffect(() => { fetch(); }, [fetch]);
