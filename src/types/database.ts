@@ -19,6 +19,9 @@ export interface Client {
   owner_id: string | null;
   card_theme: string | null;
   card_sticker: string | null;
+  reward_bar_theme: string | null;
+  reward_bar_style: string | null;
+  reward_success_animation: string | null;
   created_at: string;
 }
 

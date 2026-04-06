@@ -102,14 +102,28 @@ export default function ClientPage() {
 function DashboardTab({ clientId }: { clientId: string }) {
   const { client, behaviors, rewards, transactions, loading, refresh } = useClientDetail(clientId);
   const { refresh: refreshClients } = useClientContext();
+  const [showProgressSettings, setShowProgressSettings] = useState(false);
+  const [celebration, setCelebration] = useState<null | "confetti" | "stars" | "sparkles">(null);
 
   async function handleRefresh() { await refresh(); await refreshClients(); }
+
+  function triggerCelebration() {
+    const anim = (client?.reward_success_animation as "confetti" | "stars" | "sparkles" | null) ?? "confetti";
+    setCelebration(anim);
+    window.setTimeout(() => setCelebration(null), 1600);
+  }
+
+  async function saveProgressPrefs(patch: { reward_bar_theme?: string; reward_bar_style?: string; reward_success_animation?: string }) {
+    await supabase.from("clients").update(patch).eq("id", clientId);
+    await handleRefresh();
+  }
 
   if (loading) return <p className="text-muted-foreground">Loading...</p>;
   if (!client) return null;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 relative">
+      {celebration && <RewardCelebration type={celebration} />}
       {/* Balance + Quick Award */}
       <div className="grid gap-4 md:grid-cols-3">
         <Card className="md:col-span-1 bg-gradient-to-br from-indigo-500 to-purple-600 text-white">
@@ -127,7 +141,7 @@ function DashboardTab({ clientId }: { clientId: string }) {
             ) : (
               <div className="flex flex-wrap gap-2">
                 {behaviors.map((b) => (
-                  <QuickAwardBtn key={b.id} behavior={b} clientId={client.id} onDone={handleRefresh} />
+                  <QuickAwardBtn key={b.id} behavior={b} clientId={client.id} onDone={handleRefresh} onCelebrate={triggerCelebration} />
                 ))}
               </div>
             )}
@@ -139,14 +153,35 @@ function DashboardTab({ clientId }: { clientId: string }) {
       {rewards.length > 0 && (
         <Card>
           <CardContent className="py-5">
-            <p className="text-sm font-medium text-muted-foreground mb-4">Progress Toward Rewards</p>
+            <div className="flex items-start justify-between gap-3 mb-4">
+              <div>
+                <p className="text-sm font-medium text-muted-foreground">Progress Toward Rewards</p>
+                <p className="text-xs text-muted-foreground mt-1">Fun, kid-friendly bars with customizable styles and celebration effects.</p>
+              </div>
+              <Button variant={showProgressSettings ? "secondary" : "outline"} size="sm" onClick={() => setShowProgressSettings((v) => !v)}>
+                {showProgressSettings ? "Hide options" : "Customize"}
+              </Button>
+            </div>
+
+            {showProgressSettings && (
+              <ProgressCustomizationPanel
+                theme={client.reward_bar_theme ?? "rainbow"}
+                style={client.reward_bar_style ?? "rounded"}
+                animation={client.reward_success_animation ?? "confetti"}
+                onChange={saveProgressPrefs}
+              />
+            )}
+
             <div className="space-y-4">
               {rewards.map((r) => {
                 const pct = Math.min(100, (client.balance / r.point_cost) * 100);
                 return (
                   <ThermometerRow key={r.id} icon={r.icon} name={r.name} current={client.balance}
                     goal={r.point_cost} pct={pct} canRedeem={client.balance >= r.point_cost}
-                    onRedeem={async () => { await redeemReward(client.id, r.id); handleRefresh(); }}
+                    theme={client.reward_bar_theme ?? "rainbow"}
+                    styleVariant={client.reward_bar_style ?? "rounded"}
+                    onCelebrate={triggerCelebration}
+                    onRedeem={async () => { await redeemReward(client.id, r.id); await handleRefresh(); triggerCelebration(); }}
                   />
                 );
               })}
@@ -1420,7 +1455,7 @@ function ItemIcon({ icon, size = "text-xl" }: { icon: string; size?: string }) {
   return <span className={`${size} flex-shrink-0`}>{icon}</span>;
 }
 
-function QuickAwardBtn({ behavior, clientId, onDone }: { behavior: any; clientId: string; onDone: () => void }) {
+function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate }: { behavior: any; clientId: string; onDone: () => void; onCelebrate?: () => void }) {
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -1431,7 +1466,9 @@ function QuickAwardBtn({ behavior, clientId, onDone }: { behavior: any; clientId
     await awardPoints(clientId, behavior.id, behavior.point_value);
     setFlash(true); setConfirming(false);
     setTimeout(() => setFlash(false), 600);
-    onDone(); setBusy(false);
+    onDone();
+    onCelebrate?.();
+    setBusy(false);
   }
 
   return (
@@ -1452,12 +1489,13 @@ function QuickAwardBtn({ behavior, clientId, onDone }: { behavior: any; clientId
   );
 }
 
-function ThermometerRow({ icon, name, current, goal, pct, canRedeem, onRedeem }: {
+function ThermometerRow({ icon, name, current, goal, pct, canRedeem, onRedeem, theme, styleVariant, onCelebrate }: {
   icon: string; name: string; current: number; goal: number; pct: number; canRedeem: boolean; onRedeem: () => Promise<void>;
+  theme: string; styleVariant: string; onCelebrate?: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [confirming, setConfirming] = useState(false);
-  const barColor = pct >= 100 ? "bg-green-500" : pct >= 60 ? "bg-yellow-500" : pct >= 30 ? "bg-orange-400" : "bg-red-400";
+  const { trackClass, trackFillClass, labelChipClass, fillPattern } = getRewardBarClasses(theme, styleVariant, pct);
 
   async function handleRedeem() {
     if (!confirming) { setConfirming(true); return; }
@@ -1465,6 +1503,7 @@ function ThermometerRow({ icon, name, current, goal, pct, canRedeem, onRedeem }:
     await onRedeem();
     setConfirming(false);
     setBusy(false);
+    onCelebrate?.();
   }
 
   return (
@@ -1472,11 +1511,13 @@ function ThermometerRow({ icon, name, current, goal, pct, canRedeem, onRedeem }:
       <div className="flex items-center gap-2">
         <ItemIcon icon={icon} />
         <span className="text-sm font-medium truncate flex-1 min-w-0">{name}</span>
-        <span className="text-xs text-muted-foreground flex-shrink-0">{current}/{goal}</span>
+        <span className={`text-xs flex-shrink-0 px-2 py-0.5 rounded-full ${labelChipClass}`}>{current}/{goal}</span>
       </div>
       <div className="flex items-center gap-2">
-        <div className="flex-1 bg-muted rounded-full h-3 overflow-hidden">
-          <div className={`h-full rounded-full transition-all duration-500 ${barColor}`} style={{ width: `${pct}%` }} />
+        <div className={`flex-1 h-4 overflow-hidden ${trackClass}`}>
+          <div className={`h-full transition-all duration-500 relative ${trackFillClass}`} style={{ width: `${pct}%` }}>
+            {fillPattern && <div className={`absolute inset-0 ${fillPattern}`} />}
+          </div>
         </div>
         {canRedeem ? (
           <Button
@@ -1493,6 +1534,135 @@ function ThermometerRow({ icon, name, current, goal, pct, canRedeem, onRedeem }:
           <span className="text-[11px] text-muted-foreground flex-shrink-0">{goal - current} to go</span>
         )}
       </div>
+    </div>
+  );
+}
+
+function getRewardBarClasses(theme: string, styleVariant: string, pct: number) {
+  const rounded = styleVariant === "pill" ? "rounded-full" : styleVariant === "ticket" ? "rounded-lg border-2 border-dashed" : "rounded-md";
+
+  const themeMap: Record<string, { fill: string; chip: string; pattern?: string }> = {
+    rainbow: {
+      fill: "bg-gradient-to-r from-pink-500 via-yellow-400 to-sky-500",
+      chip: "bg-pink-100 text-pink-700",
+      pattern: "opacity-25 bg-[linear-gradient(45deg,transparent_25%,rgba(255,255,255,0.8)_25%,rgba(255,255,255,0.8)_50%,transparent_50%,transparent_75%,rgba(255,255,255,0.8)_75%)] bg-[length:14px_14px]"
+    },
+    stars: {
+      fill: "bg-gradient-to-r from-amber-400 to-yellow-300",
+      chip: "bg-amber-100 text-amber-800",
+      pattern: "opacity-30 bg-[radial-gradient(circle_at_8px_8px,rgba(255,255,255,0.95)_1.5px,transparent_2px)] bg-[length:18px_18px]"
+    },
+    ocean: {
+      fill: "bg-gradient-to-r from-cyan-500 to-blue-500",
+      chip: "bg-cyan-100 text-cyan-800"
+    },
+    candy: {
+      fill: "bg-gradient-to-r from-fuchsia-400 to-pink-400",
+      chip: "bg-fuchsia-100 text-fuchsia-800",
+      pattern: "opacity-20 bg-[linear-gradient(90deg,rgba(255,255,255,0.9)_0_8px,transparent_8px_16px)] bg-[length:16px_16px]"
+    },
+    rocket: {
+      fill: pct >= 100 ? "bg-gradient-to-r from-lime-400 to-emerald-500" : "bg-gradient-to-r from-violet-500 to-indigo-500",
+      chip: "bg-violet-100 text-violet-800"
+    },
+  };
+
+  const selected = themeMap[theme] ?? themeMap.rainbow;
+  return {
+    trackClass: `${rounded} bg-muted/80`,
+    trackFillClass: `${rounded} ${selected.fill}`,
+    labelChipClass: selected.chip,
+    fillPattern: selected.pattern ?? "",
+  };
+}
+
+function ProgressCustomizationPanel({ theme, style, animation, onChange }: {
+  theme: string; style: string; animation: string;
+  onChange: (patch: { reward_bar_theme?: string; reward_bar_style?: string; reward_success_animation?: string }) => Promise<void>;
+}) {
+  const [savingKey, setSavingKey] = useState<string | null>(null);
+  const themes = [
+    { id: "rainbow", label: "Rainbow" },
+    { id: "stars", label: "Gold Stars" },
+    { id: "ocean", label: "Ocean" },
+    { id: "candy", label: "Candy" },
+    { id: "rocket", label: "Rocket" },
+  ];
+  const styles = [
+    { id: "rounded", label: "Rounded" },
+    { id: "pill", label: "Bubble" },
+    { id: "ticket", label: "Ticket" },
+  ];
+  const animations = [
+    { id: "confetti", label: "Confetti" },
+    { id: "stars", label: "Stars" },
+    { id: "sparkles", label: "Sparkles" },
+  ];
+
+  async function save(patch: { reward_bar_theme?: string; reward_bar_style?: string; reward_success_animation?: string }, key: string) {
+    setSavingKey(key);
+    await onChange(patch);
+    setTimeout(() => setSavingKey(null), 250);
+  }
+
+  return (
+    <div className="mb-4 rounded-xl border bg-muted/30 p-4 space-y-4">
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-2">Progress Bar Theme</p>
+        <div className="flex flex-wrap gap-2">
+          {themes.map((t) => (
+            <Button key={t.id} type="button" size="sm" variant={theme === t.id ? "default" : "outline"}
+              onClick={() => save({ reward_bar_theme: t.id }, `theme-${t.id}`)}>
+              {savingKey === `theme-${t.id}` ? "Saving..." : t.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-2">Bar Shape</p>
+        <div className="flex flex-wrap gap-2">
+          {styles.map((s) => (
+            <Button key={s.id} type="button" size="sm" variant={style === s.id ? "default" : "outline"}
+              onClick={() => save({ reward_bar_style: s.id }, `style-${s.id}`)}>
+              {savingKey === `style-${s.id}` ? "Saving..." : s.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+      <div>
+        <p className="text-xs font-medium text-muted-foreground mb-2">Success Animation</p>
+        <div className="flex flex-wrap gap-2">
+          {animations.map((a) => (
+            <Button key={a.id} type="button" size="sm" variant={animation === a.id ? "default" : "outline"}
+              onClick={() => save({ reward_success_animation: a.id }, `anim-${a.id}`)}>
+              {savingKey === `anim-${a.id}` ? "Saving..." : a.label}
+            </Button>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function RewardCelebration({ type }: { type: "confetti" | "stars" | "sparkles" }) {
+  const pieces = Array.from({ length: type === "confetti" ? 18 : 14 });
+  const glyph = type === "confetti" ? ["🎉", "🎊", "✨"] : type === "stars" ? ["⭐", "🌟", "💫"] : ["✨", "💖", "⚡"];
+
+  return (
+    <div className="pointer-events-none absolute inset-0 overflow-hidden z-20">
+      {pieces.map((_, i) => (
+        <span
+          key={i}
+          className="absolute animate-reward-burst text-xl"
+          style={{
+            left: `${(i * 97) % 100}%`,
+            top: `${(i * 37) % 25}%`,
+            animationDelay: `${i * 40}ms`,
+          }}
+        >
+          {glyph[i % glyph.length]}
+        </span>
+      ))}
     </div>
   );
 }
