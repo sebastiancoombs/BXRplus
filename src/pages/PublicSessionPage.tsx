@@ -11,7 +11,6 @@ export default function PublicSessionPage() {
   const qr = params.get("qr");
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
-  const [confirmingBehavior, setConfirmingBehavior] = useState<any | null>(null);
   const [confirmingReward, setConfirmingReward] = useState<any | null>(null);
 
   async function load() {
@@ -29,10 +28,9 @@ export default function PublicSessionPage() {
   const rewards = useMemo(() => [...(session?.rewards ?? [])].sort((a, b) => a.point_cost - b.point_cost), [session]);
   const balance = client?.balance ?? 0;
 
-  async function confirmBehavior() {
-    if (!confirmingBehavior || !client) return;
-    await awardPoints(client.id, confirmingBehavior.id, confirmingBehavior.point_value);
-    setConfirmingBehavior(null);
+  async function applyBehavior(behavior: any) {
+    if (!client) return;
+    await awardPoints(client.id, behavior.id, behavior.point_value);
     await load();
   }
 
@@ -67,11 +65,11 @@ export default function PublicSessionPage() {
           <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-4">
             <div>
               <p className="text-sm font-semibold">Behaviors</p>
-              <p className="text-xs text-muted-foreground mt-1">Confirm before each point change.</p>
+              <p className="text-xs text-muted-foreground mt-1">Tap once to add or remove points quickly during a session.</p>
             </div>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4">
               {behaviors.map((b: any) => (
-                <button key={b.id} type="button" onClick={() => setConfirmingBehavior(b)} className="rounded-3xl border bg-background p-5 text-left shadow-sm hover:shadow-md transition-all">
+                <button key={b.id} type="button" onClick={() => applyBehavior(b)} className="rounded-3xl border bg-background p-5 text-left shadow-sm hover:shadow-md transition-all active:scale-[0.98]">
                   <div className="flex items-start justify-between gap-3">
                     <div className="text-4xl">{b.icon}</div>
                     <Badge variant={b.point_value < 0 ? "destructive" : "secondary"}>{b.point_value > 0 ? "+" : ""}{b.point_value}</Badge>
@@ -116,21 +114,6 @@ export default function PublicSessionPage() {
           </section>
         </div>
 
-        {confirmingBehavior && (
-          <div className="fixed inset-0 bg-black/40 z-50 grid place-items-center p-4">
-            <Card className="w-full max-w-md rounded-3xl"><CardContent className="py-6 text-center space-y-4">
-              <div className="text-5xl">{confirmingBehavior.icon}</div>
-              <div>
-                <p className="text-xl font-bold">{confirmingBehavior.name}</p>
-                <p className="text-sm text-muted-foreground mt-1">{confirmingBehavior.point_value > 0 ? `Add ${confirmingBehavior.point_value} points?` : `Remove ${Math.abs(confirmingBehavior.point_value)} points?`}</p>
-              </div>
-              <div className="flex justify-center gap-3">
-                <Button variant="outline" onClick={() => setConfirmingBehavior(null)}>Cancel</Button>
-                <Button onClick={confirmBehavior}>Confirm</Button>
-              </div>
-            </CardContent></Card>
-          </div>
-        )}
 
         {confirmingReward && (
           <div className="fixed inset-0 bg-black/40 z-50 grid place-items-center p-4">
