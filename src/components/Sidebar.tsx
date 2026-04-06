@@ -7,9 +7,9 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 
 const navItems = [
-  { path: "/dashboard", label: "Dashboard", icon: "📊" },
-  { path: "/scan", label: "Scan", icon: "📷" },
-  { path: "/profile", label: "Settings", icon: "⚙️" },
+  { path: "/dashboard", label: "Overview", icon: "📊" },
+  { path: "/scan", label: "Scan Code", icon: "📷" },
+  { path: "/profile", label: "My Profile", icon: "⚙️" },
 ];
 
 export default function Sidebar() {
@@ -73,7 +73,7 @@ export default function Sidebar() {
       <div className={cn("flex-1 overflow-y-auto", collapsed ? "p-1" : "p-3")}>
         {!collapsed && (
           <div className="flex items-center justify-between mb-2 px-1">
-            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Clients</p>
+            <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Learners</p>
             <button onClick={() => setAdding(!adding)} className="text-xs text-primary hover:underline">
               {adding ? "Cancel" : "+ Add"}
             </button>
@@ -85,7 +85,7 @@ export default function Sidebar() {
           <form onSubmit={handleAdd} className="mb-3">
             <div className="flex gap-1.5">
               <Input value={newName} onChange={(e) => setNewName(e.target.value)}
-                placeholder="Client name..." className="h-8 text-xs" autoFocus required />
+                placeholder="Learner name..." className="h-8 text-xs" autoFocus required />
               <Button type="submit" size="sm" className="h-8 px-2 text-xs" disabled={busy}>
                 {busy ? "..." : "Add"}
               </Button>
@@ -104,7 +104,7 @@ export default function Sidebar() {
           ) : (
             <button onClick={() => setAdding(true)}
               className="w-full text-left px-3 py-4 rounded-lg border-2 border-dashed text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors">
-              Add your first client
+              Add your first learner
             </button>
           )
         ) : (

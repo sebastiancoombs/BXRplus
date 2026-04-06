@@ -108,9 +108,9 @@ export default function ScanPage() {
 
   return (
     <div className="max-w-md mx-auto p-6 space-y-6">
-      <h1 className="text-2xl font-bold text-center">📷 Scan</h1>
+      <h1 className="text-2xl font-bold text-center">📷 Scan Code</h1>
       <p className="text-sm text-muted-foreground text-center">
-        Scan a client card to open their dashboard, or a reward ticket to redeem it.
+        Scan a learner card to open their page, or scan a reward ticket to redeem it.
       </p>
 
       {/* Camera */}

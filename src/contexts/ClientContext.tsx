@@ -15,6 +15,8 @@ interface ClientState {
   loading: boolean;
   refresh: () => Promise<void>;
   createClient: (name: string, dob?: string) => Promise<void>;
+  patchClient: (id: string, patch: Partial<ClientWithMeta>) => void;
+  removeClientLocal: (id: string) => void;
 }
 
 const ClientContext = createContext<ClientState | null>(null);
@@ -71,12 +73,21 @@ export function ClientProvider({ children }: { children: ReactNode }) {
     await fetchClients();
   };
 
+  const patchClient = (id: string, patch: Partial<ClientWithMeta>) => {
+    setClients((prev) => prev.map((client) => (client.id === id ? { ...client, ...patch } : client)));
+  };
+
+  const removeClientLocal = (id: string) => {
+    setClients((prev) => prev.filter((client) => client.id !== id));
+    setActiveId((prev) => (prev === id ? null : prev));
+  };
+
   const activeClient = clients.find((c) => c.id === activeId) ?? null;
 
   return (
     <ClientContext.Provider value={{
       clients, activeClient, setActiveClientId: setActiveId,
-      loading, refresh: fetchClients, createClient,
+      loading, refresh: fetchClients, createClient, patchClient, removeClientLocal,
     }}>
       {children}
     </ClientContext.Provider>

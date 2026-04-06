@@ -60,7 +60,7 @@ export default function ProfilePage() {
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <h1 className="text-2xl font-bold">Profile Settings</h1>
+      <h1 className="text-2xl font-bold">My Profile</h1>
 
       {/* Profile Info */}
       <Card>
@@ -86,7 +86,7 @@ export default function ProfilePage() {
               <Input value={user?.email ?? ""} disabled className="bg-muted" />
               <p className="text-xs text-muted-foreground">Email cannot be changed here.</p>
             </div>
-            {/* Role is per-client — managed on the Team page */}
+            {/* Support role is set per learner on the Support Team page */}
             <div className="flex items-center gap-2">
               <Button type="submit" disabled={saving}>
                 {saving ? "Saving..." : "Save Changes"}
@@ -132,7 +132,7 @@ export default function ProfilePage() {
         </CardContent>
       </Card>
 
-      {/* Danger Zone */}
+      {/* Sign Out */}
       <Card className="border-destructive/30">
         <CardContent className="py-5">
           <p className="font-medium text-destructive mb-2">Sign Out</p>

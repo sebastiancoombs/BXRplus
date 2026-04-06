@@ -48,7 +48,53 @@ export function useClientDetail(clientId: string | undefined) {
   }, [clientId]);
 
   useEffect(() => { fetch(); }, [fetch]);
-  return { client, behaviors, rewards, transactions, loading, refresh: fetch };
+
+  const patchClient = (patch: Partial<Client>) => {
+    setClient((prev) => (prev ? { ...prev, ...patch } : prev));
+  };
+
+  const replaceBehavior = (behavior: Behavior) => {
+    setBehaviors((prev) => prev.map((item) => (item.id === behavior.id ? behavior : item)));
+  };
+
+  const insertBehavior = (behavior: Behavior) => {
+    setBehaviors((prev) => [...prev, behavior].sort((a, b) => a.name.localeCompare(b.name)));
+  };
+
+  const removeBehavior = (id: string) => {
+    setBehaviors((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const replaceReward = (reward: Reward) => {
+    setRewards((prev) => prev.map((item) => (item.id === reward.id ? reward : item)));
+  };
+
+  const insertReward = (reward: Reward) => {
+    setRewards((prev) => [...prev, reward].sort((a, b) => a.point_cost - b.point_cost));
+  };
+
+  const removeReward = (id: string) => {
+    setRewards((prev) => prev.filter((item) => item.id !== id));
+  };
+
+  const replaceTransactions = (next: Transaction[]) => setTransactions(next);
+
+  return {
+    client,
+    behaviors,
+    rewards,
+    transactions,
+    loading,
+    refresh: fetch,
+    patchClient,
+    replaceBehavior,
+    insertBehavior,
+    removeBehavior,
+    replaceReward,
+    insertReward,
+    removeReward,
+    replaceTransactions,
+  };
 }
 
 export function useClientByQR(qrCode: string | undefined) {

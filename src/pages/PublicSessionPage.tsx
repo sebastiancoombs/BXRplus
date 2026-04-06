@@ -2,20 +2,16 @@ import { useEffect, useMemo, useState } from "react";
 import { useSearchParams } from "react-router-dom";
 import { supabase } from "@/lib/supabase";
 import { awardPoints, redeemReward } from "@/hooks/useClients";
-import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { getAnimationById } from "@/lib/animationCatalog";
-import { motion } from "framer-motion";
-import Lottie from "lottie-react";
+import { playEmojiBurst } from "@/lib/bursts";
 
 export default function PublicSessionPage() {
   const [params] = useSearchParams();
   const qr = params.get("qr");
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
-  const [confirmingReward, setConfirmingReward] = useState<any | null>(null);
-  const [feedback, setFeedback] = useState<null | { type: "gain" | "loss"; tick: number; theme?: string; intensity?: string; mode?: string; animationId?: string }>(null);
+  const [redeemingRewardId, setRedeemingRewardId] = useState<string | null>(null);
   const [pointsFlash, setPointsFlash] = useState<null | "gain" | "loss">(null);
 
   async function load() {
@@ -40,47 +36,40 @@ export default function PublicSessionPage() {
   async function applyBehavior(behavior: any) {
     if (!client) return;
     const isLoss = behavior.point_value < 0;
-    const behaviorTheme = behavior.feedback_theme ?? client.session_feedback_theme ?? "stars";
-    const behaviorIntensity = behavior.feedback_intensity ?? client.session_feedback_intensity ?? "standard";
-    const behaviorMode = behavior.feedback_mode ?? client.session_feedback_mode ?? "playful";
-    const animationId = isLoss ? behavior.feedback_loss_animation_id : behavior.feedback_gain_animation_id;
-    setFeedback({ type: isLoss ? "loss" : "gain", tick: Date.now(), theme: behaviorTheme, intensity: behaviorIntensity, mode: behaviorMode, animationId } as any);
+    const burstEmoji = isLoss ? behavior.feedback_loss_animation_id : behavior.feedback_gain_animation_id;
     setPointsFlash(isLoss ? "loss" : "gain");
     setTimeout(() => setPointsFlash(null), 500);
+    await playEmojiBurst({ emoji: burstEmoji, mode: isLoss ? "loss" : "gain" });
     await awardPoints(client.id, behavior.id, behavior.point_value);
     await load();
   }
 
-  async function confirmReward() {
-    if (!confirmingReward || !client) return;
-    setFeedback({ type: "loss", tick: Date.now() });
+  async function redeemNow(reward: any) {
+    if (!client) return;
+    setRedeemingRewardId(reward.id);
     setPointsFlash("loss");
     setTimeout(() => setPointsFlash(null), 500);
-    await redeemReward(client.id, confirmingReward.id);
-    setConfirmingReward(null);
+    await playEmojiBurst({ emoji: reward.icon || "🎁", mode: "loss", count: 16 });
+    await redeemReward(client.id, reward.id);
+    setRedeemingRewardId(null);
     await load();
   }
 
-  if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">Loading session…</div>;
+  if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">Opening session…</div>;
   if (!client) return <div className="min-h-screen grid place-items-center text-muted-foreground">Session not found.</div>;
-
-  const feedbackTheme = client.session_feedback_theme ?? "stars";
-  const feedbackIntensity = client.session_feedback_intensity ?? "standard";
-  const feedbackMode = client.session_feedback_mode ?? "playful";
 
   return (
     <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 overflow-x-hidden relative">
-      {feedback && <SessionFeedbackBurst type={feedback.type} theme={feedback.theme ?? feedbackTheme} intensity={feedback.intensity ?? feedbackIntensity} mode={feedback.mode ?? feedbackMode} animationId={feedback.animationId} key={feedback.tick} />}
       <div className="max-w-6xl mx-auto space-y-5 md:space-y-6">
         <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-5 md:p-7 shadow-sm overflow-hidden">
-          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Live Session</p>
+          <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Session Mode</p>
           <div className="flex flex-col sm:flex-row sm:flex-wrap items-start sm:items-end justify-between gap-4 mt-2">
             <div>
               <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold tracking-tight break-words">{client.full_name}</h1>
               <p className="text-sm text-muted-foreground mt-2">Tap a behavior to add or remove points. Tap a reward to redeem when it is available.</p>
             </div>
             <div className="rounded-3xl bg-card border px-5 py-4 text-center shadow-sm min-w-[140px] w-full sm:w-auto">
-              <p className="text-xs text-muted-foreground">Current points</p>
+              <p className="text-xs text-muted-foreground">Points available</p>
               <p className={`text-4xl sm:text-5xl font-extrabold mt-1 transition-all ${pointsFlash === "gain" ? "text-green-600 scale-110" : pointsFlash === "loss" ? "text-red-500 scale-95" : ""}`}>{balance}</p>
             </div>
           </div>
@@ -159,9 +148,7 @@ export default function PublicSessionPage() {
                     : "All rewards are currently available."}
               </p>
               <div className="flex flex-wrap gap-2">
-                <Badge variant="secondary">Theme: {feedbackTheme}</Badge>
-                <Badge variant="secondary">Intensity: {feedbackIntensity}</Badge>
-                <Badge variant="secondary">Mode: {feedbackMode}</Badge>
+                <Badge variant="secondary">Behavior animations enabled</Badge>
               </div>
             </div>
             <div className="space-y-3">
@@ -174,14 +161,16 @@ export default function PublicSessionPage() {
                         <div className="text-3xl flex-shrink-0">{r.icon}</div>
                         <div className="min-w-0">
                           <p className="font-semibold truncate">{r.name}</p>
-                          <p className="text-xs text-muted-foreground mt-1">{available ? "Available now" : `${r.point_cost - balance} points to unlock`}</p>
+                          <p className="text-xs text-muted-foreground mt-1">{available ? "Ready to redeem" : `${r.point_cost - balance} more points needed`}</p>
                         </div>
                       </div>
                       <div className="text-right flex-shrink-0">
                         <Badge>{r.point_cost} pts</Badge>
                         {available && (
                           <div className="mt-2">
-                            <Button size="sm" onClick={() => setConfirmingReward(r)}>Redeem</Button>
+                            <Button size="sm" onClick={() => redeemNow(r)} disabled={redeemingRewardId === r.id}>
+                              {redeemingRewardId === r.id ? "Redeeming..." : "Redeem"}
+                            </Button>
                           </div>
                         )}
                       </div>
@@ -193,68 +182,9 @@ export default function PublicSessionPage() {
           </section>
         </div>
 
-
-        {confirmingReward && (
-          <div className="fixed inset-0 bg-black/40 z-50 grid place-items-center p-4">
-            <Card className="w-full max-w-md rounded-3xl"><CardContent className="py-6 text-center space-y-4">
-              <div className="text-5xl">{confirmingReward.icon}</div>
-              <div>
-                <p className="text-xl font-bold">{confirmingReward.name}</p>
-                <p className="text-sm text-muted-foreground mt-1">Redeem this reward for {confirmingReward.point_cost} points?</p>
-              </div>
-              <div className="flex flex-col sm:flex-row justify-center gap-3">
-                <Button variant="outline" onClick={() => setConfirmingReward(null)}>Cancel</Button>
-                <Button onClick={confirmReward}>Confirm</Button>
-              </div>
-            </CardContent></Card>
-          </div>
-        )}
       </div>
     </div>
   );
 }
 
 
-function SessionFeedbackBurst({ type, theme, intensity, mode, animationId }: {
-  type: "gain" | "loss";
-  theme: string;
-  intensity: string;
-  mode: string;
-  animationId?: string;
-}) {
-  const preset = animationId ? getAnimationById(animationId) : null;
-  const count = (preset?.intensity ?? intensity) === "calm" ? 10 : (preset?.intensity ?? intensity) === "lively" ? 26 : 18;
-  const glyphSets: Record<string, { gain: string[]; loss: string[] }> = {
-    stars: { gain: ["⭐", "🌟", "✨", "💫"], loss: ["☆", "⬇️", "⚠️", "〰️"] },
-    bubbles: { gain: ["🫧", "✨", "🔵", "💙"], loss: ["🫧", "⬇️", "⚪", "〰️"] },
-    flowers: { gain: ["🌸", "🌼", "✨", "💖"], loss: ["🍂", "⬇️", "〰️", "⚠️"] },
-    smileys: { gain: ["😊", "😄", "✨", "🥳"], loss: ["😕", "😐", "⬇️", "〰️"] },
-    fireworks: { gain: ["🎆", "🎇", "✨", "🎉"], loss: ["💨", "⬇️", "〰️", "⚠️"] },
-    hearts: { gain: ["💖", "💗", "✨", "💕"], loss: ["🩶", "⬇️", "〰️", "⚠️"] },
-    candy: { gain: ["🍬", "🍭", "✨", "🎉"], loss: ["🫥", "⬇️", "〰️", "⚠️"] },
-    glow: { gain: ["✨", "💫", "⭐", "🌟"], loss: ["〰️", "⬇️", "⚠️", "·"] },
-  };
-  const set = glyphSets[preset?.theme ?? theme] ?? glyphSets.stars;
-  const glyphs = preset?.glyphs ?? (type === "gain" ? set.gain : set.loss);
-  const animClass = type === "gain" ? ((preset?.motion === "float" || mode === "calm") ? "animate-session-gain-calm" : "animate-session-gain") : "animate-session-loss";
-
-  if (preset?.lottieData) {
-    return (
-      <div className="pointer-events-none fixed inset-0 z-40 grid place-items-center">
-        <motion.div initial={{ scale: 0.85, opacity: 0 }} animate={{ scale: [0.9, 1.08, 1], opacity: [0, 1, 0] }} transition={{ duration: 1.2, ease: "easeOut" }} className="w-48 h-48 sm:w-56 sm:h-56">
-          <Lottie animationData={preset.lottieData} loop={false} autoplay style={{ width: "100%", height: "100%" }} />
-        </motion.div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden">
-      {Array.from({ length: count }).map((_, i) => (
-        <span key={i} className={`absolute text-2xl ${animClass}`} style={{ left: `${(i * 37) % 100}%`, top: `${(i * 19) % 80}%`, animationDelay: `${i * 25}ms` }}>
-          {glyphs[i % glyphs.length]}
-        </span>
-      ))}
-    </div>
-  );
-}
