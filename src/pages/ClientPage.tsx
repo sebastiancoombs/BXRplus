@@ -1725,13 +1725,19 @@ function UnifiedRewardPath({ rewards, current, onRedeem, onCelebrate }: {
 }) {
   const [confirmingId, setConfirmingId] = useState<string | null>(null);
   const [busyId, setBusyId] = useState<string | null>(null);
+  const [moveImpulse, setMoveImpulse] = useState(0);
   const sorted = [...rewards].sort((a, b) => a.point_cost - b.point_cost);
   const maxCost = Math.max(...sorted.map((r) => r.point_cost), 1);
   const nextReward = sorted.find((r) => current < r.point_cost) ?? null;
   const availableCount = sorted.filter((r) => current >= r.point_cost).length;
   const activeTheme = getJourneyThemeStyles(sorted[0]?.journey_theme ?? getJourneyPreset(sorted[0]?.journey_preset ?? "space").theme);
   const activeTraveler = sorted[0]?.traveler_icon ?? getJourneyPreset(sorted[0]?.journey_preset ?? "space").traveler;
-  const avatarBottom = `calc(${Math.min(94, Math.max(6, (current / maxCost) * 100))}% - 18px)`;
+  const avatarPct = Math.min(94, Math.max(6, (current / maxCost) * 100));
+  const avatarBottom = `calc(${avatarPct}% - 18px)`;
+
+  useEffect(() => {
+    setMoveImpulse((n) => n + 1);
+  }, [current]);
 
   async function handleRedeem(reward: any, e: React.MouseEvent<HTMLButtonElement>) {
     if (confirmingId !== reward.id) { setConfirmingId(reward.id); return; }
@@ -1767,9 +1773,9 @@ function UnifiedRewardPath({ rewards, current, onRedeem, onCelebrate }: {
         <div className="grid md:grid-cols-[140px_1fr] gap-5 items-start">
           <div className="relative h-[520px] md:h-[640px] flex justify-center">
             <div className={`absolute inset-y-4 w-16 rounded-full ${activeTheme.trackBg}`} />
-            <div className={`absolute bottom-4 w-16 rounded-full transition-all duration-700 ${activeTheme.trackFill}`} style={{ height: `${Math.min(100, Math.max(6, (current / maxCost) * 100))}%` }} />
-            <div className="absolute left-1/2 -translate-x-1/2 z-20 transition-all duration-700" style={{ bottom: avatarBottom }}>
-              <div className="w-16 h-16 rounded-3xl bg-background/90 border shadow-md grid place-items-center animate-journey-bob">
+            <div className={`absolute bottom-4 w-16 rounded-full transition-all duration-500 ${activeTheme.trackFill}`} style={{ height: `${avatarPct}%` }} />
+            <div className="absolute left-1/2 -translate-x-1/2 z-20 transition-all duration-500 ease-[cubic-bezier(.22,1.4,.36,1)]" style={{ bottom: avatarBottom }}>
+              <div className={`w-16 h-16 rounded-3xl bg-background/90 border shadow-md grid place-items-center animate-journey-bob ${moveImpulse ? "animate-avatar-boost" : ""}`}>
                 <ItemIcon icon={activeTraveler} size="text-4xl" />
               </div>
             </div>
@@ -1941,11 +1947,17 @@ function RewardCelebration({ type, x, y }: { type: "confetti" | "stars" | "spark
 }
 
 function SessionProgressRail({ rewards, current }: { rewards: any[]; current: number }) {
+  const [moveImpulse, setMoveImpulse] = useState(0);
   const sorted = [...rewards].sort((a, b) => a.point_cost - b.point_cost);
   const maxCost = Math.max(...sorted.map((r) => r.point_cost), 1);
   const theme = getJourneyThemeStyles(sorted[0]?.journey_theme ?? getJourneyPreset(sorted[0]?.journey_preset ?? "space").theme);
   const traveler = sorted[0]?.traveler_icon ?? getJourneyPreset(sorted[0]?.journey_preset ?? "space").traveler;
-  const avatarBottom = `calc(${Math.min(94, Math.max(6, (current / maxCost) * 100))}% - 18px)`;
+  const avatarPct = Math.min(94, Math.max(6, (current / maxCost) * 100));
+  const avatarBottom = `calc(${avatarPct}% - 18px)`;
+
+  useEffect(() => {
+    setMoveImpulse((n) => n + 1);
+  }, [current]);
 
   return (
     <Card className={`overflow-hidden ${theme.card}`}>
@@ -1954,9 +1966,9 @@ function SessionProgressRail({ rewards, current }: { rewards: any[]; current: nu
         <p className="text-2xl font-extrabold mb-3">{current}</p>
         <div className="relative h-[340px] lg:h-[560px] flex justify-center">
           <div className={`absolute inset-y-3 w-14 rounded-full ${theme.trackBg}`} />
-          <div className={`absolute bottom-3 w-14 rounded-full transition-all duration-700 ${theme.trackFill}`} style={{ height: `${Math.min(100, Math.max(6, (current / maxCost) * 100))}%` }} />
-          <div className="absolute left-1/2 -translate-x-1/2 z-20 transition-all duration-700" style={{ bottom: avatarBottom }}>
-            <div className="w-14 h-14 rounded-3xl bg-background/90 border shadow-md grid place-items-center animate-journey-bob">
+          <div className={`absolute bottom-3 w-14 rounded-full transition-all duration-500 ${theme.trackFill}`} style={{ height: `${avatarPct}%` }} />
+          <div className="absolute left-1/2 -translate-x-1/2 z-20 transition-all duration-500 ease-[cubic-bezier(.22,1.4,.36,1)]" style={{ bottom: avatarBottom }}>
+            <div className={`w-14 h-14 rounded-3xl bg-background/90 border shadow-md grid place-items-center animate-journey-bob ${moveImpulse ? "animate-avatar-boost" : ""}`}>
               <ItemIcon icon={traveler} size="text-3xl" />
             </div>
           </div>
@@ -2044,7 +2056,7 @@ function QuickAwardSessionCard({ behavior, clientId, onDone, onCelebrate, onOpti
   const [busy, setBusy] = useState(false);
   const [pulse, setPulse] = useState(false);
 
-  async function award(e: React.MouseEvent<HTMLButtonElement | HTMLDivElement>) {
+  async function award() {
     setBusy(true);
     onOptimisticAward(behavior.point_value);
     try {
