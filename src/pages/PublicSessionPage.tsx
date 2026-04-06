@@ -12,6 +12,8 @@ export default function PublicSessionPage() {
   const [loading, setLoading] = useState(true);
   const [session, setSession] = useState<any>(null);
   const [confirmingReward, setConfirmingReward] = useState<any | null>(null);
+  const [feedback, setFeedback] = useState<null | { type: "gain" | "loss"; tick: number }>(null);
+  const [pointsFlash, setPointsFlash] = useState<null | "gain" | "loss">(null);
 
   async function load() {
     if (!qr) return;
@@ -34,12 +36,19 @@ export default function PublicSessionPage() {
 
   async function applyBehavior(behavior: any) {
     if (!client) return;
+    const isLoss = behavior.point_value < 0;
+    setFeedback({ type: isLoss ? "loss" : "gain", tick: Date.now() });
+    setPointsFlash(isLoss ? "loss" : "gain");
+    setTimeout(() => setPointsFlash(null), 500);
     await awardPoints(client.id, behavior.id, behavior.point_value);
     await load();
   }
 
   async function confirmReward() {
     if (!confirmingReward || !client) return;
+    setFeedback({ type: "loss", tick: Date.now() });
+    setPointsFlash("loss");
+    setTimeout(() => setPointsFlash(null), 500);
     await redeemReward(client.id, confirmingReward.id);
     setConfirmingReward(null);
     await load();
@@ -48,8 +57,13 @@ export default function PublicSessionPage() {
   if (loading) return <div className="min-h-screen grid place-items-center text-muted-foreground">Loading session…</div>;
   if (!client) return <div className="min-h-screen grid place-items-center text-muted-foreground">Session not found.</div>;
 
+  const feedbackTheme = client.session_feedback_theme ?? "stars";
+  const feedbackIntensity = client.session_feedback_intensity ?? "standard";
+  const feedbackMode = client.session_feedback_mode ?? "playful";
+
   return (
-    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 overflow-x-hidden">
+    <div className="min-h-screen bg-background p-3 sm:p-4 md:p-6 overflow-x-hidden relative">
+      {feedback && <SessionFeedbackBurst type={feedback.type} theme={feedbackTheme} intensity={feedbackIntensity} mode={feedbackMode} key={feedback.tick} />}
       <div className="max-w-6xl mx-auto space-y-5 md:space-y-6">
         <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-4 sm:p-5 md:p-7 shadow-sm overflow-hidden">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Live Session</p>
@@ -60,7 +74,7 @@ export default function PublicSessionPage() {
             </div>
             <div className="rounded-3xl bg-card border px-5 py-4 text-center shadow-sm min-w-[140px] w-full sm:w-auto">
               <p className="text-xs text-muted-foreground">Current points</p>
-              <p className="text-4xl sm:text-5xl font-extrabold mt-1">{balance}</p>
+              <p className={`text-4xl sm:text-5xl font-extrabold mt-1 transition-all ${pointsFlash === "gain" ? "text-green-600 scale-110" : pointsFlash === "loss" ? "text-red-500 scale-95" : ""}`}>{balance}</p>
             </div>
           </div>
         </div>
@@ -129,12 +143,19 @@ export default function PublicSessionPage() {
               <p className="text-sm font-semibold">Rewards</p>
               <p className="text-xs text-muted-foreground mt-1">See what is available now and what is next to unlock.</p>
             </div>
-            <div className="rounded-2xl bg-muted/40 p-3 text-xs text-muted-foreground">
-              {availableRewards > 0
-                ? `${availableRewards} reward${availableRewards === 1 ? " is" : "s are"} available now.`
-                : nextReward
-                  ? `${Math.max(0, nextReward.point_cost - balance)} more point${Math.max(0, nextReward.point_cost - balance) === 1 ? "" : "s"} until ${nextReward.name}.`
-                  : "All rewards are currently available."}
+            <div className="rounded-2xl bg-muted/40 p-3 text-xs text-muted-foreground space-y-2">
+              <p>
+                {availableRewards > 0
+                  ? `${availableRewards} reward${availableRewards === 1 ? " is" : "s are"} available now.`
+                  : nextReward
+                    ? `${Math.max(0, nextReward.point_cost - balance)} more point${Math.max(0, nextReward.point_cost - balance) === 1 ? "" : "s"} until ${nextReward.name}.`
+                    : "All rewards are currently available."}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                <Badge variant="secondary">Theme: {feedbackTheme}</Badge>
+                <Badge variant="secondary">Intensity: {feedbackIntensity}</Badge>
+                <Badge variant="secondary">Mode: {feedbackMode}</Badge>
+              </div>
             </div>
             <div className="space-y-3">
               {rewards.map((r: any) => {
@@ -182,6 +203,39 @@ export default function PublicSessionPage() {
           </div>
         )}
       </div>
+    </div>
+  );
+}
+
+
+function SessionFeedbackBurst({ type, theme, intensity, mode }: {
+  type: "gain" | "loss";
+  theme: string;
+  intensity: string;
+  mode: string;
+}) {
+  const count = intensity === "calm" ? 10 : intensity === "lively" ? 26 : 18;
+  const glyphSets: Record<string, { gain: string[]; loss: string[] }> = {
+    stars: { gain: ["⭐", "🌟", "✨", "💫"], loss: ["☆", "⬇️", "⚠️", "〰️"] },
+    bubbles: { gain: ["🫧", "✨", "🔵", "💙"], loss: ["🫧", "⬇️", "⚪", "〰️"] },
+    flowers: { gain: ["🌸", "🌼", "✨", "💖"], loss: ["🍂", "⬇️", "〰️", "⚠️"] },
+    smileys: { gain: ["😊", "😄", "✨", "🥳"], loss: ["😕", "😐", "⬇️", "〰️"] },
+    fireworks: { gain: ["🎆", "🎇", "✨", "🎉"], loss: ["💨", "⬇️", "〰️", "⚠️"] },
+    hearts: { gain: ["💖", "💗", "✨", "💕"], loss: ["🩶", "⬇️", "〰️", "⚠️"] },
+    candy: { gain: ["🍬", "🍭", "✨", "🎉"], loss: ["🫥", "⬇️", "〰️", "⚠️"] },
+    glow: { gain: ["✨", "💫", "⭐", "🌟"], loss: ["〰️", "⬇️", "⚠️", "·"] },
+  };
+  const set = glyphSets[theme] ?? glyphSets.stars;
+  const glyphs = type === "gain" ? set.gain : set.loss;
+  const animClass = type === "gain" ? (mode === "calm" ? "animate-session-gain-calm" : "animate-session-gain") : "animate-session-loss";
+
+  return (
+    <div className="pointer-events-none fixed inset-0 z-40 overflow-hidden">
+      {Array.from({ length: count }).map((_, i) => (
+        <span key={i} className={`absolute text-2xl ${animClass}`} style={{ left: `${(i * 37) % 100}%`, top: `${(i * 19) % 80}%`, animationDelay: `${i * 25}ms` }}>
+          {glyphs[i % glyphs.length]}
+        </span>
+      ))}
     </div>
   );
 }

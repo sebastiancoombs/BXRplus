@@ -168,8 +168,38 @@
   animation: float-soft 2.4s ease-in-out infinite;
 }
 
+@keyframes session-gain {
+  0% { transform: translateY(14px) scale(0.8); opacity: 0; }
+  20% { opacity: 1; }
+  100% { transform: translateY(-36px) scale(1.08); opacity: 0; }
+}
+
+@keyframes session-gain-calm {
+  0% { transform: translateY(8px) scale(0.9); opacity: 0; }
+  20% { opacity: 0.85; }
+  100% { transform: translateY(-20px) scale(1.02); opacity: 0; }
+}
+
+@keyframes session-loss {
+  0% { transform: translateY(-6px) scale(0.95); opacity: 0; }
+  20% { opacity: 0.9; }
+  100% { transform: translateY(28px) scale(0.92); opacity: 0; }
+}
+
 .animate-avatar-boost {
   animation: avatar-boost 0.45s cubic-bezier(.22,1.4,.36,1);
+}
+
+.animate-session-gain {
+  animation: session-gain 0.8s ease-out forwards;
+}
+
+.animate-session-gain-calm {
+  animation: session-gain-calm 0.7s ease-out forwards;
+}
+
+.animate-session-loss {
+  animation: session-loss 0.65s ease-out forwards;
 }
 
 /* Emoji picker sizing */
