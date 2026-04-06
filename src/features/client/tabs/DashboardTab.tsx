@@ -540,12 +540,37 @@ function SessionProgressRail({ rewards, current, travelerIcon }: { rewards: any[
   const progressPct = Math.min(96, Math.max(8, (current / maxCost) * 100));
 
   return (
-    <Card className="overflow-hidden">
+    <Card className="overflow-hidden rounded-[28px]">
       <CardContent className="py-4 px-3 space-y-4">
         <div>
-          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Reward Progress</p>
+          <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Reward Path</p>
           <p className="text-2xl font-extrabold mb-1">{current}</p>
           <p className="text-xs text-muted-foreground">Points available</p>
+        </div>
+
+        <div className="relative mx-auto flex justify-center lg:hidden">
+          <div className="relative h-[360px] w-[150px]">
+            <div className="absolute left-1/2 top-5 bottom-5 -translate-x-1/2 w-6 rounded-full bg-gradient-to-b from-fuchsia-200 via-sky-200 to-emerald-200 shadow-inner" />
+            <div
+              className="absolute left-1/2 bottom-5 -translate-x-1/2 w-6 rounded-full bg-gradient-to-t from-violet-600 via-indigo-500 to-sky-400 transition-all duration-500"
+              style={{ height: `calc(${progressPct}% - 10px)` }}
+            />
+            <div className="absolute left-1/2 -translate-x-1/2 text-4xl animate-bounce transition-all duration-500" style={{ bottom: `calc(${progressPct}% - 6px)` }}>
+              {travelerIcon}
+            </div>
+            {sorted.map((reward, index) => {
+              const stopPct = Math.min(96, Math.max(8, (reward.point_cost / maxCost) * 100));
+              const unlocked = current >= reward.point_cost;
+              const offset = index % 2 === 0 ? -42 : 42;
+              return (
+                <div key={reward.id} className="absolute left-1/2 -translate-x-1/2" style={{ bottom: `calc(${stopPct}% - 18px)`, marginLeft: `${offset}px` }}>
+                  <div className={`h-16 w-16 rounded-[22px] border-4 grid place-items-center text-3xl shadow-md ${unlocked ? "bg-background border-primary" : "bg-white/80 border-slate-200"}`}>
+                    {reward.icon}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
         </div>
 
         <div className="hidden lg:flex justify-center">
@@ -555,7 +580,7 @@ function SessionProgressRail({ rewards, current, travelerIcon }: { rewards: any[
               className="absolute left-1/2 bottom-5 -translate-x-1/2 w-4 rounded-full bg-gradient-to-t from-violet-600 via-indigo-500 to-sky-400 transition-all duration-500"
               style={{ height: `calc(${progressPct}% - 10px)` }}
             />
-            <div className="absolute left-1/2 -translate-x-1/2 text-3xl transition-all duration-500" style={{ bottom: `calc(${progressPct}% - 2px)` }}>
+            <div className="absolute left-1/2 -translate-x-1/2 text-3xl animate-bounce transition-all duration-500" style={{ bottom: `calc(${progressPct}% - 2px)` }}>
               {travelerIcon}
             </div>
             {sorted.map((reward) => {
@@ -570,15 +595,6 @@ function SessionProgressRail({ rewards, current, travelerIcon }: { rewards: any[
               );
             })}
           </div>
-        </div>
-
-        <div className="space-y-2 lg:hidden">
-          {sorted.map((reward) => (
-            <div key={reward.id} className="flex items-center justify-between rounded-xl border bg-background px-3 py-2 text-sm">
-              <span>{reward.icon} {reward.name}</span>
-              <span className="font-medium">{reward.point_cost}</span>
-            </div>
-          ))}
         </div>
       </CardContent>
     </Card>
