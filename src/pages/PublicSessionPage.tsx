@@ -27,6 +27,10 @@ export default function PublicSessionPage() {
   const behaviors = session?.behaviors ?? [];
   const rewards = useMemo(() => [...(session?.rewards ?? [])].sort((a, b) => a.point_cost - b.point_cost), [session]);
   const balance = client?.balance ?? 0;
+  const positiveBehaviors = behaviors.filter((b: any) => b.point_value >= 0);
+  const negativeBehaviors = behaviors.filter((b: any) => b.point_value < 0);
+  const nextReward = rewards.find((r: any) => balance < r.point_cost) ?? null;
+  const availableRewards = rewards.filter((r: any) => balance >= r.point_cost).length;
 
   async function applyBehavior(behavior: any) {
     if (!client) return;
@@ -61,29 +65,76 @@ export default function PublicSessionPage() {
           </div>
         </div>
 
-        <div className="grid gap-5 md:gap-6 xl:grid-cols-[1.15fr_0.85fr] items-start">
-          <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-4">
+        <div className="sticky top-0 z-20 rounded-2xl border bg-background/90 backdrop-blur px-4 py-3 shadow-sm">
+          <div className="grid grid-cols-3 gap-3 items-center text-center">
             <div>
-              <p className="text-sm font-semibold">Behaviors</p>
-              <p className="text-xs text-muted-foreground mt-1">Tap once to add or remove points quickly during a session.</p>
+              <p className="text-[11px] text-muted-foreground">Current</p>
+              <p className="text-lg font-extrabold">{balance}</p>
             </div>
-            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
-              {behaviors.map((b: any) => (
-                <button key={b.id} type="button" onClick={() => applyBehavior(b)} className="rounded-3xl border bg-background p-4 md:p-5 text-left shadow-sm hover:shadow-md transition-all active:scale-[0.98] min-w-0">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="text-3xl sm:text-4xl flex-shrink-0">{b.icon}</div>
-                    <Badge variant={b.point_value < 0 ? "destructive" : "secondary"} className="flex-shrink-0">{b.point_value > 0 ? "+" : ""}{b.point_value}</Badge>
-                  </div>
-                  <p className="text-lg sm:text-xl font-bold mt-4 leading-tight break-words">{b.name}</p>
-                </button>
-              ))}
+            <div>
+              <p className="text-[11px] text-muted-foreground">Available</p>
+              <p className="text-lg font-extrabold">{availableRewards}</p>
             </div>
+            <div>
+              <p className="text-[11px] text-muted-foreground">Next</p>
+              <p className="text-sm font-bold truncate">{nextReward ? `${Math.max(0, nextReward.point_cost - balance)} left` : "Ready"}</p>
+            </div>
+          </div>
+        </div>
+
+        <div className="grid gap-5 md:gap-6 xl:grid-cols-[1.15fr_0.85fr] items-start">
+          <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-5">
+            <div>
+              <p className="text-sm font-semibold">Session Actions</p>
+              <p className="text-xs text-muted-foreground mt-1">Tap once for fast reinforcement. Positive and negative actions are separated for clarity.</p>
+            </div>
+
+            {positiveBehaviors.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-muted-foreground">Add Points</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+                  {positiveBehaviors.map((b: any) => (
+                    <button key={b.id} type="button" onClick={() => applyBehavior(b)} className="rounded-3xl border bg-background p-4 md:p-5 text-left shadow-sm hover:shadow-md transition-all active:scale-[0.98] min-w-0">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="text-3xl sm:text-4xl flex-shrink-0">{b.icon}</div>
+                        <Badge variant="secondary" className="flex-shrink-0">+{b.point_value}</Badge>
+                      </div>
+                      <p className="text-lg sm:text-xl font-bold mt-4 leading-tight break-words">{b.name}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {negativeBehaviors.length > 0 && (
+              <div className="space-y-3">
+                <p className="text-xs font-medium text-muted-foreground">Remove Points</p>
+                <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-3 md:gap-4">
+                  {negativeBehaviors.map((b: any) => (
+                    <button key={b.id} type="button" onClick={() => applyBehavior(b)} className="rounded-3xl border bg-background p-4 md:p-5 text-left shadow-sm hover:shadow-md transition-all active:scale-[0.98] min-w-0 border-red-200/70">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="text-3xl sm:text-4xl flex-shrink-0">{b.icon}</div>
+                        <Badge variant="destructive" className="flex-shrink-0">{b.point_value}</Badge>
+                      </div>
+                      <p className="text-lg sm:text-xl font-bold mt-4 leading-tight break-words">{b.name}</p>
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
           </section>
 
-          <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-4">
+          <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-4 xl:sticky xl:top-24">
             <div>
               <p className="text-sm font-semibold">Rewards</p>
-              <p className="text-xs text-muted-foreground mt-1">Available rewards light up automatically when enough points are earned.</p>
+              <p className="text-xs text-muted-foreground mt-1">See what is available now and what is next to unlock.</p>
+            </div>
+            <div className="rounded-2xl bg-muted/40 p-3 text-xs text-muted-foreground">
+              {availableRewards > 0
+                ? `${availableRewards} reward${availableRewards === 1 ? " is" : "s are"} available now.`
+                : nextReward
+                  ? `${Math.max(0, nextReward.point_cost - balance)} more point${Math.max(0, nextReward.point_cost - balance) === 1 ? "" : "s"} until ${nextReward.name}.`
+                  : "All rewards are currently available."}
             </div>
             <div className="space-y-3">
               {rewards.map((r: any) => {
