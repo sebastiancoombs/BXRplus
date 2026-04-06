@@ -1661,7 +1661,7 @@ function ItemIcon({ icon, size = "text-xl" }: { icon: string; size?: string }) {
   return <span className={`${size} flex-shrink-0`}>{icon}</span>;
 }
 
-function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate, onOptimisticAward }: { behavior: any; clientId: string; onDone: () => void; onCelebrate?: (x?: number, y?: number) => void; onOptimisticAward?: (amount: number) => void }) {
+function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate, onOptimisticAward }: { behavior: any; clientId: string; onDone: () => void; onCelebrate?: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") => void; onOptimisticAward?: (amount: number) => void }) {
   const [busy, setBusy] = useState(false);
   const [flash, setFlash] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -1914,28 +1914,66 @@ function ProgressCustomizationPanel({ theme, style, animation, onChange }: {
 }
 
 function RewardCelebration({ type, x, y }: { type: "confetti" | "stars" | "sparkles" | "penalty"; x?: number; y?: number }) {
-  const pieces = Array.from({ length: 8 });
-  const glyph = type === "confetti" ? ["🎉", "✨", "🎊"] : type === "stars" ? ["⭐", "🌟", "💫"] : type === "penalty" ? ["💥", "⬇️", "⚠️"] : ["✨", "💖", "⚡"];
+  const fullscreen = x == null || y == null;
+  const pieces = Array.from({ length: fullscreen ? 20 : 8 });
+  const glyph = type === "confetti" ? ["🎉", "✨", "🎊", "🥳"] : type === "stars" ? ["⭐", "🌟", "💫", "😊"] : type === "penalty" ? ["💥", "⬇️", "⚠️", "😬"] : ["✨", "💖", "⚡", "🌸"];
   const left = x ?? (typeof window !== "undefined" ? window.innerWidth / 2 : 200);
-  const top = y ?? 180;
+  const top = y ?? (typeof window !== "undefined" ? window.innerHeight / 2 : 240);
 
   return (
     <div className="pointer-events-none fixed inset-0 overflow-hidden z-30">
       {pieces.map((_, i) => (
         <span
           key={i}
-          className={`absolute ${type === "penalty" ? "animate-penalty-pop" : "animate-reward-pop"} text-lg`}
+          className={`absolute ${type === "penalty" ? (fullscreen ? "animate-penalty-screen-pop" : "animate-penalty-pop") : (fullscreen ? "animate-reward-screen-pop" : "animate-reward-pop")} text-xl`}
           style={{
-            left,
-            top,
-            ["--dx" as any]: `${(i - 3.5) * 10}px`,
-            animationDelay: `${i * 30}ms`,
+            left: fullscreen ? `${(i * 53) % 100}%` : left,
+            top: fullscreen ? `${(i * 29) % 70}%` : top,
+            ["--dx" as any]: `${fullscreen ? ((i % 5) - 2) * 30 : (i - 3.5) * 10}px`,
+            animationDelay: `${i * 25}ms`,
           }}
         >
           {glyph[i % glyph.length]}
         </span>
       ))}
     </div>
+  );
+}
+
+function SessionProgressRail({ rewards, current }: { rewards: any[]; current: number }) {
+  const sorted = [...rewards].sort((a, b) => a.point_cost - b.point_cost);
+  const maxCost = Math.max(...sorted.map((r) => r.point_cost), 1);
+  const theme = getJourneyThemeStyles(sorted[0]?.journey_theme ?? getJourneyPreset(sorted[0]?.journey_preset ?? "space").theme);
+  const traveler = sorted[0]?.traveler_icon ?? getJourneyPreset(sorted[0]?.journey_preset ?? "space").traveler;
+  const avatarBottom = `calc(${Math.min(94, Math.max(6, (current / maxCost) * 100))}% - 18px)`;
+
+  return (
+    <Card className={`overflow-hidden ${theme.card}`}>
+      <CardContent className="py-4 px-3">
+        <p className="text-xs uppercase tracking-wide text-muted-foreground mb-1">Live Progress</p>
+        <p className="text-2xl font-extrabold mb-3">{current}</p>
+        <div className="relative h-[340px] lg:h-[560px] flex justify-center">
+          <div className={`absolute inset-y-3 w-14 rounded-full ${theme.trackBg}`} />
+          <div className={`absolute bottom-3 w-14 rounded-full transition-all duration-700 ${theme.trackFill}`} style={{ height: `${Math.min(100, Math.max(6, (current / maxCost) * 100))}%` }} />
+          <div className="absolute left-1/2 -translate-x-1/2 z-20 transition-all duration-700" style={{ bottom: avatarBottom }}>
+            <div className="w-14 h-14 rounded-3xl bg-background/90 border shadow-md grid place-items-center animate-journey-bob">
+              <ItemIcon icon={traveler} size="text-3xl" />
+            </div>
+          </div>
+          {sorted.map((reward) => {
+            const y = `calc(${Math.min(96, Math.max(6, (reward.point_cost / maxCost) * 100))}% - 14px)`;
+            const unlocked = current >= reward.point_cost;
+            return (
+              <div key={reward.id} className="absolute left-1/2 -translate-x-1/2 w-full flex justify-center" style={{ bottom: y }}>
+                <div className={`w-10 h-10 rounded-2xl border-2 shadow-sm grid place-items-center ${unlocked ? "bg-background border-primary" : "bg-muted border-border"}`}>
+                  <ItemIcon icon={reward.destination_icon ?? reward.icon ?? "🎁"} size="text-xl" />
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
@@ -1947,6 +1985,8 @@ function QuickAwardSessionView({ client, behaviors, onClose, onAwarded, onCelebr
   onCelebrate: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty") => void;
   onOptimisticAward: (amount: number) => void;
 }) {
+  const { rewards } = useClientDetail(client.id);
+
   return (
     <div className="fixed inset-0 z-40 bg-background/95 backdrop-blur-sm">
       <div className="h-full flex flex-col">
@@ -1973,10 +2013,19 @@ function QuickAwardSessionView({ client, behaviors, onClose, onAwarded, onCelebr
               </div>
             </div>
           ) : (
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {behaviors.map((b) => (
-                <QuickAwardSessionCard key={b.id} behavior={b} clientId={client.id} onDone={onAwarded} onCelebrate={onCelebrate} onOptimisticAward={onOptimisticAward} />
-              ))}
+            <div className="grid lg:grid-cols-[180px_1fr] gap-4 h-full">
+              <div className="lg:sticky lg:top-0 self-start">
+                {rewards.length > 0 ? (
+                  <SessionProgressRail rewards={rewards} current={client.balance} />
+                ) : (
+                  <Card><CardContent className="py-4 text-sm text-muted-foreground">Add rewards to show progress.</CardContent></Card>
+                )}
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-4 content-start">
+                {behaviors.map((b) => (
+                  <QuickAwardSessionCard key={b.id} behavior={b} clientId={client.id} onDone={onAwarded} onCelebrate={onCelebrate} onOptimisticAward={onOptimisticAward} />
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -2001,8 +2050,7 @@ function QuickAwardSessionCard({ behavior, clientId, onDone, onCelebrate, onOpti
     try {
       await awardPoints(clientId, behavior.id, behavior.point_value);
       await onDone();
-      const rect = e.currentTarget.getBoundingClientRect();
-      onCelebrate(rect.left + rect.width / 2, rect.top + rect.height / 2, behavior.point_value < 0 ? "penalty" : undefined);
+      onCelebrate(undefined, undefined, behavior.point_value < 0 ? "penalty" : undefined);
       setPulse(true);
       setTimeout(() => setPulse(false), 220);
     } finally {
