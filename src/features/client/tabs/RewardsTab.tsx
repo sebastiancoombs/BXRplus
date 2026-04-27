@@ -1,4 +1,4 @@
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useClientDetail } from "@/hooks/useClients";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
@@ -7,9 +7,55 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import IconPicker from "@/components/IconPicker";
 import AnimationPicker from "@/components/AnimationPicker";
+import { VisibilityPicker, type TeamMember } from "@/components/VisibilityPicker";
 import { playEmojiBurst } from "@/lib/bursts";
+import { useAuth } from "@/contexts/AuthContext";
+import type { AppRole } from "@/types/database";
 
 type BehaviorMode = "earn" | "reduce";
+
+function useClientTeam(clientId: string) {
+  const [team, setTeam] = useState<TeamMember[]>([]);
+  const [ownerId, setOwnerId] = useState<string | null>(null);
+  const [ownerName, setOwnerName] = useState<string | null>(null);
+
+  useEffect(() => {
+    let cancelled = false;
+    (async () => {
+      const [clientRes, staffRes] = await Promise.all([
+        supabase.from("clients").select("owner_id").eq("id", clientId).maybeSingle(),
+        supabase
+          .from("client_staff")
+          .select("user_id, relationship, profile:profiles(full_name)")
+          .eq("client_id", clientId),
+      ]);
+      if (cancelled) return;
+      const owner = clientRes.data?.owner_id ?? null;
+      setOwnerId(owner);
+
+      const members: TeamMember[] = (staffRes.data ?? []).map((s: any) => ({
+        user_id: s.user_id,
+        full_name: s.profile?.full_name ?? "(unknown)",
+        role: s.relationship as AppRole,
+      }));
+      setTeam(members);
+
+      if (owner) {
+        const { data: ownerProfile } = await supabase
+          .from("profiles")
+          .select("full_name")
+          .eq("id", owner)
+          .maybeSingle();
+        if (!cancelled) setOwnerName(ownerProfile?.full_name ?? null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [clientId]);
+
+  return { team, ownerId, ownerName };
+}
 
 export default function RewardsTab({ clientId }: { clientId: string }) {
   const {
@@ -26,6 +72,9 @@ export default function RewardsTab({ clientId }: { clientId: string }) {
   } = useClientDetail(clientId);
 
   const [behaviorMode, setBehaviorMode] = useState<BehaviorMode>("earn");
+  const { user } = useAuth();
+  const { team, ownerId, ownerName } = useClientTeam(clientId);
+  const canEditVisibility = !!user && !!ownerId && user.id === ownerId;
 
   const positiveBehaviors = useMemo(() => behaviors.filter((b) => b.point_value >= 0), [behaviors]);
   const negativeBehaviors = useMemo(() => behaviors.filter((b) => b.point_value < 0), [behaviors]);
@@ -95,6 +144,10 @@ export default function RewardsTab({ clientId }: { clientId: string }) {
                   onUpdate={refresh}
                   onReplaceBehavior={replaceBehavior}
                   onRemoveBehavior={removeBehavior}
+                  team={team}
+                  ownerId={ownerId}
+                  ownerName={ownerName}
+                  canEditVisibility={canEditVisibility}
                 />
               ))}
             </div>
@@ -127,6 +180,10 @@ export default function RewardsTab({ clientId }: { clientId: string }) {
                   onUpdate={refresh}
                   onReplaceReward={replaceReward}
                   onRemoveReward={removeReward}
+                  team={team}
+                  ownerId={ownerId}
+                  ownerName={ownerName}
+                  canEditVisibility={canEditVisibility}
                 />
               ))}
             </div>
@@ -147,6 +204,10 @@ function ProgramRow({
   onRemoveBehavior,
   onReplaceReward,
   onRemoveReward,
+  team,
+  ownerId,
+  ownerName,
+  canEditVisibility,
 }: {
   item: any;
   type: "behavior" | "reward";
@@ -155,6 +216,10 @@ function ProgramRow({
   onRemoveBehavior?: (id: string) => void;
   onReplaceReward?: (reward: any) => void;
   onRemoveReward?: (id: string) => void;
+  team: TeamMember[];
+  ownerId: string | null;
+  ownerName: string | null;
+  canEditVisibility: boolean;
 }) {
   const [editing, setEditing] = useState(false);
   const [confirmDelete, setConfirmDelete] = useState(false);
@@ -313,6 +378,16 @@ function ProgramRow({
                   )}
                 </div>
               )}
+              <div className="flex flex-wrap gap-2 pt-1">
+                <VisibilityPicker
+                  type={type}
+                  itemId={item.id}
+                  ownerId={ownerId}
+                  ownerName={ownerName}
+                  team={team}
+                  canEdit={canEditVisibility}
+                />
+              </div>
             </div>
           </div>
 
