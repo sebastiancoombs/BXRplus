@@ -1,17 +1,36 @@
 import { useEffect, useMemo, useState } from "react";
+import { useSearchParams } from "react-router-dom";
 import { useClientContext } from "@/contexts/ClientContext";
-import { useClientDetail, awardPoints, redeemReward } from "@/hooks/useClients";
+import {
+  useClientDetail,
+  awardPoints,
+  redeemReward,
+  deleteTransactionAndRebalance,
+} from "@/hooks/useClients";
 import { supabase } from "@/lib/supabase";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { playEmojiBurst } from "@/lib/bursts";
+import { Undo2 } from "lucide-react";
 
 export default function DashboardTab({ clientId }: { clientId: string }) {
   const { client, behaviors, rewards, transactions, loading, refresh, patchClient } = useClientDetail(clientId);
   const { patchClient: patchClientInList } = useClientContext();
   const [showProgressSettings, setShowProgressSettings] = useState(false);
-  const [sessionMode, setSessionMode] = useState(false);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const sessionMode = searchParams.get("session") === "1";
+  const setSessionMode = (open: boolean) => {
+    setSearchParams(
+      (prev) => {
+        const next = new URLSearchParams(prev);
+        if (open) next.set("session", "1");
+        else next.delete("session");
+        return next;
+      },
+      { replace: true }
+    );
+  };
   const [optimisticBalance, setOptimisticBalance] = useState<number | null>(null);
 
   const displayBalance = optimisticBalance ?? client?.balance ?? 0;
@@ -574,21 +593,35 @@ function SessionProgressRail({ rewards, current, travelerIcon }: { rewards: any[
         </div>
 
         <div className="hidden lg:flex justify-center">
-          <div className="relative h-[420px] w-[110px]">
-            <div className="absolute left-1/2 top-5 bottom-5 -translate-x-1/2 w-4 rounded-full bg-slate-200" />
+          <div className="relative h-[640px] w-[180px]">
+            <div className="absolute left-1/2 top-6 bottom-6 -translate-x-1/2 w-8 rounded-full bg-slate-200 shadow-inner" />
             <div
-              className="absolute left-1/2 bottom-5 -translate-x-1/2 w-4 rounded-full bg-gradient-to-t from-violet-600 via-indigo-500 to-sky-400 transition-all duration-500"
-              style={{ height: `calc(${progressPct}% - 10px)` }}
+              className="absolute left-1/2 bottom-6 -translate-x-1/2 w-8 rounded-full bg-gradient-to-t from-violet-600 via-indigo-500 to-sky-400 transition-all duration-500 shadow-lg"
+              style={{ height: `calc(${progressPct}% - 12px)` }}
             />
-            <div className="absolute left-1/2 -translate-x-1/2 text-3xl animate-bounce transition-all duration-500" style={{ bottom: `calc(${progressPct}% - 2px)` }}>
+            <div
+              className="absolute left-1/2 -translate-x-1/2 text-5xl animate-bounce transition-all duration-500 drop-shadow-md"
+              style={{ bottom: `calc(${progressPct}% - 4px)` }}
+            >
               {travelerIcon}
             </div>
-            {sorted.map((reward) => {
+            {sorted.map((reward, index) => {
               const stopPct = Math.min(96, Math.max(8, (reward.point_cost / maxCost) * 100));
               const unlocked = current >= reward.point_cost;
+              const offset = index % 2 === 0 ? -52 : 52;
               return (
-                <div key={reward.id} className="absolute left-1/2 -translate-x-1/2" style={{ bottom: `calc(${stopPct}% - 16px)` }}>
-                  <div className={`h-12 w-12 rounded-[18px] border-2 grid place-items-center text-2xl shadow-sm ${unlocked ? "bg-background border-primary" : "bg-muted border-border"}`}>
+                <div
+                  key={reward.id}
+                  className="absolute left-1/2 -translate-x-1/2"
+                  style={{ bottom: `calc(${stopPct}% - 22px)`, marginLeft: `${offset}px` }}
+                >
+                  <div
+                    className={`h-20 w-20 rounded-[24px] border-4 grid place-items-center text-4xl shadow-lg transition-transform ${
+                      unlocked
+                        ? "bg-background border-primary scale-105"
+                        : "bg-muted border-border opacity-80"
+                    }`}
+                  >
                     {reward.icon}
                   </div>
                 </div>
@@ -601,6 +634,15 @@ function SessionProgressRail({ rewards, current, travelerIcon }: { rewards: any[
   );
 }
 
+type RecentAction = {
+  id: string;
+  txnId: string;
+  emoji: string;
+  label: string;
+  delta: number; // positive = balance went up, negative = down
+  kind: "earn" | "lose" | "redeem";
+};
+
 function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded, onCelebrate, onOptimisticAward }: {
   client: any;
   behaviors: any[];
@@ -611,10 +653,75 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
   onOptimisticAward: (amount: number) => void;
 }) {
   const [mobileTab, setMobileTab] = useState<"earn" | "reduce" | "rewards">("earn");
+  const [recent, setRecent] = useState<RecentAction[]>([]);
+  const [undoingId, setUndoingId] = useState<string | null>(null);
   const positiveBehaviors = useMemo(() => behaviors.filter((behavior) => behavior.point_value >= 0), [behaviors]);
   const negativeBehaviors = useMemo(() => behaviors.filter((behavior) => behavior.point_value < 0), [behaviors]);
   const travelerIcon = client.traveler_icon || rewards[0]?.traveler_icon || "🚀";
   const mobileActions = mobileTab === "earn" ? positiveBehaviors : mobileTab === "reduce" ? negativeBehaviors : rewards;
+
+  function pushRecent(action: RecentAction) {
+    setRecent((prev) => [action, ...prev].slice(0, 5));
+  }
+
+  async function handleApplyBehavior(behavior: any) {
+    const delta = behavior.point_value;
+    onOptimisticAward(delta);
+    const txn = await awardPoints(client.id, behavior.id, delta);
+    await onAwarded();
+    onCelebrate(
+      undefined,
+      undefined,
+      delta < 0 ? "penalty" : undefined,
+      delta < 0 ? (behavior.feedback_loss_animation_id || "⚠️") : (behavior.feedback_gain_animation_id || "⭐")
+    );
+    if (txn?.id) {
+      pushRecent({
+        id: `${txn.id}-${Date.now()}`,
+        txnId: txn.id,
+        emoji: behavior.icon,
+        label: behavior.name,
+        delta,
+        kind: delta < 0 ? "lose" : "earn",
+      });
+    }
+  }
+
+  async function handleRedeemReward(reward: any) {
+    if (client.balance < reward.point_cost) return;
+    onOptimisticAward(-reward.point_cost);
+    const txn = await redeemReward(client.id, reward.id);
+    await onAwarded();
+    onCelebrate(undefined, undefined, undefined, reward.icon || "🎁");
+    if (txn?.id) {
+      pushRecent({
+        id: `${txn.id}-${Date.now()}`,
+        txnId: txn.id,
+        emoji: reward.icon || "🎁",
+        label: reward.name,
+        delta: -reward.point_cost,
+        kind: "redeem",
+      });
+    }
+  }
+
+  async function handleUndo(action: RecentAction) {
+    setUndoingId(action.id);
+    try {
+      // Reverse the optimistic balance change first so the UI feels instant.
+      onOptimisticAward(-action.delta);
+      await deleteTransactionAndRebalance(action.txnId);
+      await onAwarded();
+      setRecent((prev) => prev.filter((r) => r.id !== action.id));
+    } catch (err) {
+      console.error("Undo failed", err);
+      // Roll the optimistic reverse back if the server rejected the delete.
+      onOptimisticAward(action.delta);
+      alert("Couldn't undo that one — it may have already been edited.");
+    } finally {
+      setUndoingId(null);
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-40 bg-background/95 backdrop-blur-sm">
@@ -634,10 +741,46 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
               <Button variant="outline" onClick={onClose}>Done</Button>
             </div>
           </div>
+
+          {recent.length > 0 && (
+            <div className="mt-3 -mx-4 px-4 pt-3 border-t">
+              <div className="flex items-center gap-2 mb-2">
+                <Undo2 className="w-3.5 h-3.5 text-muted-foreground" />
+                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
+                  Recent — tap to undo
+                </p>
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {recent.map((action) => (
+                  <button
+                    key={action.id}
+                    type="button"
+                    onClick={() => handleUndo(action)}
+                    disabled={undoingId === action.id}
+                    className={`group inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all hover:shadow-sm disabled:opacity-50 ${
+                      action.kind === "lose"
+                        ? "border-red-200 bg-red-50/60 text-red-800 hover:bg-red-50"
+                        : action.kind === "redeem"
+                        ? "border-amber-200 bg-amber-50/60 text-amber-800 hover:bg-amber-50"
+                        : "border-emerald-200 bg-emerald-50/60 text-emerald-800 hover:bg-emerald-50"
+                    }`}
+                    title={`Undo ${action.label}`}
+                  >
+                    <span className="text-base leading-none">{action.emoji}</span>
+                    <span className="truncate max-w-[140px]">{action.label}</span>
+                    <span className="font-bold">
+                      {action.delta > 0 ? `+${action.delta}` : action.delta}
+                    </span>
+                    <Undo2 className="w-3 h-3 opacity-60 group-hover:opacity-100" />
+                  </button>
+                ))}
+              </div>
+            </div>
+          )}
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 md:p-6">
-          <div className="space-y-5 lg:grid lg:grid-cols-[180px_1fr] lg:gap-4 lg:h-full lg:space-y-0">
+          <div className="space-y-5 lg:grid lg:grid-cols-[240px_1fr] lg:gap-6 lg:h-full lg:space-y-0">
             <div className="hidden lg:block self-start">
               <SessionProgressRail rewards={rewards} current={client.balance} travelerIcon={travelerIcon} />
             </div>
@@ -683,17 +826,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
                         title={behavior.name}
                         value={`${behavior.point_value > 0 ? "+" : ""}${behavior.point_value}`}
                         tone={behavior.point_value < 0 ? "loss" : "gain"}
-                        onClick={async () => {
-                          onOptimisticAward(behavior.point_value);
-                          await awardPoints(client.id, behavior.id, behavior.point_value);
-                          await onAwarded();
-                          onCelebrate(
-                            undefined,
-                            undefined,
-                            behavior.point_value < 0 ? "penalty" : undefined,
-                            behavior.point_value < 0 ? (behavior.feedback_loss_animation_id || "⚠️") : (behavior.feedback_gain_animation_id || "⭐")
-                          );
-                        }}
+                        onClick={() => handleApplyBehavior(behavior)}
                       />
                     ))}
 
@@ -706,13 +839,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
                         tone={client.balance >= reward.point_cost ? "reward" : "muted"}
                         disabled={client.balance < reward.point_cost}
                         subtitle={client.balance >= reward.point_cost ? "Tap to redeem" : `${Math.max(0, reward.point_cost - client.balance)} left`}
-                        onClick={async () => {
-                          if (client.balance < reward.point_cost) return;
-                          onOptimisticAward(-reward.point_cost);
-                          await redeemReward(client.id, reward.id);
-                          await onAwarded();
-                          onCelebrate(undefined, undefined, undefined, reward.icon || "🎁");
-                        }}
+                        onClick={() => handleRedeemReward(reward)}
                       />
                     ))}
                   </div>
@@ -754,17 +881,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
                       title={behavior.name}
                       value={`${behavior.point_value > 0 ? "+" : ""}${behavior.point_value}`}
                       tone={behavior.point_value < 0 ? "loss" : "gain"}
-                      onClick={async () => {
-                        onOptimisticAward(behavior.point_value);
-                        await awardPoints(client.id, behavior.id, behavior.point_value);
-                        await onAwarded();
-                        onCelebrate(
-                          undefined,
-                          undefined,
-                          behavior.point_value < 0 ? "penalty" : undefined,
-                          behavior.point_value < 0 ? (behavior.feedback_loss_animation_id || "⚠️") : (behavior.feedback_gain_animation_id || "⭐")
-                        );
-                      }}
+                      onClick={() => handleApplyBehavior(behavior)}
                     />
                   ))}
 
@@ -777,13 +894,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
                       tone={client.balance >= reward.point_cost ? "reward" : "muted"}
                       disabled={client.balance < reward.point_cost}
                       subtitle={client.balance >= reward.point_cost ? "Tap to redeem" : `${Math.max(0, reward.point_cost - client.balance)} left`}
-                      onClick={async () => {
-                        if (client.balance < reward.point_cost) return;
-                        onOptimisticAward(-reward.point_cost);
-                        await redeemReward(client.id, reward.id);
-                        await onAwarded();
-                        onCelebrate(undefined, undefined, undefined, reward.icon || "🎁");
-                      }}
+                      onClick={() => handleRedeemReward(reward)}
                     />
                   ))}
                 </div>

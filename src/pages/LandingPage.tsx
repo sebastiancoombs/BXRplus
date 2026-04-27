@@ -14,6 +14,7 @@ export default function LandingPage() {
             <a href="#how-it-works" className="hover:text-foreground transition-colors">How It Works</a>
             <a href="#for-your-team" className="hover:text-foreground transition-colors">For Your Team</a>
             <a href="#why-bxr" className="hover:text-foreground transition-colors">Why BXR+</a>
+            <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
           </nav>
           <div className="flex items-center gap-3">
             <Link to="/login">
@@ -238,6 +239,7 @@ export default function LandingPage() {
           <div className="flex gap-6 text-sm text-muted-foreground">
             <a href="#how-it-works" className="hover:text-foreground transition-colors">How It Works</a>
             <a href="#for-your-team" className="hover:text-foreground transition-colors">For Your Team</a>
+            <Link to="/pricing" className="hover:text-foreground transition-colors">Pricing</Link>
             <Link to="/login" className="hover:text-foreground transition-colors">Sign In</Link>
           </div>
         </div>

@@ -39,9 +39,8 @@ export default function IconPicker({ value, onChange, clientId }: IconPickerProp
     });
 
     if (error) {
-      // If bucket doesn't exist yet, try creating it
       console.error("Upload error:", error);
-      alert("Upload failed. Make sure the 'uploads' storage bucket exists in Supabase.");
+      alert(`Upload failed: ${error.message}`);
       setUploading(false);
       return;
     }

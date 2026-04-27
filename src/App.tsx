@@ -8,6 +8,8 @@ import ClientPage from "@/pages/ClientPage";
 import ScanPage from "@/pages/ScanPage";
 import ProfilePage from "@/pages/ProfilePage";
 import PublicSessionPage from "@/pages/PublicSessionPage";
+import PricingPage from "@/pages/PricingPage";
+import BillingPage from "@/pages/BillingPage";
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
@@ -30,11 +32,13 @@ export default function App() {
         <Routes>
           <Route path="/" element={<PublicRoute><LandingPage /></PublicRoute>} />
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
+          <Route path="/pricing" element={<PricingPage />} />
           <Route path="/session" element={<PublicSessionPage />} />
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<ClientPage />} />
             <Route path="/scan" element={<ScanPage />} />
             <Route path="/profile" element={<ProfilePage />} />
+            <Route path="/billing" element={<BillingPage />} />
           </Route>
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>

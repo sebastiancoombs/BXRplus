@@ -84,6 +84,32 @@ export interface Transaction {
   creator?: Profile;
 }
 
+export type SubscriptionStatus =
+  | "free"
+  | "active"
+  | "trialing"
+  | "past_due"
+  | "canceled"
+  | "incomplete"
+  | "incomplete_expired"
+  | "unpaid";
+
+export type SubscriptionPlan = "free" | "pro_monthly" | "pro_yearly";
+
+export interface Subscription {
+  owner_id: string;
+  stripe_customer_id: string | null;
+  stripe_subscription_id: string | null;
+  status: SubscriptionStatus;
+  plan: SubscriptionPlan;
+  current_period_end: string | null;
+  cancel_at_period_end: boolean;
+  comped_until: string | null;
+  comped_reason: string | null;
+  created_at: string;
+  updated_at: string;
+}
+
 export interface Database {
   public: {
     Tables: {
@@ -93,6 +119,11 @@ export interface Database {
       behaviors: { Row: Behavior; Insert: Omit<Behavior, "id" | "created_at">; Update: Partial<Behavior> };
       rewards: { Row: Reward; Insert: Omit<Reward, "id" | "created_at">; Update: Partial<Reward> };
       transactions: { Row: Transaction; Insert: Omit<Transaction, "id" | "created_at">; Update: Partial<Transaction> };
+      subscriptions: {
+        Row: Subscription;
+        Insert: Partial<Subscription> & { owner_id: string };
+        Update: Partial<Subscription>;
+      };
     };
     Functions: {
       award_points: {
@@ -102,6 +133,20 @@ export interface Database {
       redeem_reward: {
         Args: { p_client_id: string; p_reward_id: string; p_note?: string };
         Returns: Transaction;
+      };
+      is_pro: { Args: { p_owner_id: string }; Returns: boolean };
+      can_add_client: { Args: { p_owner_id: string }; Returns: boolean };
+      grant_comp: {
+        Args: { p_owner_id: string; p_until: string | null; p_reason?: string };
+        Returns: Subscription;
+      };
+      set_behavior_visibility: {
+        Args: { p_behavior_id: string; p_user_ids: string[] | null };
+        Returns: void;
+      };
+      set_reward_visibility: {
+        Args: { p_reward_id: string; p_user_ids: string[] | null };
+        Returns: void;
       };
     };
   };

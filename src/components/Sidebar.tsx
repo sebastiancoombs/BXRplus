@@ -2,25 +2,43 @@ import { useState, useEffect } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { useAuth } from "@/contexts/AuthContext";
 import { useClientContext } from "@/contexts/ClientContext";
+import { useSubscription } from "@/hooks/useSubscription";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { UpgradeModal } from "@/components/UpgradeModal";
 
 const navItems = [
   { path: "/dashboard", label: "Overview", icon: "📊" },
   { path: "/scan", label: "Scan Code", icon: "📷" },
   { path: "/profile", label: "My Profile", icon: "⚙️" },
+  { path: "/billing", label: "Billing", icon: "💳" },
 ];
+
+const FREE_CLIENT_LIMIT = 1;
 
 export default function Sidebar() {
   const location = useLocation();
   const { profile, signOut } = useAuth();
   const { clients, activeClient, setActiveClientId, createClient } = useClientContext();
+  const { isPro } = useSubscription();
   const [adding, setAdding] = useState(false);
   const [newName, setNewName] = useState("");
   const [busy, setBusy] = useState(false);
   const [collapsed, setCollapsed] = useState(false);
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [showUpgrade, setShowUpgrade] = useState(false);
+
+  const ownedCount = clients.filter((c) => c.isOwner).length;
+  const atFreeCap = !isPro && ownedCount >= FREE_CLIENT_LIMIT;
+
+  function requestAdd() {
+    if (atFreeCap) {
+      setShowUpgrade(true);
+      return;
+    }
+    setAdding((v) => !v);
+  }
 
   // Auto-collapse on small screens
   useEffect(() => {
@@ -74,8 +92,8 @@ export default function Sidebar() {
         {!collapsed && (
           <div className="flex items-center justify-between mb-2 px-1">
             <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">Learners</p>
-            <button onClick={() => setAdding(!adding)} className="text-xs text-primary hover:underline">
-              {adding ? "Cancel" : "+ Add"}
+            <button onClick={requestAdd} className="text-xs text-primary hover:underline">
+              {adding ? "Cancel" : atFreeCap ? "+ Add (Pro)" : "+ Add"}
             </button>
           </div>
         )}
@@ -96,13 +114,13 @@ export default function Sidebar() {
         {/* Client pills / icons */}
         {clients.length === 0 && !adding ? (
           collapsed ? (
-            <button onClick={() => { setCollapsed(false); setAdding(true); }}
+            <button onClick={() => { setCollapsed(false); requestAdd(); }}
               className="w-10 h-10 mx-auto rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
-              title="Add client">
+              title={atFreeCap ? "Upgrade to add another client" : "Add client"}>
               +
             </button>
           ) : (
-            <button onClick={() => setAdding(true)}
+            <button onClick={requestAdd}
               className="w-full text-left px-3 py-4 rounded-lg border-2 border-dashed text-sm text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors">
               Add your first learner
             </button>
@@ -158,9 +176,9 @@ export default function Sidebar() {
         {/* Add button when collapsed */}
         {collapsed && clients.length > 0 && (
           <button
-            onClick={() => { setCollapsed(false); setAdding(true); }}
+            onClick={() => { setCollapsed(false); requestAdd(); }}
             className="w-10 h-10 mx-auto mt-1 rounded-lg border-2 border-dashed flex items-center justify-center text-muted-foreground hover:border-primary/40 hover:text-primary transition-colors"
-            title="Add client"
+            title={atFreeCap ? "Upgrade to add another client" : "Add client"}
           >
             +
           </button>
@@ -235,6 +253,8 @@ export default function Sidebar() {
       <div className="hidden md:block">
         {sidebarContent}
       </div>
+
+      <UpgradeModal open={showUpgrade} onOpenChange={setShowUpgrade} />
     </>
   );
 }
