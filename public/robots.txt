@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+Disallow: /dashboard
+Disallow: /scan
+Disallow: /profile
+Disallow: /billing
+Disallow: /session
+
+Sitemap: https://bxrplus.app/sitemap.xml

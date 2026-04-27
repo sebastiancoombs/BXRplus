@@ -1,7 +1,14 @@
 import { Link } from "react-router-dom";
 import { Button } from "@/components/ui/button";
+import { useDocumentHead } from "@/hooks/useDocumentHead";
 
 export default function LandingPage() {
+  useDocumentHead({
+    title: "BXR+ — Token Economy Software for ABA Teams (BCBA, RBT, Parent)",
+    description:
+      "BXR+ is a shared token-economy app for ABA care teams. Track behaviors, award points, and deliver reinforcement consistently across clinic, school, and home. Free for one client, forever.",
+    canonical: "https://bxrplus.app/",
+  });
   return (
     <div className="min-h-screen bg-background">
       {/* Top Bar */}

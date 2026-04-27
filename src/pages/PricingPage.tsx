@@ -3,7 +3,8 @@ import { Link, useNavigate } from "react-router-dom";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/AuthContext";
 import { useSubscription } from "@/hooks/useSubscription";
-import { startCheckout } from "@/lib/billing";
+import { useDocumentHead } from "@/hooks/useDocumentHead";
+import { startCheckout, BillingNotReadyError } from "@/lib/billing";
 import { Check } from "lucide-react";
 
 const PRO_FEATURES = [
@@ -24,10 +25,17 @@ const FREE_FEATURES = [
 ];
 
 export default function PricingPage() {
+  useDocumentHead({
+    title: "Pricing — BXR+ | Free for one client, $7/mo for unlimited",
+    description:
+      "Free Forever for one client. BXR+ Pro is $7/mo or $59/yr for unlimited clients. RBTs and parents always free. Cancel anytime.",
+    canonical: "https://bxrplus.app/pricing",
+  });
   const { user } = useAuth();
   const { isPro } = useSubscription();
   const [billing, setBilling] = useState<"monthly" | "yearly">("yearly");
   const [busy, setBusy] = useState(false);
+  const [comingSoon, setComingSoon] = useState(false);
   const navigate = useNavigate();
 
   async function onUpgrade() {
@@ -39,8 +47,12 @@ export default function PricingPage() {
     try {
       await startCheckout(billing);
     } catch (err) {
-      console.error(err);
-      alert("Could not start checkout. Try again in a moment.");
+      if (err instanceof BillingNotReadyError) {
+        setComingSoon(true);
+      } else {
+        console.error(err);
+        alert("Could not start checkout. Try again in a moment.");
+      }
       setBusy(false);
     }
   }
@@ -71,6 +83,18 @@ export default function PricingPage() {
           <p className="mt-4 text-lg text-muted-foreground">
             One free program for life. Unlock the rest of your caseload for less than a coffee a week.
           </p>
+          {comingSoon && (
+            <div className="mt-6 inline-flex items-center gap-2 rounded-full border border-amber-300 bg-amber-50 text-amber-900 px-4 py-2 text-sm">
+              <span>🚧</span>
+              <span>
+                Paid plans launch shortly.{" "}
+                <a className="underline font-medium" href="mailto:hello@bxrplus.app?subject=BXR%2B%20Pro%20early%20access">
+                  Email for early access
+                </a>{" "}
+                — every existing account already has full access for free.
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="mt-10 flex justify-center">

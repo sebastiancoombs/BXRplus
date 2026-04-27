@@ -2,10 +2,28 @@ import { supabase } from "@/lib/supabase";
 
 export type CheckoutPlan = "monthly" | "yearly";
 
+export class BillingNotReadyError extends Error {
+  constructor() {
+    super("billing_not_ready");
+    this.name = "BillingNotReadyError";
+  }
+}
+
 async function callFunction<T>(name: string, body: Record<string, unknown>): Promise<T> {
   const { data, error } = await supabase.functions.invoke(name, { body });
-  if (error) throw error;
-  if (data?.error) throw new Error(data.error);
+  if (error) {
+    // Edge function not deployed yet (or Stripe price IDs not configured).
+    // Surface a typed error so callers can show a friendly "coming soon" UI.
+    const message = error.message ?? "";
+    const looksUnconfigured =
+      /Function not found|not_configured|FunctionsHttpError|404/i.test(message);
+    if (looksUnconfigured) throw new BillingNotReadyError();
+    throw error;
+  }
+  if (data?.error) {
+    if (data.error === "stripe price not configured") throw new BillingNotReadyError();
+    throw new Error(data.error);
+  }
   return data as T;
 }
 
