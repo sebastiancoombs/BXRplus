@@ -6,6 +6,7 @@ import DashboardTab from "@/features/client/tabs/DashboardTab";
 import RewardsTab from "@/features/client/tabs/RewardsTab";
 import DataTab from "@/features/client/tabs/DataTab";
 import PrintablesTab from "@/features/client/tabs/PrintablesTab";
+import SessionNotesTab from "@/features/client/tabs/SessionNotesTab";
 import TeamTab from "@/features/client/tabs/TeamTab";
 import SettingsTab from "@/features/client/tabs/SettingsTab";
 
@@ -63,6 +64,7 @@ export default function ClientPage() {
         {tab === "dashboard" && <DashboardTab clientId={client.id} />}
         {tab === "rewards" && <RewardsTab clientId={client.id} />}
         {tab === "data" && <DataTab clientId={client.id} clientName={client.full_name} />}
+        {tab === "notes" && <SessionNotesTab clientId={client.id} clientName={client.full_name} />}
         {tab === "printables" && <PrintablesTab clientId={client.id} client={client} />}
         {tab === "team" && <TeamTab clientId={client.id} isOwner={client.isOwner} />}
         {tab === "settings" && <SettingsTab clientId={client.id} isOwner={client.isOwner} onResetTab={() => setTab("dashboard")} />}
