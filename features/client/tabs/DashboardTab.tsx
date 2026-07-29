@@ -93,13 +93,6 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
           </div>
         </div>
 
-        <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-y py-4 xl:grid-cols-4 xl:gap-6">
-          <StatCard label="Points available" value={displayBalance} />
-          <StatCard label="Rewards ready now" value={availableRewards} />
-          <StatCard label="Next reward" value={nextReward?.name ?? "All rewards available"} />
-          <StatCard label="Points to next reward" value={nextReward ? `${Math.max(0, nextReward.point_cost - displayBalance)} left` : "Ready now"} />
-        </div>
-
         {sortedRewards.length > 0 && (
           <section className="space-y-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -141,6 +134,13 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
             />
           </section>
         )}
+
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-y py-4 xl:grid-cols-4 xl:gap-6">
+          <StatCard label="Points available" value={displayBalance} />
+          <StatCard label="Rewards ready now" value={availableRewards} />
+          <StatCard label="Next reward" value={nextReward?.name ?? "All rewards available"} />
+          <StatCard label="Points to next reward" value={nextReward ? `${Math.max(0, nextReward.point_cost - displayBalance)} left` : "Ready now"} />
+        </div>
       </section>
 
       <section className="grid items-start gap-6 border-t pt-5 xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.42fr)]">
@@ -430,12 +430,6 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
               </div>
               <span className="text-4xl leading-none">{travelerIcon}</span>
             </div>
-            <div className="mt-4 h-3 rounded-full bg-slate-200 overflow-hidden lg:hidden">
-              <div
-                className="h-full rounded-full bg-gradient-to-r from-violet-600 via-indigo-500 to-sky-400 transition-all duration-500"
-                style={{ width: `${progressPct}%` }}
-              />
-            </div>
           </div>
         </div>
       </div>
@@ -465,14 +459,27 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
           </div>
         </div>
 
-        <div className="divide-y border-y">
+        <div className="relative divide-y border-y pl-12 xl:pl-0">
+          <div className="absolute bottom-5 left-[19px] top-5 w-1.5 rounded-full bg-slate-200 xl:hidden" />
+          <div
+            className="absolute left-[19px] top-5 w-1.5 rounded-full bg-gradient-to-b from-violet-600 via-indigo-500 to-sky-400 transition-all duration-500 xl:hidden"
+            style={{ height: `calc(${progressPct}% - 10px)` }}
+          />
+          <div
+            className="absolute left-[8px] z-[2] text-2xl transition-all duration-500 xl:hidden"
+            style={{ top: `calc(${progressPct}% - 4px)` }}
+          >
+            {travelerIcon}
+          </div>
           {sorted.map((reward, index) => {
             const unlocked = current >= reward.point_cost;
             return (
-              <div key={reward.id} className={`py-4 md:px-2 md:py-5 ${unlocked ? "" : "opacity-65"}`}>
+              <div key={reward.id} className={`relative py-4 md:px-2 md:py-5 ${unlocked ? "" : "opacity-65"}`}>
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex items-start gap-3 flex-1">
-                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-muted/40 text-xl">{reward.icon}</div>
+                    <div className={`absolute -left-12 z-[3] grid h-10 w-10 shrink-0 place-items-center rounded-full border-2 text-lg xl:static xl:hidden ${unlocked ? "border-primary bg-background" : "border-border bg-muted"}`}>
+                      {reward.icon}
+                    </div>
                     <div className="min-w-0 space-y-1">
                       <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Reward stop {index + 1}</p>
                       <p className="font-semibold break-words">{reward.name}</p>
