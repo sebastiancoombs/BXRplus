@@ -826,38 +826,20 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
           </div>
 
           {recent.length > 0 && (
-            <div className="mt-3 -mx-4 px-4 pt-3 border-t">
-              <div className="flex items-center gap-2 mb-2">
-                <Undo2 className="w-3.5 h-3.5 text-muted-foreground" />
-                <p className="text-[11px] uppercase tracking-wider text-muted-foreground font-medium">
-                  Recent — tap to undo
-                </p>
-              </div>
-              <div className="flex flex-wrap gap-2">
-                {recent.map((action) => (
-                  <button
-                    key={action.id}
-                    type="button"
-                    onClick={() => handleUndo(action)}
-                    disabled={undoingId === action.id}
-                    className={`group inline-flex items-center gap-2 rounded-full border px-3 py-1.5 text-xs font-medium transition-all hover:shadow-sm disabled:opacity-50 ${
-                      action.kind === "lose"
-                        ? "border-red-200 bg-red-50/60 text-red-800 hover:bg-red-50"
-                        : action.kind === "redeem"
-                        ? "border-amber-200 bg-amber-50/60 text-amber-800 hover:bg-amber-50"
-                        : "border-emerald-200 bg-emerald-50/60 text-emerald-800 hover:bg-emerald-50"
-                    }`}
-                    title={`Undo ${action.label}`}
-                  >
-                    <span className="text-base leading-none">{action.emoji}</span>
-                    <span className="truncate max-w-[140px]">{action.label}</span>
-                    <span className="font-bold">
-                      {action.delta > 0 ? `+${action.delta}` : action.delta}
-                    </span>
-                    <Undo2 className="w-3 h-3 opacity-60 group-hover:opacity-100" />
-                  </button>
-                ))}
-              </div>
+            <div className="-mx-3 mt-2 flex justify-end border-t px-3 pt-2 md:-mx-4 md:px-4">
+              <button
+                type="button"
+                onClick={() => handleUndo(recent[0])}
+                disabled={undoingId === recent[0].id}
+                className="inline-flex min-w-0 max-w-full items-center gap-2 rounded-2xl border border-slate-300 bg-white/80 px-3 py-1.5 text-left text-xs font-bold text-slate-700 shadow-sm transition-all hover:bg-white disabled:opacity-50 dark:border-white/20 dark:bg-white/10 dark:text-slate-100"
+                title={`Undo ${recent[0].label}`}
+              >
+                <Undo2 className="h-3.5 w-3.5 shrink-0" />
+                <span className="shrink-0">{undoingId === recent[0].id ? "Undoing…" : "Undo last"}</span>
+                <span className="min-w-0 whitespace-normal break-words font-medium opacity-75">
+                  {recent[0].emoji} {recent[0].label} ({recent[0].delta > 0 ? `+${recent[0].delta}` : recent[0].delta})
+                </span>
+              </button>
             </div>
           )}
         </div>
