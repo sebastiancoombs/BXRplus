@@ -6,11 +6,13 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUiStore } from "@/store/uiStore";
 import { supabase } from "@/lib/supabase";
-import { Home, CheckSquare, BarChart2, PanelLeftClose, PanelLeft, FileText, CalendarDays, User, Activity } from "lucide-react";
+import { Home, CheckSquare, BarChart2, PanelLeftClose, PanelLeft, FileText, CalendarDays, User, Activity, Users } from "lucide-react";
 import { AiOutlineFall } from "react-icons/ai";
+import { useShellAccess } from "@/hooks/useShellAccess";
 
 export default function SidebarNav() {
   const pathname = usePathname();
+  const { behaviorOnly } = useShellAccess();
   
   const { isSidebarPinned, toggleSidebarPin, isSidebarIconPinned, toggleSidebarIconPin, mobileNoteOpen, isEditorFullscreen } = useUiStore();
   const [isHovered, setIsHovered] = useState(false);
@@ -67,7 +69,7 @@ export default function SidebarNav() {
     { name: "Notes", href: "/notes", icon: FileText },
     { name: "Calendar", href: "/calendar", icon: CalendarDays },
     { name: "Analytics", href: "/analytics", icon: BarChart2 },
-  ];
+  ].filter((item) => !behaviorOnly || item.href === "/behavior-zone");
 
   const mobileNavItems =[
     { name: "Tasks", href: "/tasks", icon: CheckSquare },
@@ -76,10 +78,10 @@ export default function SidebarNav() {
     { name: "Behavior Zone", href: "/behavior-zone", icon: Activity },
     { name: "Calendar", href: "/calendar", icon: CalendarDays },
     { name: "Analytics", href: "/analytics", icon: BarChart2 },
-  ];
+  ].filter((item) => !behaviorOnly || item.href === "/behavior-zone");
 
   const currentItem = desktopNavItems.find(item => item.href === pathname) || { 
-    name: pathname === '/settings' ? 'Profile' : pathname === '/sessions' ? 'Time Log' : 'BXR+' 
+    name: pathname === '/settings' ? 'Profile' : pathname === '/support-team' ? 'Support Team' : pathname === '/sessions' ? 'Time Log' : 'BXR+' 
   };
 
   const handleTabClick = (e: React.MouseEvent, href: string, isActive: boolean) => {
@@ -174,6 +176,21 @@ export default function SidebarNav() {
           </nav>
 
           <div className="mt-auto space-y-2 pb-6 pt-4 border-t border-[#e0ddd5]/50 dark:border-[#333]/50 mx-4">
+            {!behaviorOnly && (
+              <Link
+                href="/support-team"
+                onClick={(e) => handleTabClick(e, "/support-team", pathname === "/support-team")}
+                className={`flex items-center h-12 rounded-xl text-sm font-medium transition-all duration-300 overflow-hidden shrink-0
+                  ${isExpanded ? "px-4 justify-start gap-4" : "mx-0 justify-center"}
+                  ${pathname === "/support-team" ? "bg-white dark:bg-[#252525] text-[#c2956e] dark:text-[#d1a784] shadow-sm border border-[#e0ddd5] dark:border-[#333]" : "text-[#888888] dark:text-[#a0a0a0] md:hover:bg-white/50 md:dark:hover:bg-[#2a2a2a] md:hover:text-[#3d3b33] md:dark:hover:text-[#fff]"}
+                `}
+              >
+                <Users className="w-[22px] h-[22px] shrink-0" />
+                <span className={`transition-all duration-300 whitespace-nowrap ${isExpanded ? "opacity-100 w-auto" : "opacity-0 w-0"}`}>
+                  Support Team
+                </span>
+              </Link>
+            )}
             <Link
               href="/settings"
               onClick={(e) => handleTabClick(e, "/settings", pathname === "/settings")}
@@ -222,7 +239,7 @@ export default function SidebarNav() {
       </aside>
 
       {/* Mobile Bottom Nav */}
-      <nav className={`md:hidden fixed bottom-0 left-0 w-full h-[calc(82px+env(safe-area-inset-bottom))] pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-0 px-6 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-xl border-t border-[#e0ddd5] dark:border-[#2a2a2a] flex items-center justify-between z-[100] transition-transform duration-300 ease-in-out overflow-x-auto no-scrollbar ${mobileNoteOpen || isEditorFullscreen ? 'translate-y-full' : 'translate-y-0'}`}>
+      <nav className={`md:hidden fixed bottom-0 left-0 w-full h-[calc(82px+env(safe-area-inset-bottom))] pb-[calc(1.5rem+env(safe-area-inset-bottom))] pt-0 px-6 bg-white/95 dark:bg-[#121212]/95 backdrop-blur-xl border-t border-[#e0ddd5] dark:border-[#2a2a2a] flex items-center ${behaviorOnly ? "justify-center" : "justify-between"} z-[100] transition-transform duration-300 ease-in-out overflow-x-auto no-scrollbar ${mobileNoteOpen || isEditorFullscreen ? 'translate-y-full' : 'translate-y-0'}`}>
         {mobileNavItems.map((item) => {
           const isActive = pathname === item.href;
           return (

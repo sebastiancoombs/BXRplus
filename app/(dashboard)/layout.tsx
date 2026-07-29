@@ -10,14 +10,22 @@ import { useTimerStore } from "@/store/timerStore";
 import ConfirmDialog from "@/components/ui/ConfirmDialog";
 import GlobalTimeWidget from "@/components/ui/GlobalTimeWidget";
 import { Tooltip } from "react-tooltip";
+import { useShellAccess } from "@/hooks/useShellAccess";
 
 const generateSyncId = () => (typeof crypto !== 'undefined' && crypto.randomUUID) ? crypto.randomUUID() : Math.random().toString(36).substring(2);
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const router = useRouter();
   const pathname = usePathname();
+  const { behaviorOnly, loading: accessLoading } = useShellAccess();
   const [isLoading, setIsLoading] = useState(true);
   const [userId, setUserId] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!accessLoading && behaviorOnly && pathname !== "/behavior-zone" && pathname !== "/settings") {
+      router.replace("/behavior-zone");
+    }
+  }, [accessLoading, behaviorOnly, pathname, router]);
 
   const { 
     theme, 
@@ -316,7 +324,9 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   const isHomePage = pathname === '/home';
   const isLandingPage = pathname === '/';
 
-  if (isLoading) return <div className="min-h-screen bg-[#f7f5f0] dark:bg-[#121212]" />;
+  if (isLoading || accessLoading || (behaviorOnly && pathname !== "/behavior-zone" && pathname !== "/settings")) {
+    return <div className="min-h-screen bg-[#f7f5f0] dark:bg-[#121212]" />;
+  }
 
   if (isLandingPage) {
     return (
