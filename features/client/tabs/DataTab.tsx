@@ -105,7 +105,7 @@ export default function DataTab({ clientId, clientName }: { clientId: string; cl
 
   return (
     <div className="space-y-4 md:space-y-8">
-      <div className="rounded-2xl border bg-gradient-to-br from-background via-background to-primary/5 p-4 shadow-sm md:rounded-3xl md:p-7">
+      <div>
         <div className="flex flex-col gap-3 md:gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Progress Review</p>
@@ -213,7 +213,7 @@ export default function DataTab({ clientId, clientName }: { clientId: string; cl
 
 function MetricCard({ label, value, className = "" }: { label: string; value: string; className?: string }) {
   return (
-    <div className="rounded-xl border bg-card px-3 py-3 md:rounded-2xl md:px-4 md:py-4">
+    <div className="border-l-2 border-primary/30 pl-3">
       <p className="text-xs text-muted-foreground">{label}</p>
       <p className={`mt-1 text-2xl font-extrabold md:text-3xl ${className}`}>{value}</p>
     </div>

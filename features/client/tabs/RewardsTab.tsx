@@ -84,7 +84,7 @@ export default function RewardsTab({ clientId }: { clientId: string }) {
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <section className="space-y-4 rounded-2xl border bg-gradient-to-br from-background via-background to-primary/5 p-4 shadow-sm md:space-y-6 md:rounded-[32px] md:p-7">
+      <section className="space-y-5 md:space-y-6">
         <div className="space-y-3">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Program Setup</p>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -101,7 +101,7 @@ export default function RewardsTab({ clientId }: { clientId: string }) {
           </div>
         </div>
 
-        <section className="space-y-4 rounded-2xl border bg-card p-3 md:space-y-5 md:rounded-[28px] md:p-5">
+        <section className="space-y-4 border-t pt-5 md:space-y-5">
           <div className="space-y-2">
             <div>
               <h3 className="text-xl font-semibold tracking-tight">Behavior Programs</h3>
@@ -156,7 +156,7 @@ export default function RewardsTab({ clientId }: { clientId: string }) {
           )}
         </section>
 
-        <section className="space-y-4 rounded-2xl border bg-card p-3 md:space-y-5 md:rounded-[28px] md:p-5">
+        <section className="space-y-4 border-t pt-5 md:space-y-5">
           <div>
             <h3 className="text-xl font-semibold tracking-tight">Rewards</h3>
             <p className="text-sm text-muted-foreground mt-1">

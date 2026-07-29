@@ -284,7 +284,7 @@ export default function SessionNotesTab({ clientId, clientName }: { clientId: st
 
   return (
     <div className="space-y-4 md:space-y-6">
-      <section className="space-y-4 rounded-2xl border bg-gradient-to-br from-background via-background to-sky-50/70 p-4 shadow-sm md:space-y-6 md:rounded-[32px] md:p-7">
+      <section className="space-y-5 md:space-y-6">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2 max-w-3xl">
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">BCBA Documentation</p>
@@ -300,7 +300,7 @@ export default function SessionNotesTab({ clientId, clientName }: { clientId: st
         </div>
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-          <section className="space-y-4 rounded-2xl border bg-card p-3 md:space-y-5 md:rounded-[28px] md:p-5">
+          <section className="space-y-4 border-t pt-5 md:space-y-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h3 className="text-xl font-semibold tracking-tight">Daily note groups</h3>

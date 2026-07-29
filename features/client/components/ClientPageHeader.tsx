@@ -19,7 +19,7 @@ export function ClientPageHeader({
 }) {
   return (
     <div className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur">
-      <div className="mx-auto max-w-5xl px-3 sm:px-4 md:px-6">
+      <div className="w-full px-3 sm:px-4 md:px-6 2xl:px-10">
         <div className="flex min-h-14 items-center justify-between gap-3 pl-10 md:min-h-16 md:pl-0">
           <div className="min-w-0">
             <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground lg:hidden">Behavior Zone</p>

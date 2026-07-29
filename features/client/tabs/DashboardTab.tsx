@@ -75,7 +75,7 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
         />
       )}
 
-      <section className="space-y-4 rounded-2xl border bg-gradient-to-br from-background via-background to-primary/5 p-4 shadow-sm md:space-y-6 md:rounded-[32px] md:p-7">
+      <section className="space-y-5 md:space-y-6">
         <div className="space-y-2 md:space-y-3">
           <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Session Overview</p>
           <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
@@ -93,7 +93,7 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
           </div>
         </div>
 
-        <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-4">
+        <div className="grid grid-cols-2 gap-x-4 gap-y-3 border-y py-4 xl:grid-cols-4 xl:gap-6">
           <StatCard label="Points available" value={displayBalance} />
           <StatCard label="Rewards ready now" value={availableRewards} />
           <StatCard label="Next reward" value={nextReward?.name ?? "All rewards available"} />
@@ -101,7 +101,7 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
         </div>
 
         {sortedRewards.length > 0 && (
-          <section className="space-y-4 rounded-2xl border bg-card p-3 shadow-sm md:rounded-[28px] md:p-6">
+          <section className="space-y-4">
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
               <div>
                 <p className="text-sm font-semibold">Reward Path</p>
@@ -143,8 +143,8 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
         )}
       </section>
 
-      <section className="grid items-start gap-4 md:gap-6 2xl:grid-cols-[minmax(0,1fr)_360px]">
-        <section className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:rounded-[28px] md:p-6">
+      <section className="grid items-start gap-6 border-t pt-5 xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.42fr)]">
+        <section className="space-y-4">
           <div className="space-y-1">
             <p className="text-sm font-semibold">Quick Actions</p>
             <p className="text-xs text-muted-foreground">Award or remove points without breaking flow during teaching.</p>
@@ -181,7 +181,7 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
           )}
         </section>
 
-        <aside className="rounded-2xl border bg-card p-4 shadow-sm md:rounded-[28px] md:p-6">
+        <aside className="border-t pt-5 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
           <div className="space-y-1 mb-4">
             <p className="text-sm font-semibold">Recent Activity</p>
             <p className="text-xs text-muted-foreground">A clean running log of points earned, removed, and rewards redeemed.</p>
@@ -199,9 +199,9 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
 
 function StatCard({ label, value }: { label: string; value: string | number }) {
   return (
-    <div className="rounded-xl border bg-card px-3 py-3 shadow-sm md:rounded-[22px] md:px-4 md:py-4">
+    <div className="min-w-0 border-l-2 border-primary/30 pl-3">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className="text-lg md:text-xl font-semibold mt-2 break-words">{value}</p>
+      <p className="mt-1 break-words text-lg font-semibold md:text-xl">{value}</p>
     </div>
   );
 }
@@ -402,8 +402,8 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
   }
 
   return (
-    <div className="space-y-5">
-      <div className="rounded-[24px] border bg-background/80 p-4 md:p-5">
+    <div className="space-y-4">
+      <div className="py-1">
         <div className="flex flex-col gap-4 lg:grid lg:grid-cols-[minmax(0,1fr)_280px] lg:items-center">
           <div className="space-y-3 min-w-0">
             <div className="flex items-center gap-3 text-sm text-muted-foreground">
@@ -422,7 +422,7 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
             </div>
           </div>
 
-          <div className="rounded-[22px] border bg-muted/20 p-4">
+          <div className="py-1 lg:border-l lg:pl-6">
             <div className="flex items-end justify-between gap-4">
               <div>
                 <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Path progress</p>
@@ -440,7 +440,7 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
         </div>
       </div>
 
-      <div className="grid gap-5 xl:grid-cols-[180px_minmax(0,1fr)] items-start">
+      <div className="grid items-start gap-5 xl:grid-cols-[140px_minmax(0,1fr)]">
         <div className="hidden xl:flex justify-center">
           <div className="relative h-[520px] w-[120px]">
             <div className="absolute left-1/2 top-5 bottom-5 -translate-x-1/2 w-5 rounded-full bg-slate-200" />
@@ -465,14 +465,14 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
           </div>
         </div>
 
-        <div className="space-y-3">
+        <div className="divide-y border-y">
           {sorted.map((reward, index) => {
             const unlocked = current >= reward.point_cost;
             return (
-              <div key={reward.id} className={`rounded-[24px] border p-4 md:p-5 ${unlocked ? "bg-background shadow-sm" : "bg-muted/20"}`}>
-                <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+              <div key={reward.id} className={`py-4 md:px-2 md:py-5 ${unlocked ? "" : "opacity-65"}`}>
+                <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex items-start gap-3 flex-1">
-                    <div className="h-12 w-12 rounded-[18px] border bg-background grid place-items-center text-2xl shrink-0">{reward.icon}</div>
+                    <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-muted/40 text-xl">{reward.icon}</div>
                     <div className="min-w-0 space-y-1">
                       <p className="text-xs uppercase tracking-[0.14em] text-muted-foreground">Reward stop {index + 1}</p>
                       <p className="font-semibold break-words">{reward.name}</p>
@@ -482,7 +482,7 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
                     </div>
                   </div>
 
-                  <div className="sm:text-right shrink-0 space-y-2">
+                  <div className="shrink-0 space-y-2 text-right">
                     <Badge>{reward.point_cost} pts</Badge>
                     {unlocked && (
                       <div>

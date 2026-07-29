@@ -41,7 +41,7 @@ export default function PrintablesTab({ clientId, client }: { clientId: string; 
         </div>
       </section>
 
-      <section className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:rounded-3xl md:p-6">
+      <section className="space-y-4 border-t pt-5">
         <div>
           <p className="text-sm font-semibold">Client Card</p>
           <p className="text-xs text-muted-foreground mt-1">Credit-card sized and easy to laminate.</p>
@@ -50,7 +50,7 @@ export default function PrintablesTab({ clientId, client }: { clientId: string; 
       </section>
 
       {rewards.length > 0 && (
-        <section className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:rounded-3xl md:p-6">
+        <section className="space-y-4 border-t pt-5">
           <div>
             <p className="text-sm font-semibold">Reward Tickets</p>
             <p className="text-xs text-muted-foreground mt-1">Printable reward choices that make goals visible and easy to redeem.</p>
@@ -64,7 +64,7 @@ export default function PrintablesTab({ clientId, client }: { clientId: string; 
       )}
 
       {behaviors.length > 0 && (
-        <section className="max-w-2xl space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:rounded-3xl md:p-6">
+        <section className="max-w-2xl space-y-4 border-t pt-5">
           <div>
             <p className="text-sm font-semibold">Behavior Reference Sheet</p>
             <p className="text-xs text-muted-foreground mt-1">A simple staff-facing reference for what adds or removes points.</p>

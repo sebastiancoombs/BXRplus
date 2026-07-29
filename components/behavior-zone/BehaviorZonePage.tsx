@@ -82,7 +82,7 @@ export default function ClientPage() {
         onTabChange={setTab}
       />
 
-      <div className="mx-auto max-w-5xl px-3 py-3 sm:px-4 md:px-6 md:py-6">
+      <div className="h-full w-full px-3 py-3 sm:px-4 md:px-6 md:py-6 2xl:px-10">
         {tab === "dashboard" && <DashboardTab clientId={client.id} />}
         {tab === "rewards" && <RewardsTab clientId={client.id} />}
         {tab === "data" && <DataTab clientId={client.id} clientName={client.full_name} />}
