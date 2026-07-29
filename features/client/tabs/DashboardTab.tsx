@@ -336,6 +336,7 @@ function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate, onOptimisticAw
   const [flash, setFlash] = useState(false);
 
   async function go(e?: React.MouseEvent<HTMLButtonElement>) {
+    const rect = e?.currentTarget.getBoundingClientRect();
     setBusy(true);
     onOptimisticAward?.(behavior.point_value);
     try {
@@ -343,7 +344,6 @@ function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate, onOptimisticAw
       setFlash(true);
       setTimeout(() => setFlash(false), 600);
       onDone();
-      const rect = e?.currentTarget.getBoundingClientRect();
       onCelebrate?.(
         rect ? rect.left + rect.width / 2 : undefined,
         rect ? rect.top + rect.height / 2 : undefined,
@@ -625,6 +625,38 @@ type RecentAction = {
   kind: "earn" | "lose" | "redeem";
 };
 
+function SessionEdgeProgress({ rewards, current, travelerIcon }: { rewards: any[]; current: number; travelerIcon: string }) {
+  const sorted = [...rewards].sort((a, b) => a.point_cost - b.point_cost);
+  const maxCost = Math.max(...sorted.map((reward) => reward.point_cost), 1);
+  const progressPct = Math.min(92, Math.max(8, (current / maxCost) * 100));
+  const target = sorted.find((reward) => current < reward.point_cost) ?? sorted.at(-1);
+
+  return (
+    <div className="absolute inset-y-0 left-0 z-[4] w-14 border-r border-white/30 bg-gradient-to-b from-sky-300/80 via-violet-300/70 to-fuchsia-300/80 shadow-[6px_0_24px_rgba(99,102,241,0.15)] backdrop-blur-sm lg:hidden">
+      <div className="absolute inset-y-8 left-[25px] w-2 rounded-full bg-white/60 shadow-inner" />
+      <div
+        className="absolute bottom-8 left-[25px] w-2 rounded-full bg-gradient-to-t from-violet-700 via-fuchsia-500 to-amber-300 shadow-[0_0_14px_rgba(124,58,237,0.7)] transition-all duration-700"
+        style={{ height: `calc(${progressPct}% - 16px)` }}
+      />
+      {target && (
+        <div className="absolute left-1/2 top-3 grid h-11 w-11 -translate-x-1/2 place-items-center rounded-full border-[3px] border-amber-300 bg-white text-2xl shadow-lg" aria-label={`Target: ${target.name}`}>
+          {target.icon}
+        </div>
+      )}
+      <div
+        key={`session-edge-${current}`}
+        className="animate-level-up absolute left-1/2 z-10 -translate-x-1/2 text-4xl drop-shadow-lg transition-all duration-700"
+        style={{ bottom: `calc(${progressPct}% - 8px)` }}
+      >
+        {travelerIcon}
+      </div>
+      <div className="absolute bottom-2 left-1/2 -translate-x-1/2 rounded-full bg-white/85 px-2 py-0.5 text-[9px] font-black text-violet-700 shadow">
+        {current}
+      </div>
+    </div>
+  );
+}
+
 function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded, onCelebrate, onOptimisticAward }: {
   client: any;
   behaviors: any[];
@@ -706,7 +738,10 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
   }
 
   return (
-    <div className="fixed inset-0 z-40 bg-background/95 backdrop-blur-sm">
+    <div className="fixed inset-0 z-40 overflow-hidden bg-gradient-to-br from-sky-100 via-violet-50 to-fuchsia-100 dark:from-sky-950 dark:via-violet-950 dark:to-fuchsia-950">
+      <div className="pointer-events-none absolute left-[18%] top-[18%] text-5xl opacity-15">☁️</div>
+      <div className="pointer-events-none absolute right-[8%] top-[32%] text-4xl opacity-20">⭐</div>
+      <div className="pointer-events-none absolute bottom-[12%] right-[20%] text-6xl opacity-10">🏰</div>
       <div className="h-full flex flex-col">
         <div className="sticky top-0 z-10 border-b bg-background/95 px-3 py-2 backdrop-blur md:px-4 md:py-3">
           <div className="flex items-center justify-between gap-2">
@@ -761,14 +796,15 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-3 md:p-6">
+        <div className="relative flex-1 overflow-y-auto p-3 md:p-6">
+          <SessionEdgeProgress rewards={rewards} current={client.balance} travelerIcon={travelerIcon} />
           <div className="space-y-5 lg:grid lg:grid-cols-[240px_1fr] lg:gap-6 lg:h-full lg:space-y-0">
             <div className="hidden lg:block self-start">
               <SessionProgressRail rewards={rewards} current={client.balance} travelerIcon={travelerIcon} />
             </div>
 
             <div className="space-y-5">
-              <div className="lg:hidden">
+              <div className="pl-14 lg:hidden">
                 <div className="min-w-0 space-y-3">
                   <div className="sticky top-0 z-[5] rounded-xl border bg-card/95 p-1.5 shadow-sm backdrop-blur">
                     <div className="grid grid-cols-3 gap-2">
@@ -796,7 +832,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
                     </div>
                   </div>
 
-                  <div className="space-y-2">
+                  <div className="grid grid-cols-2 gap-3">
                     {mobileTab !== "rewards" && mobileActions.map((behavior) => (
                       <CompactSessionActionRow
                         key={behavior.id}
@@ -928,17 +964,17 @@ function CompactSessionActionRow({
       type="button"
       onClick={handleClick}
       disabled={disabled || busy}
-      className={`w-full rounded-2xl border px-3 py-2.5 text-left transition-all active:scale-[0.98] md:rounded-[22px] md:py-3 ${toneClasses} ${disabled ? "opacity-60" : "hover:shadow-sm"}`}
+      className={`h-full min-h-28 w-full rounded-3xl border-2 px-3 py-3 text-center shadow-[0_5px_0_rgba(15,23,42,0.12)] transition-all active:translate-y-1 active:scale-[0.98] active:shadow-none ${toneClasses} ${disabled ? "opacity-60" : "hover:shadow-md"}`}
     >
-      <div className="flex items-center justify-between gap-3">
-        <div className="min-w-0 flex items-center gap-3">
-          <div className="grid h-10 w-10 shrink-0 place-items-center rounded-xl bg-white/90 text-xl shadow-sm md:h-11 md:w-11 md:rounded-[16px] md:text-2xl">{emoji}</div>
+      <div className="flex h-full flex-col items-center justify-center gap-1.5">
+        <div className="min-w-0">
+          <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white/90 text-3xl shadow-sm">{emoji}</div>
           <div className="min-w-0">
-            <p className="text-sm font-semibold break-words">{title}</p>
+            <p className="mt-1 line-clamp-2 text-sm font-black leading-tight">{title}</p>
             {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
           </div>
         </div>
-        <div className="rounded-full bg-white/90 px-3 py-1 text-sm font-bold shadow-sm shrink-0">{busy ? "..." : value}</div>
+        <div className="rounded-full bg-white/90 px-3 py-1 text-sm font-black shadow-sm">{busy ? "..." : value}</div>
       </div>
     </button>
   );
