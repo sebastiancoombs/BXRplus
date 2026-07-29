@@ -73,7 +73,7 @@ export default function ClientPage() {
   return (
     <div className="min-h-screen">
       {clients.length > 1 && (
-        <div className="max-w-5xl mx-auto px-4 md:px-6 pt-4">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 pt-4 lg:hidden">
           <label className="flex items-center gap-3 text-sm text-muted-foreground">
             Learner
             <select
