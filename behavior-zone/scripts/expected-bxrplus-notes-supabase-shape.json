@@ -1,0 +1,212 @@
+{
+  "public": {
+    "Tables": {
+      "session_notes": {
+        "id": "string",
+        "client_id": "string",
+        "folder_id": "string | null",
+        "service_date": "string",
+        "title": "string",
+        "content": "string",
+        "quick_notes": "string",
+        "insurance_note": "string",
+        "status": "string",
+        "sync_mode": "string",
+        "locked": "boolean",
+        "published": "boolean",
+        "published_at": "string | null",
+        "current_branch_id": "string | null",
+        "deleted_at": "string | null",
+        "color": "string | null",
+        "source_filename": "string | null",
+        "source_mime_type": "string | null",
+        "source_path": "string | null",
+        "created_by": "string",
+        "updated_by": "string | null",
+        "created_at": "string",
+        "updated_at": "string",
+        "insurance_id": "string | null",
+        "cpt_template_id": "string | null",
+        "cpt_code": "string | null",
+        "note_kind": "string",
+        "setting_events": "string",
+        "behavior_observations": "string",
+        "interventions": "string",
+        "client_response": "string",
+        "plan_next_steps": "string"
+      },
+      "session_note_folders": {
+        "id": "string",
+        "client_id": "string",
+        "parent_id": "string | null",
+        "name": "string",
+        "path": "string",
+        "color": "string",
+        "description": "string",
+        "sort_order": "number",
+        "source": "string",
+        "created_by": "string",
+        "created_at": "string"
+      },
+      "session_note_versions": {
+        "id": "string",
+        "note_id": "string",
+        "parent_id": "string | null",
+        "branch_id": "string | null",
+        "title": "string",
+        "is_checkpoint": "boolean",
+        "data": "string",
+        "created_by": "string | null",
+        "created_at": "string"
+      },
+      "session_note_branches": {
+        "id": "string",
+        "note_id": "string",
+        "name": "string",
+        "head_version_id": "string | null",
+        "is_default": "boolean",
+        "created_by": "string | null",
+        "created_at": "string"
+      },
+      "session_note_media": {
+        "id": "string",
+        "client_id": "string",
+        "note_id": "string | null",
+        "type": "string",
+        "filename": "string",
+        "storage_path": "string",
+        "mime_type": "string",
+        "size": "number",
+        "width": "number | null",
+        "height": "number | null",
+        "published": "boolean",
+        "caption": "string | null",
+        "created_by": "string",
+        "created_at": "string",
+        "updated_at": "string"
+      },
+      "session_note_shares": {
+        "id": "string",
+        "note_id": "string",
+        "owner_id": "string",
+        "shared_with_id": "string | null",
+        "shared_with_email": "string | null",
+        "permission": "string",
+        "token": "string | null",
+        "expires_at": "string | null",
+        "created_at": "string"
+      },
+      "bxrplus_workspace_config": {
+        "id": "string",
+        "user_id": "string",
+        "key": "string",
+        "value": "string",
+        "created_at": "string",
+        "updated_at": "string"
+      },
+      "client_goals": {
+        "id": "string",
+        "client_id": "string",
+        "title": "string",
+        "description": "string",
+        "domain": "string | null",
+        "target_text": "string | null",
+        "mastery_criteria": "string | null",
+        "source": "string",
+        "is_active": "boolean"
+      },
+      "session_note_goals": {
+        "note_id": "string",
+        "goal_id": "string",
+        "created_by": "string",
+        "created_at": "string"
+      },
+      "clients": {
+        "insurance_id": "string | null",
+        "default_cpt_template_id": "string | null",
+        "default_cpt_code": "string | null"
+      },
+      "insurance_payers": {
+        "id": "string",
+        "name": "string",
+        "documentation_style": "string",
+        "compliance_language": "string",
+        "created_by": "string | null",
+        "created_at": "string",
+        "updated_at": "string"
+      },
+      "insurance_cpt_templates": {
+        "id": "string",
+        "insurance_id": "string",
+        "cpt_code": "string",
+        "service_name": "string",
+        "template_title": "string",
+        "default_setting_events": "string",
+        "required_sections": "Json",
+        "prompt_guidance": "string",
+        "is_active": "boolean",
+        "created_by": "string | null",
+        "created_at": "string",
+        "updated_at": "string",
+        "template_body": "string"
+      },
+      "session_note_suggestions": {
+        "id": "string",
+        "client_id": "string",
+        "source_note_id": "string | null",
+        "target_note_id": "string",
+        "goal_id": "string | null",
+        "suggestion_text": "string",
+        "rationale": "string",
+        "status": "string",
+        "created_by": "string",
+        "accepted_at": "string | null",
+        "created_at": "string"
+      },
+      "session_note_cards": {
+        "id": "string",
+        "note_id": "string",
+        "client_id": "string",
+        "body": "string",
+        "zone": "string",
+        "sort_order": "number",
+        "created_by": "string",
+        "created_at": "string",
+        "updated_at": "string"
+      },
+      "clinical_goals": {
+        "id": "string",
+        "client_id": "string",
+        "title": "string",
+        "description": "string",
+        "domain": "string | null",
+        "target_text": "string | null",
+        "mastery_criteria": "string | null",
+        "source": "string",
+        "source_document_id": "string | null",
+        "is_active": "boolean",
+        "created_by": "string",
+        "created_at": "string",
+        "updated_at": "string"
+      },
+      "session_note_clinical_goals": {
+        "note_id": "string",
+        "clinical_goal_id": "string",
+        "created_by": "string",
+        "created_at": "string"
+      },
+      "session_note_zones": {
+        "id": "string",
+        "note_id": "string",
+        "client_id": "string",
+        "label": "string",
+        "sort_order": "number",
+        "created_by": "string",
+        "created_at": "string",
+        "source": "string",
+        "template_id": "string | null",
+        "deleted_at": "string | null"
+      }
+    }
+  }
+}

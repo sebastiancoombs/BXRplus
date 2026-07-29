@@ -1,0 +1,204 @@
+@import "tailwindcss";
+@config "../tailwind.config.ts";
+
+/* ─── Design Tokens ──────────────────────────────────────────────────────── */
+:root {
+  --color-bg:           247, 245, 240;
+  --color-surface:      255, 255, 255;
+  --color-text-primary: 61,  59,  51;
+  --color-text-muted:   136, 135, 128;
+  --color-text-faint:   196, 192, 184;
+  --color-border:       235, 232, 226;
+
+  --color-sage:         124, 169, 130;
+  --color-sage-light:   232, 242, 233;
+  --color-amber:        194, 149, 110;
+  --color-amber-light:  245, 237, 227;
+
+  --font-display:       'Cormorant Garamond', Georgia, serif;
+  --font-body:          'DM Sans', 'Helvetica Neue', Arial, sans-serif;
+  --font-mono:          'JetBrains Mono', 'Fira Code', monospace;
+
+  --radius-sm:  8px;
+  --radius-md:  14px;
+  --radius-xl:  28px;
+  --radius-pill: 999px;
+}
+
+html, body {
+  overscroll-behavior: none;
+  height: 100%;
+  overflow: hidden;
+  position: fixed;
+  width: 100%;
+}
+
+/* ─── Base Reset ─────────────────────────────────────────────────────────── */
+body {
+  font-family: var(--font-body);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+
+  /* Native App Feel: Prevent web-like text highlighting and blue tap flashes */
+  -webkit-user-select: none;
+  user-select: none;
+  -webkit-tap-highlight-color: transparent;
+
+  /* 
+     Android APK / PWA Safe Area Support 
+     These variables are injected by the WebView wrapper. 
+     On standard browsers, they fallback to 0px and cause no layout shifts.
+  */
+  padding-top: var(--safe-area-inset-top, 0px);
+  padding-bottom: var(--safe-area-inset-bottom, 0px);
+  padding-left: var(--safe-area-inset-left, 0px);
+  padding-right: var(--safe-area-inset-right, 0px);
+}
+
+/* Allow text selection where the user actually needs to type/edit */
+input, textarea, .chronoa-editor, .task-input-field {
+  -webkit-user-select: auto;
+  user-select: auto;
+}
+
+h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; }
+
+/* ─── Scrollbar ──────────────────────────────────────────────────────────── */
+::-webkit-scrollbar { width: 5px; height: 5px; }
+::-webkit-scrollbar-thumb { background: #e0ddd5; border-radius: 10px; }
+.dark ::-webkit-scrollbar-thumb { background: #333333; }
+
+/* ─── CHRONOA JOURNAL EDITOR STYLING ─────────────────────────────────────── */
+
+.chronoa-editor {
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  max-width: 100%;
+  overflow-x: hidden;
+  -webkit-touch-callout: none;
+  -webkit-user-callout: none;
+}
+
+.chronoa-editor h1 {
+  font-size: 3rem !important;
+  font-weight: 800 !important;
+  margin-top: 0.25rem !important;
+  margin-bottom: 0.75rem !important;
+  line-height: 1.1 !important;
+  color: #1a1a1a !important;
+}
+
+.dark .chronoa-editor h1 { color: #f0f0f0 !important; }
+
+.chronoa-editor h2 {
+  font-size: 1.8rem !important;
+  font-weight: 700 !important;
+  margin-top: 0.75rem !important;
+  margin-bottom: 0.75rem !important;
+  color: #333 !important;
+}
+
+.dark .chronoa-editor h2 { color: #d0d0d0 !important; }
+
+.chronoa-editor p {
+  margin-bottom: 0.5rem !important;
+  line-height: 1.45 !important;
+}
+
+.chronoa-editor strong { font-weight: 800 !important; color: #000 !important; }
+.dark .chronoa-editor strong { color: #fff !important; }
+
+.chronoa-editor em { font-style: italic !important; }
+
+.chronoa-editor ul {
+  list-style-type: disc !important;
+  padding-left: 2rem !important;
+  margin: 0.5rem 0 !important;
+}
+
+.chronoa-editor ol {
+  list-style-type: decimal !important;
+  padding-left: 2rem !important;
+  margin: 0.5rem 0 !important;
+}
+
+.chronoa-editor li { margin-bottom: 0.25rem !important; }
+.chronoa-editor li p { margin: 0 !important; display: inline !important; }
+
+.chronoa-editor a {
+  color: #c2956e !important;
+  text-decoration: underline;
+  text-decoration-color: rgba(194, 149, 110, 0.4);
+  text-underline-offset: 3px;
+  transition: all 0.2s ease;
+  cursor: pointer;
+}
+
+.chronoa-editor a:hover {
+  color: #b0855f !important;
+  text-decoration-color: #b0855f;
+}
+
+.dark .chronoa-editor a {
+  color: #d1a784 !important;
+  text-decoration-color: rgba(209, 167, 132, 0.4);
+}
+
+.dark .chronoa-editor a:hover {
+  color: #e0b589 !important;
+  text-decoration-color: #e0b589;
+}
+
+/* ─── Utilities ──────────────────────────────────────────────────────────── */
+.no-scrollbar::-webkit-scrollbar { display: none; }
+@keyframes fadeUp { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+.animate-fade-up { animation: fadeUp 0.3s cubic-bezier(0.4, 0, 0.2, 1) both; }
+
+@keyframes spinOnce {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+.animate-spin-once {
+  animation: spinOnce 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
+}
+
+.heading-node-wrapper {
+  position: relative;
+}
+
+.hidden-by-collapse {
+  display: none !important;
+}
+
+/* ─── Soothing Task Vanishing Animation ────────────────────────────────── */
+
+@keyframes workspaceExit {
+  0% {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+    filter: blur(0px);
+    max-height: 100px;
+    margin-bottom: 0px;
+  }
+  30% {
+    opacity: 0.5;
+    transform: translateX(10px);
+    filter: blur(2px);
+  }
+  100% {
+    opacity: 0;
+    transform: translateX(30px) scale(0.95);
+    filter: blur(12px);
+    max-height: 0px;
+    margin-bottom: -12px;
+    padding-top: 0px;
+    padding-bottom: 0px;
+    pointer-events: none;
+  }
+}
+
+.task-vanishing-soothing {
+  animation: workspaceExit 0.8s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+  overflow: hidden;
+}
