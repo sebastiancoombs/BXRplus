@@ -95,8 +95,9 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
           </div>
         </div>
 
-        {sortedRewards.length > 0 && (
-          <section className="relative isolate space-y-4 overflow-hidden rounded-[28px] bg-gradient-to-br from-violet-100 via-sky-50 to-amber-50 p-4 text-slate-900 shadow-[inset_0_0_0_1px_rgba(124,58,237,0.12)] dark:from-violet-950/45 dark:via-sky-950/30 dark:to-amber-950/20 dark:text-white md:p-6">
+        {(sortedRewards.length > 0 || positiveBehaviors.length > 0) && (
+          <section className="relative isolate min-h-[440px] space-y-4 overflow-hidden rounded-[28px] bg-gradient-to-br from-violet-100 via-sky-50 to-amber-50 py-4 pl-[72px] pr-4 text-slate-900 shadow-[inset_0_0_0_1px_rgba(124,58,237,0.12)] dark:from-violet-950/45 dark:via-sky-950/30 dark:to-amber-950/20 dark:text-white md:py-6 md:pl-24 md:pr-6">
+            <SessionEdgeProgress rewards={sortedRewards} current={displayBalance} travelerIcon={travelerIcon} alwaysVisible />
             <div className="pointer-events-none absolute -right-8 -top-10 -z-10 text-8xl opacity-[0.08]">⭐</div>
             <div className="pointer-events-none absolute -bottom-8 left-1/3 -z-10 text-7xl opacity-[0.07]">🚀</div>
             <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -136,11 +137,21 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
               </div>
             )}
 
-            <UnifiedRewardPath
-              rewards={sortedRewards}
-              current={displayBalance}
-              travelerIcon={travelerIcon}
-            />
+            <div className="flex items-center justify-between gap-3 border-t border-violet-300/30 pt-4">
+              <div>
+                <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700/70 dark:text-violet-200/70">Explorer position</p>
+                <p className="mt-1 text-2xl font-black">{displayBalance} points</p>
+              </div>
+              {nextReward ? (
+                <div className="min-w-0 text-right">
+                  <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Next target</p>
+                  <p className="truncate font-black">{nextReward.icon} {nextReward.name}</p>
+                  <p className="text-xs font-bold text-violet-700 dark:text-violet-300">{Math.max(0, nextReward.point_cost - displayBalance)} to go</p>
+                </div>
+              ) : (
+                <p className="font-black text-emerald-600 dark:text-emerald-400">All rewards unlocked! 🎉</p>
+              )}
+            </div>
           </section>
         )}
 
@@ -625,17 +636,17 @@ type RecentAction = {
   kind: "earn" | "lose" | "redeem";
 };
 
-function SessionEdgeProgress({ rewards, current, travelerIcon }: { rewards: any[]; current: number; travelerIcon: string }) {
+function SessionEdgeProgress({ rewards, current, travelerIcon, alwaysVisible = false }: { rewards: any[]; current: number; travelerIcon: string; alwaysVisible?: boolean }) {
   const sorted = [...rewards].sort((a, b) => a.point_cost - b.point_cost);
   const maxCost = Math.max(...sorted.map((reward) => reward.point_cost), 1);
   const progressPct = Math.min(92, Math.max(8, (current / maxCost) * 100));
   const target = sorted.find((reward) => current < reward.point_cost) ?? sorted.at(-1);
 
   return (
-    <div className="absolute inset-y-0 left-0 z-[4] w-14 border-r border-white/30 bg-gradient-to-b from-sky-300/80 via-violet-300/70 to-fuchsia-300/80 shadow-[6px_0_24px_rgba(99,102,241,0.15)] backdrop-blur-sm lg:hidden">
-      <div className="absolute inset-y-8 left-[25px] w-2 rounded-full bg-white/60 shadow-inner" />
+    <div className={`absolute inset-y-0 left-0 z-[4] w-14 border-r border-white/30 bg-gradient-to-b from-sky-300/80 via-violet-300/70 to-fuchsia-300/80 shadow-[6px_0_24px_rgba(99,102,241,0.15)] backdrop-blur-sm md:w-16 ${alwaysVisible ? "" : "lg:hidden"}`}>
+      <div className="absolute inset-y-8 left-1/2 w-2 -translate-x-1/2 rounded-full bg-white/60 shadow-inner" />
       <div
-        className="absolute bottom-8 left-[25px] w-2 rounded-full bg-gradient-to-t from-violet-700 via-fuchsia-500 to-amber-300 shadow-[0_0_14px_rgba(124,58,237,0.7)] transition-all duration-700"
+        className="absolute bottom-8 left-1/2 w-2 -translate-x-1/2 rounded-full bg-gradient-to-t from-violet-700 via-fuchsia-500 to-amber-300 shadow-[0_0_14px_rgba(124,58,237,0.7)] transition-all duration-700"
         style={{ height: `calc(${progressPct}% - 16px)` }}
       />
       {target && (
