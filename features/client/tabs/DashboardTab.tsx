@@ -716,7 +716,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
   const [mobileTab, setMobileTab] = useState<"earn" | "reduce" | "rewards">("earn");
   const [recent, setRecent] = useState<RecentAction[]>([]);
   const [undoingId, setUndoingId] = useState<string | null>(null);
-  const [rewardFeedback, setRewardFeedback] = useState<string | null>(null);
+  const [rewardFeedback, setRewardFeedback] = useState<{ message: string; tone: "success" | "error" | "pending" } | null>(null);
   const positiveBehaviors = useMemo(() => behaviors.filter((behavior) => behavior.point_value >= 0), [behaviors]);
   const negativeBehaviors = useMemo(() => behaviors.filter((behavior) => behavior.point_value < 0), [behaviors]);
   const travelerIcon = client.traveler_icon || rewards[0]?.traveler_icon || "🚀";
@@ -752,11 +752,14 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
   async function handleRedeemReward(reward: any) {
     if (client.balance < reward.point_cost) {
       const remaining = reward.point_cost - client.balance;
-      setRewardFeedback(`${reward.icon} ${remaining} more point${remaining === 1 ? "" : "s"} to unlock ${reward.name}`);
+      setRewardFeedback({
+        message: `${reward.icon} ${remaining} more point${remaining === 1 ? "" : "s"} needed for ${reward.name}`,
+        tone: "error",
+      });
       window.setTimeout(() => setRewardFeedback(null), 3000);
       return;
     }
-    setRewardFeedback(`Claiming ${reward.icon} ${reward.name}…`);
+    setRewardFeedback({ message: `Claiming ${reward.icon} ${reward.name}…`, tone: "pending" });
     onOptimisticAward(-reward.point_cost);
     try {
       const txn = await redeemReward(client.id, reward.id);
@@ -772,7 +775,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
           kind: "redeem",
         });
       }
-      setRewardFeedback(`${reward.icon} ${reward.name} claimed!`);
+      setRewardFeedback({ message: `✓ ${reward.icon} ${reward.name} claimed!`, tone: "success" });
       window.setTimeout(() => setRewardFeedback(null), 3000);
     } catch (error) {
       onOptimisticAward(reward.point_cost);
@@ -896,8 +899,14 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
                   </div>
 
                   {mobileTab === "rewards" && rewardFeedback && (
-                    <div className="rounded-2xl border border-amber-300 bg-amber-50 px-3 py-2 text-center text-sm font-bold text-amber-900 shadow-sm dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-100">
-                      {rewardFeedback}
+                    <div className={`rounded-2xl border px-3 py-2 text-center text-sm font-bold shadow-sm ${
+                      rewardFeedback.tone === "success"
+                        ? "border-emerald-400 bg-emerald-100 text-emerald-950 dark:border-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-100"
+                        : rewardFeedback.tone === "error"
+                          ? "border-rose-400 bg-rose-100 text-rose-950 dark:border-rose-600 dark:bg-rose-950/80 dark:text-rose-100"
+                          : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-100"
+                    }`}>
+                      {rewardFeedback.message}
                     </div>
                   )}
 
@@ -957,8 +966,14 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
 
                 <div className="space-y-2">
                   {mobileTab === "rewards" && rewardFeedback && (
-                    <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900 shadow-sm dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-100">
-                      {rewardFeedback}
+                    <div className={`rounded-2xl border px-4 py-3 text-sm font-bold shadow-sm ${
+                      rewardFeedback.tone === "success"
+                        ? "border-emerald-400 bg-emerald-100 text-emerald-950 dark:border-emerald-600 dark:bg-emerald-950/80 dark:text-emerald-100"
+                        : rewardFeedback.tone === "error"
+                          ? "border-rose-400 bg-rose-100 text-rose-950 dark:border-rose-600 dark:bg-rose-950/80 dark:text-rose-100"
+                          : "border-amber-300 bg-amber-50 text-amber-900 dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-100"
+                    }`}>
+                      {rewardFeedback.message}
                     </div>
                   )}
                   {mobileTab !== "rewards" && (mobileTab === "earn" ? positiveBehaviors : negativeBehaviors).map((behavior) => (
