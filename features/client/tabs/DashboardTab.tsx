@@ -118,21 +118,28 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
               />
             )}
 
+            {positiveBehaviors.length > 0 && (
+              <div className="space-y-3 rounded-3xl bg-white/65 p-3 shadow-sm backdrop-blur-sm dark:bg-black/20 md:p-4">
+                <div>
+                  <p className="text-base font-black">What did you do?</p>
+                  <p className="text-xs font-medium text-slate-600 dark:text-slate-300">Tap a behavior to earn points and move the explorer.</p>
+                </div>
+                <QuickActionGroup
+                  title=""
+                  description=""
+                  behaviors={positiveBehaviors}
+                  clientId={client.id}
+                  onDone={handleRefresh}
+                  onCelebrate={triggerCelebration}
+                  onOptimisticAward={(amount) => setOptimisticBalance((balance) => Math.max(0, (balance ?? client.balance) + amount))}
+                />
+              </div>
+            )}
+
             <UnifiedRewardPath
               rewards={sortedRewards}
               current={displayBalance}
               travelerIcon={travelerIcon}
-              onCelebrate={triggerCelebration}
-              onRedeem={async (reward) => {
-                setOptimisticBalance((b) => Math.max(0, (b ?? client.balance) - reward.point_cost));
-                try {
-                  await redeemReward(client.id, reward.id);
-                  await handleRefresh();
-                } catch (e) {
-                  setOptimisticBalance(client.balance);
-                  throw e;
-                }
-              }}
             />
           </section>
         )}
@@ -147,30 +154,12 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
 
       <section className="grid items-start gap-6 border-t pt-5 xl:grid-cols-[minmax(0,1fr)_minmax(280px,0.42fr)]">
         <section className="space-y-4">
-          <div className="space-y-1">
-            <p className="text-lg font-bold">Give Points</p>
-            <p className="text-sm text-muted-foreground">Tap a behavior the moment it happens.</p>
-          </div>
-
           {behaviors.length === 0 ? (
             <p className="text-sm text-muted-foreground">Add behavior programs first so staff can use point updates during session.</p>
-          ) : (
+          ) : negativeBehaviors.length > 0 ? (
             <div className="space-y-5">
-              {positiveBehaviors.length > 0 && (
                 <QuickActionGroup
-                  title="Earn Points"
-                  description="Target behaviors you want to strengthen"
-                  behaviors={positiveBehaviors}
-                  clientId={client.id}
-                  onDone={handleRefresh}
-                  onCelebrate={triggerCelebration}
-                  onOptimisticAward={(amount) => setOptimisticBalance((bal) => Math.max(0, (bal ?? client.balance) + amount))}
-                />
-              )}
-
-              {negativeBehaviors.length > 0 && (
-                <QuickActionGroup
-                  title="Remove Points"
+                  title="Plan-based corrections"
                   description="Use only when point loss is part of the plan"
                   behaviors={negativeBehaviors}
                   clientId={client.id}
@@ -178,9 +167,8 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
                   onCelebrate={triggerCelebration}
                   onOptimisticAward={(amount) => setOptimisticBalance((bal) => Math.max(0, (bal ?? client.balance) + amount))}
                 />
-              )}
             </div>
-          )}
+          ) : <p className="text-sm text-muted-foreground">Earn-point behaviors are available on the game board above.</p>}
         </section>
 
         <aside className="border-t pt-5 xl:border-l xl:border-t-0 xl:pl-6 xl:pt-0">
@@ -227,10 +215,12 @@ function QuickActionGroup({
 }) {
   return (
     <div className="space-y-3">
-      <div className="space-y-1">
-        <p className="text-sm font-semibold">{title}</p>
-        <p className="text-xs text-muted-foreground">{description}</p>
-      </div>
+      {(title || description) && (
+        <div className="space-y-1">
+          {title && <p className="text-sm font-semibold">{title}</p>}
+          {description && <p className="text-xs text-muted-foreground">{description}</p>}
+        </div>
+      )}
       <div className="grid grid-cols-2 gap-2 sm:grid-cols-3 lg:grid-cols-4">
         {behaviors.map((behavior) => (
           <QuickAwardBtn
@@ -371,37 +361,26 @@ function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate, onOptimisticAw
       size="sm"
       onClick={go}
       disabled={busy}
-      className={`h-auto min-h-16 w-full justify-start rounded-2xl border-2 px-3 py-2.5 text-left shadow-sm transition-all active:scale-[0.97] ${behavior.point_value < 0 ? "border-rose-200 bg-rose-50/70 hover:bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/20" : "border-emerald-200 bg-gradient-to-br from-emerald-50 to-sky-50 hover:shadow-md dark:border-emerald-900/50 dark:from-emerald-950/25 dark:to-sky-950/20"} ${flash ? behavior.point_value < 0 ? "ring-2 ring-red-300 bg-red-50" : "ring-2 ring-green-400 bg-green-50" : ""}`}
+      className={`relative h-auto min-h-28 w-full flex-col justify-center overflow-hidden rounded-3xl border-[3px] px-3 py-3 text-center shadow-[0_5px_0_rgba(15,23,42,0.12)] transition-all active:translate-y-1 active:scale-[0.98] active:shadow-none ${behavior.point_value < 0 ? "border-rose-200 bg-rose-50/70 hover:bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/20" : "border-white bg-gradient-to-br from-cyan-300 via-sky-400 to-violet-500 text-white hover:brightness-105 dark:border-white/20"} ${flash ? behavior.point_value < 0 ? "ring-4 ring-red-300 bg-red-50" : "ring-4 ring-amber-300 brightness-110" : ""}`}
     >
-      <span className="mr-2 text-2xl">{behavior.icon}</span>
-      <span className="min-w-0 flex-1 truncate font-semibold">{behavior.name}</span>
-      <Badge variant={behavior.point_value < 0 ? "destructive" : "secondary"} className="ml-1 shrink-0 text-xs font-black">
+      <span className="text-4xl drop-shadow-sm">{behavior.icon}</span>
+      <span className="mt-1 line-clamp-2 min-w-0 text-sm font-black leading-tight">{behavior.name}</span>
+      <Badge variant={behavior.point_value < 0 ? "destructive" : "secondary"} className="absolute right-2 top-2 shrink-0 border-0 bg-white/90 text-xs font-black text-violet-700 shadow-sm">
         {behavior.point_value > 0 ? "+" : ""}{behavior.point_value}
       </Badge>
     </Button>
   );
 }
 
-function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebrate }: {
+function UnifiedRewardPath({ rewards, current, travelerIcon }: {
   rewards: any[];
   current: number;
   travelerIcon: string;
-  onRedeem: (reward: any) => Promise<void>;
-  onCelebrate?: (x?: number, y?: number, type?: "confetti" | "stars" | "sparkles" | "penalty", emojiOverride?: string) => void;
 }) {
-  const [busyId, setBusyId] = useState<string | null>(null);
   const sorted = [...rewards].sort((a, b) => a.point_cost - b.point_cost);
   const maxCost = Math.max(...sorted.map((reward) => reward.point_cost), 1);
   const progressPct = Math.min(96, Math.max(8, (current / maxCost) * 100));
   const unlockedCount = sorted.filter((reward) => current >= reward.point_cost).length;
-
-  async function handleRedeem(reward: any, e: React.MouseEvent<HTMLButtonElement>) {
-    setBusyId(reward.id);
-    await onRedeem(reward);
-    const rect = e.currentTarget.getBoundingClientRect();
-    onCelebrate?.(rect.left + rect.width / 2, rect.top + rect.height / 2, undefined, reward.icon || "🎁");
-    setBusyId(null);
-  }
 
   return (
     <div className="space-y-4">
@@ -444,7 +423,7 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
               className="absolute bottom-5 left-1/2 w-5 -translate-x-1/2 rounded-full bg-gradient-to-t from-violet-600 via-fuchsia-500 to-amber-400 shadow-[0_0_20px_rgba(139,92,246,0.45)] transition-all duration-700"
               style={{ height: `calc(${progressPct}% - 10px)` }}
             />
-            <div className="absolute left-1/2 z-10 -translate-x-1/2 text-5xl drop-shadow-lg transition-all duration-700" style={{ bottom: `calc(${progressPct}% - 6px)` }}>
+            <div key={`desktop-traveler-${current}`} className="animate-level-up absolute left-1/2 z-10 -translate-x-1/2 text-6xl drop-shadow-lg transition-all duration-700" style={{ bottom: `calc(${progressPct}% - 6px)` }}>
               {travelerIcon}
             </div>
             {sorted.map((reward) => {
@@ -468,7 +447,8 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
             style={{ height: `calc(${progressPct}% - 10px)` }}
           />
           <div
-            className="absolute left-[5px] z-[4] text-3xl drop-shadow-md transition-all duration-700 xl:hidden"
+            key={`mobile-traveler-${current}`}
+            className="animate-level-up absolute left-[1px] z-[4] text-4xl drop-shadow-md transition-all duration-700 xl:hidden"
             style={{ top: `calc(${progressPct}% - 4px)` }}
           >
             {travelerIcon}
@@ -493,13 +473,9 @@ function UnifiedRewardPath({ rewards, current, travelerIcon, onRedeem, onCelebra
 
                   <div className="shrink-0 space-y-2 text-right">
                     <Badge>{reward.point_cost} pts</Badge>
-                    {unlocked && (
-                      <div>
-                        <Button className="rounded-xl bg-gradient-to-r from-violet-600 to-fuchsia-500 font-bold text-white shadow-md" size="sm" onClick={(e) => handleRedeem(reward, e)} disabled={busyId === reward.id}>
-                          {busyId === reward.id ? "Redeeming..." : "Redeem"}
-                        </Button>
-                      </div>
-                    )}
+                    <p className={`text-[10px] font-black uppercase tracking-wide ${unlocked ? "text-emerald-600 dark:text-emerald-400" : "text-slate-400"}`}>
+                      {unlocked ? "Unlocked!" : "Keep going"}
+                    </p>
                   </div>
                 </div>
               </div>

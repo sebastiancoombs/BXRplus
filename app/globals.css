@@ -226,6 +226,15 @@ h1, h2, h3, h4 { font-family: var(--font-display); font-weight: 500; }
   animation: spinOnce 0.7s cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
+@keyframes levelUp {
+  0% { transform: translateX(-50%) scale(0.75) rotate(-10deg); }
+  45% { transform: translateX(-50%) translateY(-14px) scale(1.3) rotate(8deg); }
+  100% { transform: translateX(-50%) scale(1) rotate(0); }
+}
+.animate-level-up {
+  animation: levelUp 0.65s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
 .heading-node-wrapper {
   position: relative;
 }
