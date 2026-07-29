@@ -18,6 +18,7 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
   const { client, behaviors, rewards, transactions, loading, refresh, patchClient } = useClientDetail(clientId);
   const { patchClient: patchClientInList } = useClientContext();
   const [showProgressSettings, setShowProgressSettings] = useState(false);
+  const [redeemingRewardId, setRedeemingRewardId] = useState<string | null>(null);
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -45,6 +46,27 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
     void playEmojiBurst({ emoji, mode: type === "penalty" ? "loss" : "gain" });
   }
 
+  async function claimReward(reward: any, event: React.MouseEvent<HTMLButtonElement>) {
+    const rect = event.currentTarget.getBoundingClientRect();
+    const previousBalance = displayBalance;
+    const nextBalance = Math.max(0, previousBalance - reward.point_cost);
+    setRedeemingRewardId(reward.id);
+    setOptimisticBalance(nextBalance);
+    patchClientInList(clientId, { balance: nextBalance } as any);
+    try {
+      await redeemReward(clientId, reward.id);
+      await handleRefresh();
+      triggerCelebration(rect.left + rect.width / 2, rect.top + rect.height / 2, undefined, reward.icon || "🎁");
+    } catch (error) {
+      setOptimisticBalance(previousBalance);
+      patchClientInList(clientId, { balance: previousBalance } as any);
+      console.error("Reward redemption failed", error);
+      alert(error instanceof Error ? error.message : "Couldn’t claim that reward. Please try again.");
+    } finally {
+      setRedeemingRewardId(null);
+    }
+  }
+
   async function saveProgressPrefs(patch: { reward_bar_theme?: string; reward_bar_style?: string; reward_success_animation?: string }) {
     await supabase.from("clients").update(patch).eq("id", clientId);
     patchClient(patch);
@@ -57,6 +79,7 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
   const sortedRewards = [...rewards].sort((a, b) => a.point_cost - b.point_cost);
   const availableRewards = sortedRewards.filter((r) => displayBalance >= r.point_cost).length;
   const nextReward = sortedRewards.find((r) => displayBalance < r.point_cost) ?? null;
+  const claimableReward = [...sortedRewards].reverse().find((reward) => displayBalance >= reward.point_cost) ?? null;
   const positiveBehaviors = behaviors.filter((b) => b.point_value >= 0);
   const negativeBehaviors = behaviors.filter((b) => b.point_value < 0);
   const travelerIcon = client.traveler_icon || sortedRewards[0]?.traveler_icon || "🚀";
@@ -142,10 +165,23 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
                 <p className="text-xs font-black uppercase tracking-[0.16em] text-violet-700/70 dark:text-violet-200/70">Explorer position</p>
                 <p className="mt-1 text-2xl font-black">{displayBalance} points</p>
               </div>
-              {nextReward ? (
+              {claimableReward ? (
+                <div className="min-w-0 text-right">
+                  <p className="text-xs font-black uppercase tracking-wide text-emerald-700 dark:text-emerald-300">Reward unlocked!</p>
+                  <Button
+                    type="button"
+                    size="sm"
+                    className="mt-1 h-auto max-w-full whitespace-normal rounded-xl bg-gradient-to-r from-amber-400 to-fuchsia-500 py-2 text-right font-black leading-tight text-white shadow-md"
+                    disabled={redeemingRewardId === claimableReward.id}
+                    onClick={(event) => claimReward(claimableReward, event)}
+                  >
+                    {redeemingRewardId === claimableReward.id ? "Claiming…" : `Claim ${claimableReward.icon} ${claimableReward.name}`}
+                  </Button>
+                </div>
+              ) : nextReward ? (
                 <div className="min-w-0 text-right">
                   <p className="text-xs font-bold text-slate-600 dark:text-slate-300">Next target</p>
-                  <p className="truncate font-black">{nextReward.icon} {nextReward.name}</p>
+                  <p className="break-words font-black">{nextReward.icon} {nextReward.name}</p>
                   <p className="text-xs font-bold text-violet-700 dark:text-violet-300">{Math.max(0, nextReward.point_cost - displayBalance)} to go</p>
                 </div>
               ) : (
@@ -375,7 +411,7 @@ function QuickAwardBtn({ behavior, clientId, onDone, onCelebrate, onOptimisticAw
       className={`relative h-auto min-h-28 w-full flex-col justify-center overflow-hidden rounded-3xl border-[3px] px-3 py-3 text-center shadow-[0_5px_0_rgba(15,23,42,0.12)] transition-all active:translate-y-1 active:scale-[0.98] active:shadow-none ${behavior.point_value < 0 ? "border-rose-200 bg-rose-50/70 hover:bg-rose-50 dark:border-rose-900/50 dark:bg-rose-950/20" : "border-white bg-gradient-to-br from-cyan-300 via-sky-400 to-violet-500 text-white hover:brightness-105 dark:border-white/20"} ${flash ? behavior.point_value < 0 ? "ring-4 ring-red-300 bg-red-50" : "ring-4 ring-amber-300 brightness-110" : ""}`}
     >
       <span className="text-4xl drop-shadow-sm">{behavior.icon}</span>
-      <span className="mt-1 line-clamp-2 min-w-0 text-sm font-black leading-tight">{behavior.name}</span>
+      <span className="mt-1 min-w-0 whitespace-normal break-words text-sm font-black leading-tight">{behavior.name}</span>
       <Badge variant={behavior.point_value < 0 ? "destructive" : "secondary"} className="absolute right-2 top-2 shrink-0 border-0 bg-white/90 text-xs font-black text-violet-700 shadow-sm">
         {behavior.point_value > 0 ? "+" : ""}{behavior.point_value}
       </Badge>
@@ -680,6 +716,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
   const [mobileTab, setMobileTab] = useState<"earn" | "reduce" | "rewards">("earn");
   const [recent, setRecent] = useState<RecentAction[]>([]);
   const [undoingId, setUndoingId] = useState<string | null>(null);
+  const [rewardFeedback, setRewardFeedback] = useState<string | null>(null);
   const positiveBehaviors = useMemo(() => behaviors.filter((behavior) => behavior.point_value >= 0), [behaviors]);
   const negativeBehaviors = useMemo(() => behaviors.filter((behavior) => behavior.point_value < 0), [behaviors]);
   const travelerIcon = client.traveler_icon || rewards[0]?.traveler_icon || "🚀";
@@ -713,20 +750,35 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
   }
 
   async function handleRedeemReward(reward: any) {
-    if (client.balance < reward.point_cost) return;
+    if (client.balance < reward.point_cost) {
+      const remaining = reward.point_cost - client.balance;
+      setRewardFeedback(`${reward.icon} ${remaining} more point${remaining === 1 ? "" : "s"} to unlock ${reward.name}`);
+      window.setTimeout(() => setRewardFeedback(null), 3000);
+      return;
+    }
+    setRewardFeedback(`Claiming ${reward.icon} ${reward.name}…`);
     onOptimisticAward(-reward.point_cost);
-    const txn = await redeemReward(client.id, reward.id);
-    await onAwarded();
-    onCelebrate(undefined, undefined, undefined, reward.icon || "🎁");
-    if (txn?.id) {
-      pushRecent({
-        id: `${txn.id}-${Date.now()}`,
-        txnId: txn.id,
-        emoji: reward.icon || "🎁",
-        label: reward.name,
-        delta: -reward.point_cost,
-        kind: "redeem",
-      });
+    try {
+      const txn = await redeemReward(client.id, reward.id);
+      await onAwarded();
+      onCelebrate(undefined, undefined, undefined, reward.icon || "🎁");
+      if (txn?.id) {
+        pushRecent({
+          id: `${txn.id}-${Date.now()}`,
+          txnId: txn.id,
+          emoji: reward.icon || "🎁",
+          label: reward.name,
+          delta: -reward.point_cost,
+          kind: "redeem",
+        });
+      }
+      setRewardFeedback(`${reward.icon} ${reward.name} claimed!`);
+      window.setTimeout(() => setRewardFeedback(null), 3000);
+    } catch (error) {
+      onOptimisticAward(reward.point_cost);
+      console.error("Reward redemption failed", error);
+      setRewardFeedback(null);
+      alert(error instanceof Error ? error.message : "Couldn’t claim that reward. Please try again.");
     }
   }
 
@@ -843,6 +895,12 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
                     </div>
                   </div>
 
+                  {mobileTab === "rewards" && rewardFeedback && (
+                    <div className="rounded-2xl border border-amber-300 bg-amber-50 px-3 py-2 text-center text-sm font-bold text-amber-900 shadow-sm dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-100">
+                      {rewardFeedback}
+                    </div>
+                  )}
+
                   <div className="grid grid-cols-2 gap-3">
                     {mobileTab !== "rewards" && mobileActions.map((behavior) => (
                       <CompactSessionActionRow
@@ -862,8 +920,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
                         title={reward.name}
                         value={`${reward.point_cost}`}
                         tone={client.balance >= reward.point_cost ? "reward" : "muted"}
-                        disabled={client.balance < reward.point_cost}
-                        subtitle={client.balance >= reward.point_cost ? "Tap to redeem" : `${Math.max(0, reward.point_cost - client.balance)} left`}
+                        subtitle={client.balance >= reward.point_cost ? "Tap to claim" : `Tap · ${Math.max(0, reward.point_cost - client.balance)} left`}
                         onClick={() => handleRedeemReward(reward)}
                       />
                     ))}
@@ -899,6 +956,11 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
                 </div>
 
                 <div className="space-y-2">
+                  {mobileTab === "rewards" && rewardFeedback && (
+                    <div className="rounded-2xl border border-amber-300 bg-amber-50 px-4 py-3 text-sm font-bold text-amber-900 shadow-sm dark:border-amber-700 dark:bg-amber-950/70 dark:text-amber-100">
+                      {rewardFeedback}
+                    </div>
+                  )}
                   {mobileTab !== "rewards" && (mobileTab === "earn" ? positiveBehaviors : negativeBehaviors).map((behavior) => (
                     <CompactSessionActionRow
                       key={behavior.id}
@@ -917,8 +979,7 @@ function QuickAwardSessionView({ client, behaviors, rewards, onClose, onAwarded,
                       title={reward.name}
                       value={`${reward.point_cost}`}
                       tone={client.balance >= reward.point_cost ? "reward" : "muted"}
-                      disabled={client.balance < reward.point_cost}
-                      subtitle={client.balance >= reward.point_cost ? "Tap to redeem" : `${Math.max(0, reward.point_cost - client.balance)} left`}
+                      subtitle={client.balance >= reward.point_cost ? "Tap to claim" : `Tap · ${Math.max(0, reward.point_cost - client.balance)} left`}
                       onClick={() => handleRedeemReward(reward)}
                     />
                   ))}
@@ -981,7 +1042,7 @@ function CompactSessionActionRow({
         <div className="min-w-0">
           <div className="mx-auto grid h-12 w-12 place-items-center rounded-2xl bg-white/90 text-3xl shadow-sm">{emoji}</div>
           <div className="min-w-0">
-            <p className="mt-1 line-clamp-2 text-sm font-black leading-tight">{title}</p>
+            <p className="mt-1 whitespace-normal break-words text-sm font-black leading-tight">{title}</p>
             {subtitle && <p className="text-[11px] text-muted-foreground mt-0.5">{subtitle}</p>}
           </div>
         </div>
