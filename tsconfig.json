@@ -30,5 +30,5 @@
     ".next/dev/types/**/*.ts",
     "**/*.mts"
   ],
-  "exclude": ["node_modules", "behavior-zone"]
+  "exclude": ["node_modules", "supabase"]
 }

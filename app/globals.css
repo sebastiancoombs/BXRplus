@@ -1,6 +1,29 @@
 @import "tailwindcss";
 @config "../tailwind.config.ts";
 
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: var(--bxr-background);
+  --color-foreground: var(--bxr-foreground);
+  --color-card: var(--bxr-card);
+  --color-card-foreground: var(--bxr-card-foreground);
+  --color-popover: var(--bxr-popover);
+  --color-popover-foreground: var(--bxr-popover-foreground);
+  --color-primary: var(--bxr-primary);
+  --color-primary-foreground: var(--bxr-primary-foreground);
+  --color-secondary: var(--bxr-secondary);
+  --color-secondary-foreground: var(--bxr-secondary-foreground);
+  --color-muted: var(--bxr-muted);
+  --color-muted-foreground: var(--bxr-muted-foreground);
+  --color-accent: var(--bxr-accent);
+  --color-accent-foreground: var(--bxr-accent-foreground);
+  --color-destructive: var(--bxr-destructive);
+  --color-border: var(--bxr-border);
+  --color-input: var(--bxr-input);
+  --color-ring: var(--bxr-ring);
+}
+
 /* ─── Design Tokens ──────────────────────────────────────────────────────── */
 :root {
   --color-bg:           247, 245, 240;
@@ -23,6 +46,46 @@
   --radius-md:  14px;
   --radius-xl:  28px;
   --radius-pill: 999px;
+
+  --bxr-background: oklch(1 0 0);
+  --bxr-foreground: oklch(0.145 0 0);
+  --bxr-card: oklch(1 0 0);
+  --bxr-card-foreground: oklch(0.145 0 0);
+  --bxr-popover: oklch(1 0 0);
+  --bxr-popover-foreground: oklch(0.145 0 0);
+  --bxr-primary: oklch(0.205 0 0);
+  --bxr-primary-foreground: oklch(0.985 0 0);
+  --bxr-secondary: oklch(0.97 0 0);
+  --bxr-secondary-foreground: oklch(0.205 0 0);
+  --bxr-muted: oklch(0.97 0 0);
+  --bxr-muted-foreground: oklch(0.556 0 0);
+  --bxr-accent: oklch(0.97 0 0);
+  --bxr-accent-foreground: oklch(0.205 0 0);
+  --bxr-destructive: oklch(0.577 0.245 27.325);
+  --bxr-border: oklch(0.922 0 0);
+  --bxr-input: oklch(0.922 0 0);
+  --bxr-ring: oklch(0.708 0 0);
+}
+
+.dark {
+  --bxr-background: oklch(0.145 0 0);
+  --bxr-foreground: oklch(0.985 0 0);
+  --bxr-card: oklch(0.205 0 0);
+  --bxr-card-foreground: oklch(0.985 0 0);
+  --bxr-popover: oklch(0.205 0 0);
+  --bxr-popover-foreground: oklch(0.985 0 0);
+  --bxr-primary: oklch(0.922 0 0);
+  --bxr-primary-foreground: oklch(0.205 0 0);
+  --bxr-secondary: oklch(0.269 0 0);
+  --bxr-secondary-foreground: oklch(0.985 0 0);
+  --bxr-muted: oklch(0.269 0 0);
+  --bxr-muted-foreground: oklch(0.708 0 0);
+  --bxr-accent: oklch(0.269 0 0);
+  --bxr-accent-foreground: oklch(0.985 0 0);
+  --bxr-destructive: oklch(0.704 0.191 22.216);
+  --bxr-border: oklch(1 0 0 / 10%);
+  --bxr-input: oklch(1 0 0 / 15%);
+  --bxr-ring: oklch(0.556 0 0);
 }
 
 html, body {

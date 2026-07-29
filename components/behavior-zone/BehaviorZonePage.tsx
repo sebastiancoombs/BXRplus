@@ -21,8 +21,10 @@ type ClientMeta = {
 let persistedTab: ClientTabKey = "dashboard";
 
 export default function ClientPage() {
-  const { activeClient, clients, loading } = useClientContext();
+  const { activeClient, clients, loading, setActiveClientId, createClient } = useClientContext();
   const [tab, setTabState] = useState<ClientTabKey>(persistedTab);
+  const [newClientName, setNewClientName] = useState("");
+  const [creatingClient, setCreatingClient] = useState(false);
 
   const setTab = (nextTab: ClientTabKey) => {
     persistedTab = nextTab;
@@ -37,9 +39,29 @@ export default function ClientPage() {
         <div className="text-center max-w-sm">
           <p className="text-5xl mb-6">🏆</p>
           <h2 className="text-2xl font-bold mb-2">Welcome to BXR+</h2>
-          <p className="text-muted-foreground">
-            Add your first client using the sidebar to get started.
-          </p>
+          <p className="text-muted-foreground mb-4">Add your first learner to get started.</p>
+          <form
+            className="flex gap-2"
+            onSubmit={async (event) => {
+              event.preventDefault();
+              if (!newClientName.trim()) return;
+              setCreatingClient(true);
+              await createClient(newClientName.trim());
+              setCreatingClient(false);
+              setNewClientName("");
+            }}
+          >
+            <input
+              value={newClientName}
+              onChange={(event) => setNewClientName(event.target.value)}
+              placeholder="Learner name"
+              className="h-10 flex-1 rounded-lg border bg-background px-3 text-sm"
+              required
+            />
+            <button className="h-10 rounded-lg bg-primary px-4 text-sm text-primary-foreground" disabled={creatingClient}>
+              {creatingClient ? "Adding…" : "Add"}
+            </button>
+          </form>
         </div>
       </div>
     );
@@ -51,6 +73,22 @@ export default function ClientPage() {
 
   return (
     <div className="min-h-screen">
+      {clients.length > 1 && (
+        <div className="max-w-5xl mx-auto px-4 md:px-6 pt-4">
+          <label className="flex items-center gap-3 text-sm text-muted-foreground">
+            Learner
+            <select
+              value={client.id}
+              onChange={(event) => setActiveClientId(event.target.value)}
+              className="h-9 rounded-lg border bg-background px-3 text-foreground"
+            >
+              {clients.map((item) => (
+                <option key={item.id} value={item.id}>{item.full_name}</option>
+              ))}
+            </select>
+          </label>
+        </div>
+      )}
       <ClientPageHeader
         clientName={client.full_name}
         balance={client.balance}

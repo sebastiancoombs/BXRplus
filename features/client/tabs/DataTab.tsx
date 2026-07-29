@@ -187,7 +187,7 @@ export default function DataTab({ clientId, clientName }: { clientId: string; cl
                 <CartesianGrid strokeDasharray="3 3" stroke="#f0f0f0" />
                 <XAxis type="number" tick={{ fontSize: 11 }} />
                 <YAxis type="category" dataKey="name" tick={{ fontSize: 11 }} width={120} />
-                <Tooltip formatter={(val: number) => [`${val} pts`, "Points"]} />
+                <Tooltip formatter={(val) => [`${Number(val ?? 0)} pts`, "Points"]} />
                 <Bar dataKey="points" radius={[0, 4, 4, 0]}>{barData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}</Bar>
               </BarChart>
             </ResponsiveContainer>
@@ -201,7 +201,7 @@ export default function DataTab({ clientId, clientName }: { clientId: string; cl
                 <Pie data={pieData} dataKey="count" nameKey="name" cx="50%" cy="50%" outerRadius={90}>
                   {pieData.map((_, i) => <Cell key={i} fill={CHART_COLORS[i % CHART_COLORS.length]} />)}
                 </Pie>
-                <Tooltip formatter={(val: number, name: string) => [`${val} times`, name]} />
+                <Tooltip formatter={(val, name) => [`${Number(val ?? 0)} times`, String(name)]} />
               </PieChart>
             </ResponsiveContainer>
           </ChartCard>

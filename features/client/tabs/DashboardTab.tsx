@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
-import { useSearchParams } from "react-router-dom";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import { useClientContext } from "@/contexts/ClientContext";
 import {
   useClientDetail,
@@ -18,18 +18,15 @@ export default function DashboardTab({ clientId }: { clientId: string }) {
   const { client, behaviors, rewards, transactions, loading, refresh, patchClient } = useClientDetail(clientId);
   const { patchClient: patchClientInList } = useClientContext();
   const [showProgressSettings, setShowProgressSettings] = useState(false);
-  const [searchParams, setSearchParams] = useSearchParams();
+  const searchParams = useSearchParams();
+  const pathname = usePathname();
+  const router = useRouter();
   const sessionMode = searchParams.get("session") === "1";
   const setSessionMode = (open: boolean) => {
-    setSearchParams(
-      (prev) => {
-        const next = new URLSearchParams(prev);
-        if (open) next.set("session", "1");
-        else next.delete("session");
-        return next;
-      },
-      { replace: true }
-    );
+    const next = new URLSearchParams(searchParams.toString());
+    if (open) next.set("session", "1");
+    else next.delete("session");
+    router.replace(`${pathname}${next.size ? `?${next.toString()}` : ""}`);
   };
   const [optimisticBalance, setOptimisticBalance] = useState<number | null>(null);
 
@@ -965,4 +962,3 @@ function CompactSessionActionRow({
     </button>
   );
 }
-

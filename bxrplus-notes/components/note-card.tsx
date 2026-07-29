@@ -1,4 +1,3 @@
-import { Link } from "react-router-dom";
 import type { Note } from "@/bxrplus-notes/lib/adapter";
 
 const LIGHT_COLORS = [
@@ -89,10 +88,10 @@ export function NoteCard({
     const isLocal = note.sync_mode === "local";
 
     return (
-        <Link
-            to={`/note/${note.id}`}
-            className="block group"
-            onClick={onOpen ? (e) => { e.preventDefault(); onOpen(note); } : undefined}
+        <button
+            type="button"
+            className="block group w-full text-left"
+            onClick={() => onOpen?.(note)}
         >
             <div
                 className={`rounded-l-md rounded-r-2xl overflow-hidden hover:-translate-y-1 hover:shadow-xl transition-all duration-200 min-h-[180px] flex flex-col ${isLocal ? "border-2 border-dashed shadow-none" : "shadow-[0_1px_3px_rgba(0,0,0,0.06)]"}`}
@@ -156,6 +155,6 @@ export function NoteCard({
                     </button>
                 </div>
             </div>
-        </Link>
+        </button>
     );
 }

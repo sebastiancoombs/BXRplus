@@ -1,12 +1,14 @@
 "use client";
 
+import BxrPlusNotesCanvas from "@/bxrplus-notes/BxrPlusNotesCanvas";
+import BxrProviders from "@/components/behavior-zone/BxrProviders";
+
 export default function NotesPage() {
   return (
-    <iframe
-      src="/behavior-zone-app/index.html?embed=notes"
-      title="BXR+ Notes"
-      className="h-full w-full border-0 bg-white"
-      allow="clipboard-read; clipboard-write"
-    />
+    <BxrProviders>
+      <div className="h-full overflow-y-auto bg-background">
+        <BxrPlusNotesCanvas />
+      </div>
+    </BxrProviders>
   );
 }
