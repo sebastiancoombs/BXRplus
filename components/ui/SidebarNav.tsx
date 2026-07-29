@@ -6,7 +6,8 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUiStore } from "@/store/uiStore";
 import { supabase } from "@/lib/supabase";
-import { Home, CheckSquare, BarChart2, PanelLeftClose, PanelLeft, Sun, FileText, CalendarDays, User, Activity } from "lucide-react";
+import { Home, CheckSquare, BarChart2, PanelLeftClose, PanelLeft, FileText, CalendarDays, User, Activity } from "lucide-react";
+import { AiOutlineFall } from "react-icons/ai";
 
 export default function SidebarNav() {
   const pathname = usePathname();
@@ -15,7 +16,6 @@ export default function SidebarNav() {
   const [isHovered, setIsHovered] = useState(false);
   const[isAsleep, setIsAsleep] = useState(false);
   const [touchOpen, setTouchOpen] = useState(false);
-  const [spinKey, setSpinKey] = useState(0);
   
   // Cache user avatar for instant load
   const [userAvatar, setUserAvatar] = useState<string | null>(() => {
@@ -31,11 +31,6 @@ export default function SidebarNav() {
       }
     });
   },[]);
-
-  // Update spinKey on pathname change to trigger re-animation on the Sun logo
-  useEffect(() => {
-    setSpinKey(prev => prev + 1);
-  }, [pathname]);
 
   // Auto-close to asleep (hidden) state in 3 seconds
   useEffect(() => {
@@ -77,7 +72,7 @@ export default function SidebarNav() {
   const mobileNavItems =[
     { name: "Tasks", href: "/tasks", icon: CheckSquare },
     { name: "Notes", href: "/notes", icon: FileText },
-    { name: "Home", href: "/home", icon: Sun, isLogo: true },
+    { name: "Home", href: "/home", icon: AiOutlineFall, isLogo: true },
     { name: "Behavior Zone", href: "/behavior-zone", icon: Activity },
     { name: "Calendar", href: "/calendar", icon: CalendarDays },
     { name: "Analytics", href: "/analytics", icon: BarChart2 },
@@ -90,7 +85,6 @@ export default function SidebarNav() {
   const handleTabClick = (e: React.MouseEvent, href: string, isActive: boolean) => {
     if (isActive) {
       e.preventDefault();
-      setSpinKey(prev => prev + 1); // Triggers re-spin if actively tapped again
       window.dispatchEvent(new CustomEvent('chronoa-reset-tab', { detail: href }));
       
       const containers =["notes-library-scroll-container", "notes-scroll-container", "tasks-scroll-container", "analytics-scroll-container", "sessions-scroll-container", "settings-scroll-container"];
@@ -119,7 +113,7 @@ export default function SidebarNav() {
           isHiddenMode && !isEditorFullscreen ? 'opacity-100 pointer-events-auto cursor-pointer' : 'opacity-0 pointer-events-none'
         }`}>
           <div className="-rotate-90 flex items-center gap-3">
-             <Sun key={`vert-logo-${spinKey}`} size={16} className="text-[#c2956e] dark:text-[#b0855f] animate-spin-once shrink-0" />
+             <AiOutlineFall size={18} className="text-[#c2956e] dark:text-[#b0855f] -scale-y-100 shrink-0" />
              <span className="whitespace-nowrap text-[10px] tracking-[0.4em] uppercase font-bold text-[#b0ad9a] dark:text-[#7a7a7a]">
                {currentItem.name}
              </span>
@@ -136,8 +130,8 @@ export default function SidebarNav() {
           <div className="flex items-center h-24 relative shrink-0">
             {/* Expanded State with Text + Logo */}
             <div className={`absolute inset-0 flex items-center px-6 gap-3 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              <Sun 
-                 className={`text-[#c2956e] dark:text-[#b0855f] shrink-0 transition-transform duration-700 ease-out ${isExpanded ? 'rotate-45 scale-110' : 'rotate-0 scale-100'}`} 
+              <AiOutlineFall
+                 className="text-[#c2956e] dark:text-[#b0855f] shrink-0 -scale-y-100"
                  size={28} 
               />
               <h2 className="text-3xl text-[#3d3b33] dark:text-[#e0e0e0] font-serif tracking-tight mt-1" style={{ fontFamily: 'var(--font-cormorant), serif' }}>
@@ -147,8 +141,8 @@ export default function SidebarNav() {
             
             {/* Collapsed State with smaller Logo only */}
             <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isExpanded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-               <Sun 
-                 className={`text-[#c2956e] dark:text-[#b0855f] transition-transform duration-700 ease-out ${isExpanded ? 'rotate-45 scale-110' : 'rotate-0 scale-100'}`} 
+               <AiOutlineFall
+                 className="text-[#c2956e] dark:text-[#b0855f] -scale-y-100"
                  size={22} 
                />
             </div>
@@ -244,8 +238,7 @@ export default function SidebarNav() {
             >
               {item.isLogo ? (
                 <item.icon 
-                  key={`mob-logo-${isActive ? spinKey : ''}`}
-                  className={`shrink-0 transition-transform ${isActive ? 'animate-spin-once text-[#c2956e] dark:text-[#d1a784]' : ''}`} 
+                  className={`shrink-0 -scale-y-100 ${isActive ? 'text-[#c2956e] dark:text-[#d1a784]' : ''}`}
                   style={{ width: 32, height: 32 }}
                   strokeWidth={isActive ? 2.5 : 2} 
                 />
