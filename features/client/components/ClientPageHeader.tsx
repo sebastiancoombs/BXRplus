@@ -18,14 +18,18 @@ export function ClientPageHeader({
   onTabChange: (tab: ClientTabKey) => void;
 }) {
   return (
-    <div className="border-b bg-card sticky top-0 z-10">
-      <div className="max-w-5xl mx-auto px-4 md:px-6">
-        <div className="py-3 md:py-4 pl-10 md:pl-0">
-          <h1 className="text-lg md:text-xl font-bold">{clientName}</h1>
-          <p className="text-xs md:text-sm text-muted-foreground">
-            {balance} points
-            {isOwner && " · Owner"}
-            {myRole && !isOwner && ` · ${myRole.toUpperCase()}`}
+    <div className="sticky top-0 z-10 border-b bg-card/95 backdrop-blur">
+      <div className="mx-auto max-w-5xl px-3 sm:px-4 md:px-6">
+        <div className="flex min-h-14 items-center justify-between gap-3 pl-10 md:min-h-16 md:pl-0">
+          <div className="min-w-0">
+            <p className="text-[10px] font-semibold uppercase tracking-wider text-muted-foreground lg:hidden">Behavior Zone</p>
+            <h1 className="truncate text-base font-bold md:text-xl">{clientName}</h1>
+          </div>
+          <div className="shrink-0 rounded-full bg-primary/10 px-3 py-1 text-sm font-bold text-primary">
+            {balance} pts
+          </div>
+          <p className="hidden text-xs text-muted-foreground lg:block">
+            {isOwner ? "Owner" : myRole?.toUpperCase()}
           </p>
         </div>
         <div className="hidden lg:flex gap-0.5 -mb-px overflow-x-auto scrollbar-none">

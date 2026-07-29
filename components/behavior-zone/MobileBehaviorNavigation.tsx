@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Plus, Users, X } from "lucide-react";
+import { ChartNoAxesCombined, Gift, Home, NotebookPen, Plus, Printer, Settings, Users, X } from "lucide-react";
 import { useClientContext } from "@/contexts/ClientContext";
 import { CLIENT_TABS, type ClientTabKey } from "@/features/client/types";
 import { cn } from "@/lib/utils";
@@ -18,36 +18,48 @@ export default function MobileBehaviorNavigation({
   const [adding, setAdding] = useState(false);
   const [name, setName] = useState("");
   const [saving, setSaving] = useState(false);
+  const tabIcons = {
+    dashboard: Home,
+    rewards: Gift,
+    data: ChartNoAxesCombined,
+    notes: NotebookPen,
+    printables: Printer,
+    settings: Settings,
+  };
 
   return (
     <>
-      <nav className="fixed inset-x-0 bottom-0 z-[110] flex h-[calc(76px+env(safe-area-inset-bottom))] items-start gap-1 overflow-x-auto border-t border-[#e0ddd5] bg-white/95 px-2 pt-2 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl dark:border-[#2a2a2a] dark:bg-[#121212]/95 lg:hidden">
+      <nav className="fixed inset-x-0 bottom-0 z-[110] grid h-[calc(64px+env(safe-area-inset-bottom))] grid-cols-7 items-start border-t border-[#e0ddd5] bg-white/95 px-1 pt-1 pb-[env(safe-area-inset-bottom)] backdrop-blur-xl dark:border-[#2a2a2a] dark:bg-[#121212]/95 lg:hidden">
         <button
           type="button"
           onClick={() => setDrawerOpen(true)}
-          className="flex h-14 w-14 shrink-0 flex-col items-center justify-center gap-1 rounded-xl text-[#c2956e]"
+          className="flex h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl text-[#c2956e]"
           aria-label="Choose learner"
         >
           <Users size={22} />
-          <span className="text-[9px] font-bold uppercase">Learner</span>
+          <span className="max-w-full truncate text-[8px] font-bold uppercase">Learner</span>
         </button>
-        <div className="my-2 h-9 w-px shrink-0 bg-[#e0ddd5] dark:bg-[#333]" />
-        {CLIENT_TABS.map((item) => (
-          <button
-            key={item.key}
-            type="button"
-            onClick={() => onTabChange(item.key)}
-            className={cn(
-              "flex h-14 min-w-[62px] flex-1 shrink-0 flex-col items-center justify-center gap-1 rounded-xl px-2 transition-colors",
-              activeTab === item.key
-                ? "bg-[#c2956e]/12 text-[#a57550] dark:bg-[#b0855f]/20 dark:text-[#d1a784]"
-                : "text-[#888] dark:text-[#aaa]",
-            )}
-          >
-            <span className="text-lg leading-none">{item.icon}</span>
-            <span className="max-w-[70px] truncate text-[9px] font-bold uppercase">{item.label}</span>
-          </button>
-        ))}
+        {CLIENT_TABS.map((item) => {
+          const Icon = tabIcons[item.key];
+          return (
+            <button
+              key={item.key}
+              type="button"
+              onClick={() => onTabChange(item.key)}
+              className={cn(
+                "flex h-14 min-w-0 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 transition-colors",
+                activeTab === item.key
+                  ? "bg-[#c2956e]/12 text-[#a57550] dark:bg-[#b0855f]/20 dark:text-[#d1a784]"
+                  : "text-[#888] dark:text-[#aaa]",
+              )}
+            >
+              <Icon size={19} strokeWidth={activeTab === item.key ? 2.4 : 1.9} />
+              <span className="max-w-full truncate text-[8px] font-bold uppercase">
+                {item.key === "settings" ? "Setup" : item.label}
+              </span>
+            </button>
+          );
+        })}
       </nav>
 
       {drawerOpen && (

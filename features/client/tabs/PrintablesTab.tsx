@@ -16,7 +16,7 @@ export default function PrintablesTab({ clientId, client }: { clientId: string; 
   }
 
   return (
-    <div className="space-y-8">
+    <div className="space-y-4 md:space-y-8">
       <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-5 md:p-7 shadow-sm">
         <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Program Materials</p>
         <h2 className="text-2xl md:text-3xl font-bold tracking-tight mt-1">Printables</h2>
@@ -41,7 +41,7 @@ export default function PrintablesTab({ clientId, client }: { clientId: string; 
         </div>
       </section>
 
-      <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-4">
+      <section className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:rounded-3xl md:p-6">
         <div>
           <p className="text-sm font-semibold">Client Card</p>
           <p className="text-xs text-muted-foreground mt-1">Credit-card sized and easy to laminate.</p>
@@ -50,7 +50,7 @@ export default function PrintablesTab({ clientId, client }: { clientId: string; 
       </section>
 
       {rewards.length > 0 && (
-        <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-4">
+        <section className="space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:rounded-3xl md:p-6">
           <div>
             <p className="text-sm font-semibold">Reward Tickets</p>
             <p className="text-xs text-muted-foreground mt-1">Printable reward choices that make goals visible and easy to redeem.</p>
@@ -64,7 +64,7 @@ export default function PrintablesTab({ clientId, client }: { clientId: string; 
       )}
 
       {behaviors.length > 0 && (
-        <section className="rounded-3xl border bg-card p-5 md:p-6 shadow-sm space-y-4 max-w-2xl">
+        <section className="max-w-2xl space-y-4 rounded-2xl border bg-card p-4 shadow-sm md:rounded-3xl md:p-6">
           <div>
             <p className="text-sm font-semibold">Behavior Reference Sheet</p>
             <p className="text-xs text-muted-foreground mt-1">A simple staff-facing reference for what adds or removes points.</p>

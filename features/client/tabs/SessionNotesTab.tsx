@@ -283,12 +283,12 @@ export default function SessionNotesTab({ clientId, clientName }: { clientId: st
   if (loading) return <p className="text-muted-foreground">Loading session notes...</p>;
 
   return (
-    <div className="space-y-6">
-      <section className="rounded-[32px] border bg-gradient-to-br from-background via-background to-sky-50/70 p-5 md:p-7 shadow-sm space-y-6">
+    <div className="space-y-4 md:space-y-6">
+      <section className="space-y-4 rounded-2xl border bg-gradient-to-br from-background via-background to-sky-50/70 p-4 shadow-sm md:space-y-6 md:rounded-[32px] md:p-7">
         <div className="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between">
           <div className="space-y-2 max-w-3xl">
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">BCBA Documentation</p>
-            <h2 className="text-3xl md:text-4xl font-bold tracking-tight">Session Notes</h2>
+            <h2 className="text-2xl font-bold tracking-tight md:text-4xl">Session Notes</h2>
             <p className="text-sm md:text-base text-muted-foreground">
               Capture short category notes during the day, then generate a clean rich-text session note draft for review and editing.
             </p>
@@ -300,7 +300,7 @@ export default function SessionNotesTab({ clientId, clientName }: { clientId: st
         </div>
 
         <div className="grid gap-5 xl:grid-cols-[minmax(0,0.95fr)_minmax(0,1.05fr)]">
-          <section className="rounded-[28px] border bg-card p-4 md:p-5 space-y-5">
+          <section className="space-y-4 rounded-2xl border bg-card p-3 md:space-y-5 md:rounded-[28px] md:p-5">
             <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
               <div>
                 <h3 className="text-xl font-semibold tracking-tight">Daily note groups</h3>
@@ -335,7 +335,7 @@ export default function SessionNotesTab({ clientId, clientName }: { clientId: st
               })}
             </div>
 
-            <div className="rounded-[24px] border bg-background p-4 space-y-3">
+            <div className="space-y-3 rounded-2xl border bg-background p-3 md:rounded-[24px] md:p-4">
               <div className="flex items-center justify-between gap-3">
                 <div>
                   <p className="text-sm font-semibold">{editingNote ? "Edit note" : "Add note"}</p>
@@ -344,7 +344,7 @@ export default function SessionNotesTab({ clientId, clientName }: { clientId: st
                 {editingNote && <Button type="button" variant="ghost" size="sm" onClick={resetComposer}>New note</Button>}
               </div>
               <Input value={noteTitle} onChange={(e) => setNoteTitle(e.target.value)} placeholder="Note title" />
-              <Textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} placeholder="What happened in session? Add objective clinical details, prompts, barriers, progress, caregiver concerns, or plan notes." className="min-h-[130px] text-base" />
+              <Textarea value={noteContent} onChange={(e) => setNoteContent(e.target.value)} placeholder="What happened in session? Add objective clinical details, prompts, barriers, progress, caregiver concerns, or plan notes." className="min-h-[110px] text-base md:min-h-[130px]" />
               <Button type="button" onClick={saveNote} disabled={busy || !noteContent.trim()} className="w-full sm:w-auto">
                 {editingNote ? <Save className="size-4" /> : <Plus className="size-4" />}
                 {editingNote ? "Save note" : "Add note"}

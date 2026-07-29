@@ -104,29 +104,29 @@ export default function DataTab({ clientId, clientName }: { clientId: string; cl
   }
 
   return (
-    <div className="space-y-8">
-      <div className="rounded-3xl border bg-gradient-to-br from-background via-background to-primary/5 p-5 md:p-7 shadow-sm">
-        <div className="flex flex-col gap-5 xl:flex-row xl:items-end xl:justify-between">
+    <div className="space-y-4 md:space-y-8">
+      <div className="rounded-2xl border bg-gradient-to-br from-background via-background to-primary/5 p-4 shadow-sm md:rounded-3xl md:p-7">
+        <div className="flex flex-col gap-3 md:gap-5 xl:flex-row xl:items-end xl:justify-between">
           <div>
             <p className="text-xs uppercase tracking-[0.18em] text-muted-foreground">Progress Review</p>
             <h2 className="text-2xl md:text-3xl font-bold tracking-tight mt-1">Progress & Outcomes</h2>
           </div>
-          <div className="flex flex-wrap gap-2 items-center">
-            <div className="flex rounded-xl border overflow-hidden flex-shrink-0 bg-card">
+          <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:items-center">
+            <div className="grid grid-cols-4 overflow-hidden rounded-xl border bg-card">
               {(["7d", "30d", "90d", "all"] as DateRange[]).map((r) => (
                 <button key={r} onClick={() => setRange(r)} className={cn("px-3 py-2 text-xs font-medium transition-colors", range === r ? "bg-primary text-primary-foreground" : "hover:bg-accent")}>{r === "all" ? "All time" : r}</button>
               ))}
             </div>
-            <select value={filterBehavior} onChange={(e) => setFilterBehavior(e.target.value)} className="rounded-xl border border-input bg-card px-3 py-2 text-base h-10">
+            <select value={filterBehavior} onChange={(e) => setFilterBehavior(e.target.value)} className="h-10 min-w-0 rounded-xl border border-input bg-card px-3 py-2 text-sm">
               <option value="all">All activity</option>
               <option value="debits">Rewards redeemed</option>
               {behaviors.map((b) => <option key={b.id} value={b.id}>{b.icon} {b.name}</option>)}
             </select>
-            <Button variant="outline" size="sm" onClick={exportCSV} disabled={behaviorFiltered.length === 0} className="h-9">Download CSV</Button>
+            <Button variant="outline" size="sm" onClick={exportCSV} disabled={behaviorFiltered.length === 0} className="h-10 sm:h-9">Download CSV</Button>
           </div>
         </div>
 
-        <div className="grid gap-3 grid-cols-2 xl:grid-cols-4 mt-6">
+        <div className="mt-4 grid grid-cols-2 gap-2 md:mt-6 md:gap-3 xl:grid-cols-4">
           <MetricCard label="Points earned" value={`+${totalCredits}`} className="text-green-600" />
           <MetricCard label="Points spent/removed" value={`−${totalDebits}`} className="text-red-500" />
           <MetricCard label="Point events" value={`${filtered.filter((t) => t.type === "credit").length}`} />
@@ -213,9 +213,9 @@ export default function DataTab({ clientId, clientName }: { clientId: string; cl
 
 function MetricCard({ label, value, className = "" }: { label: string; value: string; className?: string }) {
   return (
-    <div className="rounded-2xl bg-card border px-4 py-4">
+    <div className="rounded-xl border bg-card px-3 py-3 md:rounded-2xl md:px-4 md:py-4">
       <p className="text-xs text-muted-foreground">{label}</p>
-      <p className={`text-3xl font-extrabold mt-1 ${className}`}>{value}</p>
+      <p className={`mt-1 text-2xl font-extrabold md:text-3xl ${className}`}>{value}</p>
     </div>
   );
 }
@@ -223,7 +223,7 @@ function MetricCard({ label, value, className = "" }: { label: string; value: st
 function ChartCard({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <Card>
-      <CardContent className="py-5">
+      <CardContent className="px-3 py-4 md:px-6 md:py-5">
         <p className="text-sm font-medium text-muted-foreground mb-4">{title}</p>
         {children}
       </CardContent>

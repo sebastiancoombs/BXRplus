@@ -72,7 +72,7 @@ export default function ClientPage() {
   const client = activeClient as ClientMeta;
 
   return (
-    <div className="min-h-screen pb-24 lg:pb-0">
+    <div className="min-h-screen pb-20 lg:pb-0">
       <ClientPageHeader
         clientName={client.full_name}
         balance={client.balance}
@@ -82,7 +82,7 @@ export default function ClientPage() {
         onTabChange={setTab}
       />
 
-      <div className="max-w-5xl mx-auto px-4 md:px-6 py-4 md:py-6">
+      <div className="mx-auto max-w-5xl px-3 py-3 sm:px-4 md:px-6 md:py-6">
         {tab === "dashboard" && <DashboardTab clientId={client.id} />}
         {tab === "rewards" && <RewardsTab clientId={client.id} />}
         {tab === "data" && <DataTab clientId={client.id} clientName={client.full_name} />}
