@@ -8,6 +8,7 @@ import { supabase } from "@/lib/supabase";
 import { parseICS, exportICS } from "@/lib/icsParser";
 import { CalendarSource, CalendarEvent } from "@/types/app.types";
 import FeedbackModal from "@/components/settings/FeedbackModal";
+import AccountProfileSettings from "@/components/settings/AccountProfileSettings";
 import { 
   MapPin, Search, Clock, Sparkles, User,
   X, Monitor, LogOut, Navigation, AlertTriangle, Keyboard, CheckCircle2,
@@ -166,7 +167,8 @@ export default function SettingsPage() {
           localStorage.setItem('chronoa_avatar', user.user_metadata.avatar_url);
         }
 
-        const { data: profile } = await supabase.from('profiles').select('routine_reset_hour, weather_city, disabled_hotkeys').eq('id', user.id).single();
+        const { data: profile } = await supabase.from('profiles').select('full_name, routine_reset_hour, weather_city, disabled_hotkeys').eq('id', user.id).single();
+        if (profile?.full_name) setUserName(profile.full_name);
         if (profile?.routine_reset_hour !== undefined) setRoutineResetHour(profile.routine_reset_hour);
         if (profile?.disabled_hotkeys) setDisabledHotkeys(profile.disabled_hotkeys);
         if (profile?.weather_city) { setCityInput(profile.weather_city); setCurrentCity(profile.weather_city); }
@@ -965,6 +967,12 @@ export default function SettingsPage() {
               <p className="text-sm font-medium text-[#888] dark:text-[#7a7a7a] mt-1">{userEmail}</p>
             </div>
           </div>
+
+          <AccountProfileSettings
+            initialName={userName}
+            email={userEmail}
+            onNameUpdated={setUserName}
+          />
 
           <div className="bg-white dark:bg-[#1a1a1a] border border-[#ebe8e2] dark:border-[#2a2a2a] rounded-[2.5rem] p-6 md:p-10 shadow-sm flex flex-col gap-10 transition-all relative">
             {visibleSections.map((sec, i) => (
