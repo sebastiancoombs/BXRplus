@@ -36,6 +36,7 @@ export default function App() {
           <Route path="/login" element={<PublicRoute><LoginPage /></PublicRoute>} />
           <Route path="/pricing" element={<PricingPage />} />
           <Route path="/session" element={<PublicSessionPage />} />
+          <Route path="/index.html" element={<ProtectedRoute><NotesPage /></ProtectedRoute>} />
           <Route element={<ProtectedRoute><AppLayout /></ProtectedRoute>}>
             <Route path="/dashboard" element={<ClientPage />} />
             <Route path="/scan" element={<ScanPage />} />
