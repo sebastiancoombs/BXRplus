@@ -2,23 +2,17 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createBrowserClient } from '@supabase/ssr';
 import { Moon, Sun } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useUiStore } from "@/store/uiStore";
 
 export const useGoogleLogin = () => {
+  const router = useRouter();
   const [isLoggingIn, setIsLoggingIn] = useState(false);
-  const supabase = createBrowserClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!, 
-    process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-  );
 
-  const handleLogin = async () => {
+  const handleLogin = () => {
     setIsLoggingIn(true);
-    await supabase.auth.signInWithOAuth({
-      provider: 'google',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
-    });
+    router.push("/login");
   };
 
   return { handleLogin, isLoggingIn };
