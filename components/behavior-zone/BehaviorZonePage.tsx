@@ -8,6 +8,7 @@ import DataTab from "@/features/client/tabs/DataTab";
 import PrintablesTab from "@/features/client/tabs/PrintablesTab";
 import SessionNotesTab from "@/features/client/tabs/SessionNotesTab";
 import SettingsTab from "@/features/client/tabs/SettingsTab";
+import MobileBehaviorNavigation from "@/components/behavior-zone/MobileBehaviorNavigation";
 
 type ClientMeta = {
   id: string;
@@ -20,7 +21,7 @@ type ClientMeta = {
 let persistedTab: ClientTabKey = "dashboard";
 
 export default function ClientPage() {
-  const { activeClient, clients, loading, setActiveClientId, createClient } = useClientContext();
+  const { activeClient, clients, loading, createClient } = useClientContext();
   const [tab, setTabState] = useState<ClientTabKey>(persistedTab);
   const [newClientName, setNewClientName] = useState("");
   const [creatingClient, setCreatingClient] = useState(false);
@@ -71,23 +72,7 @@ export default function ClientPage() {
   const client = activeClient as ClientMeta;
 
   return (
-    <div className="min-h-screen">
-      {clients.length > 1 && (
-        <div className="max-w-5xl mx-auto px-4 md:px-6 pt-4 lg:hidden">
-          <label className="flex items-center gap-3 text-sm text-muted-foreground">
-            Learner
-            <select
-              value={client.id}
-              onChange={(event) => setActiveClientId(event.target.value)}
-              className="h-9 rounded-lg border bg-background px-3 text-foreground"
-            >
-              {clients.map((item) => (
-                <option key={item.id} value={item.id}>{item.full_name}</option>
-              ))}
-            </select>
-          </label>
-        </div>
-      )}
+    <div className="min-h-screen pb-24 lg:pb-0">
       <ClientPageHeader
         clientName={client.full_name}
         balance={client.balance}
@@ -105,6 +90,7 @@ export default function ClientPage() {
         {tab === "printables" && <PrintablesTab clientId={client.id} client={client} />}
         {tab === "settings" && <SettingsTab clientId={client.id} isOwner={client.isOwner} onResetTab={() => setTab("dashboard")} />}
       </div>
+      <MobileBehaviorNavigation activeTab={tab} onTabChange={setTab} />
     </div>
   );
 }

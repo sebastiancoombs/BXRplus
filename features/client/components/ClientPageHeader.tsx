@@ -28,7 +28,7 @@ export function ClientPageHeader({
             {myRole && !isOwner && ` · ${myRole.toUpperCase()}`}
           </p>
         </div>
-        <div className="flex gap-0.5 -mb-px overflow-x-auto scrollbar-none">
+        <div className="hidden lg:flex gap-0.5 -mb-px overflow-x-auto scrollbar-none">
           {CLIENT_TABS.map((item) => (
             <button
               key={item.key}
