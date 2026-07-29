@@ -67,6 +67,10 @@ export default function SidebarNav() {
   const isExpanded = isSidebarPinned || isHovered || touchOpen;
   const isHiddenMode = !isExpanded && isAsleep && !isSidebarIconPinned;
 
+  useEffect(() => {
+    setSpinKey((current) => current + 1);
+  }, [isExpanded]);
+
   const desktopNavItems =[
     { name: "Home", href: "/home", icon: Home },
     { name: "Behavior Zone", href: "/behavior-zone", icon: Activity },

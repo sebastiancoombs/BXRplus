@@ -31,8 +31,9 @@ export const metadata: Metadata = {
     statusBarStyle: "black-translucent",
   },
   icons: {
-    icon: [{ url: '/icon.svg' }],
-    apple: [{ url: '/apple-icon.png' }]
+    icon: [{ url: '/bxr-icon.svg', type: 'image/svg+xml' }],
+    shortcut: [{ url: '/bxr-icon.svg', type: 'image/svg+xml' }],
+    apple: [{ url: '/bxr-icon.png' }]
   },
 };
 
