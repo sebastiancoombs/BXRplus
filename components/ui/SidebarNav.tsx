@@ -18,6 +18,7 @@ export default function SidebarNav() {
   const [isHovered, setIsHovered] = useState(false);
   const[isAsleep, setIsAsleep] = useState(false);
   const [touchOpen, setTouchOpen] = useState(false);
+  const [spinKey, setSpinKey] = useState(0);
   
   // Cache user avatar for instant load
   const [userAvatar, setUserAvatar] = useState<string | null>(() => {
@@ -33,6 +34,10 @@ export default function SidebarNav() {
       }
     });
   },[]);
+
+  useEffect(() => {
+    setSpinKey((current) => current + 1);
+  }, [pathname]);
 
   // Auto-close to asleep (hidden) state in 3 seconds
   useEffect(() => {
@@ -87,6 +92,7 @@ export default function SidebarNav() {
   const handleTabClick = (e: React.MouseEvent, href: string, isActive: boolean) => {
     if (isActive) {
       e.preventDefault();
+      setSpinKey((current) => current + 1);
       window.dispatchEvent(new CustomEvent('chronoa-reset-tab', { detail: href }));
       
       const containers =["notes-library-scroll-container", "notes-scroll-container", "tasks-scroll-container", "analytics-scroll-container", "sessions-scroll-container", "settings-scroll-container"];
@@ -115,7 +121,9 @@ export default function SidebarNav() {
           isHiddenMode && !isEditorFullscreen ? 'opacity-100 pointer-events-auto cursor-pointer' : 'opacity-0 pointer-events-none'
         }`}>
           <div className="-rotate-90 flex items-center gap-3">
-             <AiOutlineFall size={18} className="text-[#c2956e] dark:text-[#b0855f] -scale-y-100 shrink-0" />
+             <span className="-scale-y-100">
+               <AiOutlineFall key={`rail-logo-${spinKey}`} size={18} className="animate-spin-once shrink-0 text-[#c2956e] dark:text-[#b0855f]" />
+             </span>
              <span className="whitespace-nowrap text-[10px] tracking-[0.4em] uppercase font-bold text-[#b0ad9a] dark:text-[#7a7a7a]">
                {currentItem.name}
              </span>
@@ -132,10 +140,13 @@ export default function SidebarNav() {
           <div className="flex items-center h-24 relative shrink-0">
             {/* Expanded State with Text + Logo */}
             <div className={`absolute inset-0 flex items-center px-6 gap-3 transition-opacity duration-300 ${isExpanded ? 'opacity-100' : 'opacity-0 pointer-events-none'}`}>
-              <AiOutlineFall
-                 className="text-[#c2956e] dark:text-[#b0855f] shrink-0 -scale-y-100"
-                 size={28} 
-              />
+              <span className="-scale-y-100">
+                <AiOutlineFall
+                  key={`expanded-logo-${spinKey}`}
+                  className="animate-spin-once shrink-0 text-[#c2956e] dark:text-[#b0855f]"
+                  size={28}
+                />
+              </span>
               <h2 className="text-3xl text-[#3d3b33] dark:text-[#e0e0e0] font-serif tracking-tight mt-1" style={{ fontFamily: 'var(--font-cormorant), serif' }}>
                 BXR+
               </h2>
@@ -143,10 +154,13 @@ export default function SidebarNav() {
             
             {/* Collapsed State with smaller Logo only */}
             <div className={`absolute inset-0 flex items-center justify-center transition-opacity duration-300 ${isExpanded ? 'opacity-0 pointer-events-none' : 'opacity-100'}`}>
-               <AiOutlineFall
-                 className="text-[#c2956e] dark:text-[#b0855f] -scale-y-100"
-                 size={22} 
-               />
+               <span className="-scale-y-100">
+                 <AiOutlineFall
+                   key={`collapsed-logo-${spinKey}`}
+                   className="animate-spin-once text-[#c2956e] dark:text-[#b0855f]"
+                   size={22}
+                 />
+               </span>
             </div>
           </div>
 
@@ -254,11 +268,14 @@ export default function SidebarNav() {
               }`}
             >
               {item.isLogo ? (
-                <item.icon 
-                  className={`shrink-0 -scale-y-100 ${isActive ? 'text-[#c2956e] dark:text-[#d1a784]' : ''}`}
-                  style={{ width: 32, height: 32 }}
-                  strokeWidth={isActive ? 2.5 : 2} 
-                />
+                <span className="-scale-y-100">
+                  <item.icon
+                    key={`mobile-logo-${spinKey}`}
+                    className={`animate-spin-once shrink-0 ${isActive ? 'text-[#c2956e] dark:text-[#d1a784]' : ''}`}
+                    style={{ width: 32, height: 32 }}
+                    strokeWidth={isActive ? 2.5 : 2}
+                  />
+                </span>
               ) : (
                 <item.icon className="w-[24px] h-[24px]" strokeWidth={isActive ? 2.5 : 2} />
               )}
