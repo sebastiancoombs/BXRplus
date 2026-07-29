@@ -39,7 +39,7 @@ export const RANKS =[
   { name: "Blossom", minLevel: 15, minXp: 11111 },
   { name: "Grandmaster", minLevel: 20, minXp: 20000 },
   { name: "Legend", minLevel: 30, minXp: 45000 },
-  { name: "Chronoa Ascendant", minLevel: 50, minXp: 125000 }
+  { name: "BXR+ Ascendant", minLevel: 50, minXp: 125000 }
 ];
 
 const RANK_MESSAGES: Record<string, string> = {
@@ -50,7 +50,7 @@ const RANK_MESSAGES: Record<string, string> = {
   "Blossom": "Your productivity is in full bloom.",
   "Grandmaster": "A true master of time and focus.",
   "Legend": "Your dedication is legendary.",
-  "Chronoa Ascendant": "You have transcended time itself."
+  "BXR+ Ascendant": "You have transcended time itself."
 };
 
 const escapeRegExp = (string: string) => {
@@ -542,7 +542,7 @@ export default function AnalyticsPage() {
             <RankBadge rank={data?.levelInfo.rank || "Novice"} className="w-20 h-20" />
             <div>
               <div className="flex items-center gap-2 mb-1">
-                <p className="text-[10px] text-[#c2956e] dark:text-[#b0855f] font-bold uppercase tracking-widest">Chronoa Rank</p>
+                <p className="text-[10px] text-[#c2956e] dark:text-[#b0855f] font-bold uppercase tracking-widest">BXR+ Rank</p>
                 <button onClick={() => setIsRankModalOpen(true)} className="outline-none p-1 -m-1">
                   <Info size={14} className="text-[#888] hover:text-[#c2956e] transition-colors" />
                 </button>
@@ -679,7 +679,7 @@ export default function AnalyticsPage() {
             
             <header className="px-8 py-6 border-b border-[#e0ddd5] dark:border-[#2a2a2a] flex justify-between items-center bg-white dark:bg-[#1a1a1a]">
               <div>
-                <h3 className="text-3xl font-serif text-[#3d3b33] dark:text-white">Chronoa Ranks</h3>
+                <h3 className="text-3xl font-serif text-[#3d3b33] dark:text-white">BXR+ Ranks</h3>
                 <p className="text-[10px] text-[#b0ad9a] dark:text-[#7a7a7a] font-bold uppercase tracking-widest mt-1">Evolve through consistency</p>
               </div>
               <button onClick={() => setIsRankModalOpen(false)} className="p-2 rounded-full bg-[#f0ede8] dark:bg-[#222] hover:bg-[#e0ddd5] dark:hover:bg-[#333] transition-colors text-[#3d3b33] dark:text-white">
@@ -691,7 +691,7 @@ export default function AnalyticsPage() {
               <div className="flex gap-4 p-4 bg-white dark:bg-[#1a1a1a] border border-[#e0ddd5] dark:border-[#2a2a2a] rounded-2xl">
                 <Info className="text-[#c2956e] shrink-0 mt-0.5" size={20} />
                 <div className="text-sm text-[#3d3b33] dark:text-[#e0e0e0] leading-relaxed">
-                  <span className="font-bold">How XP Works:</span> You earn XP automatically as you use Chronoa.
+                  <span className="font-bold">How XP Works:</span> You earn XP automatically as you use BXR+.
                   <ul className="mt-4 flex flex-col sm:flex-row sm:items-center gap-y-3 gap-x-10">
                     <li className="flex items-center gap-2.5">
                       <div className="w-2 h-2 rounded-full bg-[#7ca982] shrink-0 shadow-[0_0_8px_rgba(124,169,130,0.3)]" />

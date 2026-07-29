@@ -101,7 +101,7 @@ export default function AppLoginPage() {
 
       <div className="z-10 flex flex-col items-center px-4 w-full">
         <h1 className="text-6xl md:text-7xl text-[#3d3b33] dark:text-[#f0f0f0] mb-4 tracking-tight font-serif">
-          Chronoa
+          BXR+
         </h1>
         <p className="text-[#888888] dark:text-[#7a7a7a] tracking-[0.25em] text-[11px] font-semibold uppercase mb-16">
           Your aesthetic workspace. Completely synced.

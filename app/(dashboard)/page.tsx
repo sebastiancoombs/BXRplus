@@ -5,7 +5,7 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { supabase } from "@/lib/supabase";
 import { motion } from "framer-motion";
-import { LandingNav, ChronoaLogo, GithubIcon, useGoogleLogin } from "@/components/landing/LandingNav";
+import { LandingNav, BxrPlusLogo, GithubIcon, useGoogleLogin } from "@/components/landing/LandingNav";
 import { MockHomeSandbox, MockTaskSandbox, MockTimeSandbox, MockCalendarSandbox, MockNotesSandbox, MockAnalyticsSandbox } from "@/components/landing/Sandboxes";
 import { DownloadsSection } from "@/components/landing/Downloads";
 import DeveloperMessageModal from "@/components/landing/DeveloperMessageModal";
@@ -141,7 +141,7 @@ export default function LandingPage() {
             
             <div className="relative z-10 flex flex-col items-center">
               <div className="w-24 h-24 bg-[#c2956e]/10 dark:bg-[#b0855f]/20 rounded-full flex items-center justify-center mb-8 shadow-sm text-[#c2956e] dark:text-[#b0855f]">
-                <ChronoaLogo className="w-12 h-12" />
+                <BxrPlusLogo className="w-12 h-12" />
               </div>
               <h3 className="text-4xl md:text-6xl font-serif mb-6 text-[#3d3b33] dark:text-white leading-tight">Your journey<br/> starts here.</h3>
               <p className="text-[#888] dark:text-[#a0a0a0] max-w-md mx-auto mb-10 text-sm md:text-base leading-relaxed">
@@ -170,8 +170,8 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto flex flex-col md:flex-row justify-between items-center md:items-start gap-10 md:gap-0">
            <div className="flex flex-col items-center md:items-start gap-4">
               <div className="flex items-center gap-3 text-[#3d3b33] dark:text-[#e0e0e0]">
-                 <ChronoaLogo className="w-8 h-8 text-[#c2956e] dark:text-[#b0855f]" />
-                 <span className="text-2xl font-serif font-medium tracking-tight">Chronoa</span>
+                 <BxrPlusLogo className="w-8 h-8 text-[#c2956e] dark:text-[#b0855f]" />
+                 <span className="text-2xl font-serif font-medium tracking-tight">BXR+</span>
               </div>
               <p className="text-sm text-[#888] dark:text-[#a0a0a0] max-w-xs text-center md:text-left">
                 Your aesthetic workspace. Completely synced and designed for deep focus.
@@ -179,7 +179,7 @@ export default function LandingPage() {
            </div>
            <div className="flex flex-col items-center md:items-end gap-4">
               <div className="flex gap-4">
-                 <a href="https://github.com/XeCipher/Chronoa" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-[#252525] border border-[#e0ddd5] dark:border-[#333] text-[#888] hover:text-[#3d3b33] dark:hover:text-[#f0f0f0] transition-colors shadow-sm text-xs font-bold uppercase tracking-widest">
+                 <a href="https://github.com/sebastiancoombs/BXRplus" target="_blank" rel="noreferrer" className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-[#252525] border border-[#e0ddd5] dark:border-[#333] text-[#888] hover:text-[#3d3b33] dark:hover:text-[#f0f0f0] transition-colors shadow-sm text-xs font-bold uppercase tracking-widest">
                    <GithubIcon size={16} /> GitHub
                  </a>
                  <button onClick={() => setIsDeveloperModalOpen(true)} className="flex items-center gap-2 px-5 py-2.5 rounded-xl bg-[#c2956e] text-white hover:bg-[#b0855f] transition-colors shadow-sm text-xs font-bold uppercase tracking-widest">
@@ -189,7 +189,7 @@ export default function LandingPage() {
            </div>
         </div>
         <div className="max-w-7xl mx-auto mt-16 pt-8 border-t border-[#e0ddd5] dark:border-[#2a2a2a] text-center flex flex-col md:flex-row justify-between items-center gap-4 text-[10px] font-bold uppercase tracking-widest text-[#b0ad9a] dark:text-[#555]">
-           <span>© {new Date().getFullYear()} Chronoa. Open Source.</span>
+           <span>© {new Date().getFullYear()} BXR+.</span>
            <span>Built with Next.js & Supabase</span>
         </div>
       </footer>

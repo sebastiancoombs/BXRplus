@@ -160,7 +160,7 @@ export default function DeveloperMessageModal({ isOpen, onClose }: Props) {
              </div>
              <h4 className="text-3xl font-serif text-[#3d3b33] dark:text-white mb-2 text-center">Message Delivered</h4>
              <p className="text-sm text-[#888] dark:text-[#7a7a7a] text-center max-w-[300px] leading-relaxed">
-               Thank you for reaching out. Your feedback makes Chronoa better for everyone.
+               Thank you for reaching out. Your feedback makes BXR+ better for everyone.
              </p>
           </div>
         </div>

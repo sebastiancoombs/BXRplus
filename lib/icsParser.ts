@@ -101,7 +101,7 @@ export function parseICS(icsText: string, color: string, userId: string, sourceI
 }
 
 export function exportICS(events: CalendarEvent[]): string {
-  let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//Chronoa//EN\n";
+  let ics = "BEGIN:VCALENDAR\nVERSION:2.0\nPRODID:-//BXR+//EN\n";
 
   const formatDate = (date: Date, isAllDay: boolean) => {
     const y = date.getUTCFullYear();

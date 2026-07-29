@@ -84,7 +84,7 @@ export default function SidebarNav() {
   ];
 
   const currentItem = desktopNavItems.find(item => item.href === pathname) || { 
-    name: pathname === '/settings' ? 'Profile' : pathname === '/sessions' ? 'Time Log' : 'Chronoa' 
+    name: pathname === '/settings' ? 'Profile' : pathname === '/sessions' ? 'Time Log' : 'BXR+' 
   };
 
   const handleTabClick = (e: React.MouseEvent, href: string, isActive: boolean) => {
@@ -141,7 +141,7 @@ export default function SidebarNav() {
                  size={28} 
               />
               <h2 className="text-3xl text-[#3d3b33] dark:text-[#e0e0e0] font-serif tracking-tight mt-1" style={{ fontFamily: 'var(--font-cormorant), serif' }}>
-                Chronoa
+                BXR+
               </h2>
             </div>
             

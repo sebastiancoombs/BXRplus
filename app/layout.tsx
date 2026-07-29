@@ -17,17 +17,17 @@ const dmSans = DM_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "Chronoa",
+  title: "BXR+",
   description: "Your aesthetic workspace. Completely synced.",
   openGraph: {
-    title: "Chronoa",
+    title: "BXR+",
     description: "Your aesthetic workspace. Completely synced.",
     images:[{ url: '/opengraph-image.png', width: 1200, height: 630 }],
     type: 'website',
   },
   appleWebApp: {
     capable: true,
-    title: "Chronoa",
+    title: "BXR+",
     statusBarStyle: "black-translucent",
   },
   icons: {

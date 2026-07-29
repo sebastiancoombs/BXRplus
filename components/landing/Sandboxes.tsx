@@ -799,7 +799,7 @@ export function MockCalendarSandbox() {
 }
 
 export function MockNotesSandbox() {
-  const [content, setContent] = useState(`<h1>A Blank Canvas</h1><p>Chronoa provides a completely distraction-free markdown environment for your thoughts, meeting notes, and daily journaling.</p><p><br/></p><p>Go ahead, <strong>type something here</strong>. Use standard markdown shortcuts or highlight text to style it.</p>`);
+  const [content, setContent] = useState(`<h1>A Blank Canvas</h1><p>BXR+ provides a completely distraction-free markdown environment for your thoughts, meeting notes, and daily journaling.</p><p><br/></p><p>Go ahead, <strong>type something here</strong>. Use standard markdown shortcuts or highlight text to style it.</p>`);
 
   return (
     <div className="w-full flex flex-col gap-4 md:gap-6 my-10 md:my-20 max-lg:h-[72vh] max-lg:max-h-[550px] max-lg:min-h-[430px]">
@@ -825,7 +825,7 @@ export function MockAnalyticsSandbox() {
       <div className="text-center max-w-2xl mx-auto mb-10 px-4 w-full">
         <h3 className="text-3xl md:text-4xl font-serif text-[#3d3b33] dark:text-[#f0f0f0] mb-3">Insights That Matter</h3>
         <p className="text-[#888] dark:text-[#a0a0a0] leading-relaxed text-sm">
-          Chronoa passively analyzes your activity, helping you discover your peak performance hours, flow states, and focus distribution. 
+          BXR+ passively analyzes your activity, helping you discover your peak performance hours, flow states, and focus distribution. 
         </p>
       </div>
 

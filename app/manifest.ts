@@ -3,8 +3,8 @@ import { MetadataRoute } from 'next';
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: 'Chronoa',
-    short_name: 'Chronoa',
+    name: 'BXR+',
+    short_name: 'BXR+',
     description: 'Your aesthetic workspace. Completely synced.',
     start_url: '/',
     display: 'standalone',

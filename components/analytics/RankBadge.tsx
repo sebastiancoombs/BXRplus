@@ -457,7 +457,7 @@ const LegendBadge = () => (
 );
 
 // ----------------------------------------------------------------------
-// Rank 8: Chronoa Ascendant (Gold / Divine) - Majestic, celestial, supreme
+// Rank 8: BXR+ Ascendant (Gold / Divine) - Majestic, celestial, supreme
 // ----------------------------------------------------------------------
 const AscendantBadge = () => (
   <svg viewBox="0 0 120 120" className="w-full h-full drop-shadow-2xl" xmlns="http://www.w3.org/2000/svg">
@@ -577,7 +577,7 @@ export default function RankBadge({ rank, className = "" }: Props) {
       case "Blossom": return <BlossomBadge />;
       case "Grandmaster": return <GrandmasterBadge />;
       case "Legend": return <LegendBadge />;
-      case "Chronoa Ascendant": return <AscendantBadge />;
+      case "BXR+ Ascendant": return <AscendantBadge />;
       default: return <NoviceBadge />;
     }
   };

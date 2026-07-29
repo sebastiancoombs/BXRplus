@@ -11,7 +11,7 @@ export function DownloadsSection() {
       <div className="text-center mb-16 px-4">
         <h3 className="text-4xl md:text-5xl font-serif text-[#3d3b33] dark:text-[#f0f0f0] mb-4 tracking-tight">Take It Anywhere</h3>
         <p className="text-[#888] dark:text-[#a0a0a0] text-sm md:text-base max-w-lg mx-auto leading-relaxed">
-          Chronoa is designed to live natively on your home screen. Install it for a completely immersive, full-screen sanctuary.
+          BXR+ is designed to live natively on your home screen. Install it for a completely immersive, full-screen sanctuary.
         </p>
       </div>
 
@@ -35,10 +35,10 @@ export function DownloadsSection() {
               <div className="bg-amber-50/80 dark:bg-amber-900/10 border border-amber-200/60 dark:border-amber-900/30 p-3 md:p-4 rounded-xl md:rounded-2xl flex gap-2 md:gap-3 mb-4 md:mb-8 backdrop-blur-sm">
                 <ShieldAlert size={16} className="md:w-[18px] md:h-[18px] text-amber-600 dark:text-amber-500 shrink-0 mt-0.5" />
                 <p className="text-[10px] md:text-[11px] text-amber-800 dark:text-amber-400/90 font-medium leading-relaxed">
-                  Your browser may flag this as "harmful" since it's not on the Play Store. Chronoa is fully open-source and completely safe.
+                  Your browser may flag this as "harmful" since it's not on the Play Store. BXR+ is fully open-source and completely safe.
                 </p>
               </div>
-              <a href="/chronoa.apk" download className="w-full flex items-center justify-center gap-2 py-3 md:py-4 bg-[#7ca982] text-white font-bold text-[10px] md:text-[11px] uppercase tracking-widest rounded-xl md:rounded-2xl hover:bg-[#6a9a70] hover:-translate-y-1 transition-all shadow-[0_8px_20px_rgba(124,169,130,0.3)]">
+              <a href="/bxrplus.apk" download className="w-full flex items-center justify-center gap-2 py-3 md:py-4 bg-[#7ca982] text-white font-bold text-[10px] md:text-[11px] uppercase tracking-widest rounded-xl md:rounded-2xl hover:bg-[#6a9a70] hover:-translate-y-1 transition-all shadow-[0_8px_20px_rgba(124,169,130,0.3)]">
                 <Download size={16} /> Download APK (1.4 MB)
               </a>
             </div>
@@ -57,7 +57,7 @@ export function DownloadsSection() {
             </div>
             <h4 className="text-2xl md:text-3xl font-serif text-[#3d3b33] dark:text-[#f0f0f0] mb-2 md:mb-3">iOS & Web App</h4>
             <p className="text-xs md:text-sm text-[#888] dark:text-[#a0a0a0] leading-relaxed mb-3 md:mb-8">
-              Install Chronoa seamlessly via your browser to get a native app icon on your home screen, without touching an App Store.
+              Install BXR+ seamlessly via your browser to get a native app icon on your home screen, without touching an App Store.
             </p>
 
             <div className="mt-auto hidden md:block space-y-4">

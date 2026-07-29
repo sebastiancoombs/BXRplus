@@ -192,7 +192,7 @@ export default function FeedbackModal({ isOpen, onClose }: Props) {
                 {step === 1 && <MessageSquareHeart size={18} className="text-[#c2956e]" />}
               </h3>
               <div className="text-[10px] font-bold text-[#b0ad9a] dark:text-[#7a7a7a] uppercase tracking-widest mt-0.5">
-                {step === 1 ? "Help us improve Chronoa" : step === 2 ? "Rate your experience" : "Feedback received"}
+                {step === 1 ? "Help us improve BXR+" : step === 2 ? "Rate your experience" : "Feedback received"}
               </div>
             </div>
           </div>
@@ -267,7 +267,7 @@ export default function FeedbackModal({ isOpen, onClose }: Props) {
              <div className="w-16 h-16 bg-[#c2956e]/10 dark:bg-[#b0855f]/10 rounded-full flex items-center justify-center mb-6">
                 <Star size={32} className="text-[#c2956e] dark:text-[#d1a784] fill-current" />
              </div>
-             <h4 className="text-2xl font-serif text-[#3d3b33] dark:text-white mb-2 text-center">How would you rate Chronoa?</h4>
+             <h4 className="text-2xl font-serif text-[#3d3b33] dark:text-white mb-2 text-center">How would you rate BXR+?</h4>
              <p className="text-xs text-[#888] dark:text-[#7a7a7a] text-center max-w-[250px] mb-8">
                Your honest rating helps us improve the experience for everyone.
              </p>

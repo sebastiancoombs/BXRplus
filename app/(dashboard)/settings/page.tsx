@@ -183,8 +183,8 @@ export default function SettingsPage() {
     if (showGithubModal && githubCountdown > 0) timer = setTimeout(() => setGithubCountdown(githubCountdown - 1), 1000);
     else if (showGithubModal && githubCountdown === 0) {
       const isStandalone = window.matchMedia('(display-mode: standalone)').matches || ('standalone' in navigator && (navigator as any).standalone);
-      if (isStandalone) window.location.href = "https://github.com/XeCipher/Chronoa";
-      else window.open("https://github.com/XeCipher/Chronoa", "_blank");
+      if (isStandalone) window.location.href = "https://github.com/sebastiancoombs/BXRplus";
+      else window.open("https://github.com/sebastiancoombs/BXRplus", "_blank");
       setShowGithubModal(false);
       setGithubCountdown(-1);
     }
@@ -452,7 +452,7 @@ export default function SettingsPage() {
       const url = URL.createObjectURL(blob);
       const link = document.createElement('a');
       link.href = url;
-      link.setAttribute('download', 'Chronoa_Calendar.ics');
+      link.setAttribute('download', 'BXRplus_Calendar.ics');
       document.body.appendChild(link);
       link.click();
       document.body.removeChild(link);
@@ -671,7 +671,7 @@ export default function SettingsPage() {
               <div className="pt-6 mt-2 border-t border-[#e0ddd5] dark:border-[#333] flex flex-col md:flex-row justify-between items-start md:items-center gap-4">
                  <div>
                     <h4 className="text-sm font-bold text-[#3d3b33] dark:text-[#f0f0f0]">Export Calendar</h4>
-                    <p className="text-[11px] text-[#b0ad9a] dark:text-[#7a7a7a]">Download your created Chronoa events locally.</p>
+                    <p className="text-[11px] text-[#b0ad9a] dark:text-[#7a7a7a]">Download your created BXR+ events locally.</p>
                  </div>
                  <button onClick={handleExportCalendar} className="flex items-center gap-2 px-6 py-3 bg-white dark:bg-[#1a1a1a] border border-[#e0ddd5] dark:border-[#333] text-[#3d3b33] dark:text-[#f0f0f0] rounded-xl text-[10px] font-bold uppercase tracking-widest shadow-sm hover:bg-gray-50 dark:hover:bg-[#222] transition-colors shrink-0">
                     <Download size={16} /> Export .ics
@@ -898,7 +898,7 @@ export default function SettingsPage() {
              <Info size={20} className="text-[#c2956e] dark:text-[#d1a784]" />
              <h3 className="text-xl font-medium"><HighlightText text="Developer & Source" query={searchQuery} /></h3>
           </div>
-          <p className="text-xs text-[#b0ad9a] dark:text-[#7a7a7a] mt-1 mb-4"><HighlightText text="Chronoa is an open-source workspace built for deep focus. If you have any feature suggestions, want to reach out to the developer, or report an issue, we'd love to hear from you. Every feedback is reviewed within 24 hours of submission." query={searchQuery} /></p>
+          <p className="text-xs text-[#b0ad9a] dark:text-[#7a7a7a] mt-1 mb-4"><HighlightText text="BXR+ is a shared workspace for ABA care teams. If you have a feature suggestion or need to report an issue, we'd love to hear from you." query={searchQuery} /></p>
           <div className="flex flex-row items-center gap-3">
             <button onClick={() => setIsFeedbackModalOpen(true)} className="flex-1 sm:flex-none w-full sm:w-auto flex items-center justify-center gap-2 px-4 sm:px-6 py-3 bg-[#c2956e] text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-[#b0855f] transition-all shadow-md whitespace-nowrap">
               <MessageSquareHeart size={16} /> Share Feedback

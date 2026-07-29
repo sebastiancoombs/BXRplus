@@ -101,7 +101,7 @@ function MiniEngineCard({ engine, tab }: { engine: EngineInstance, tab: 'timer' 
             store.pause(tab, engine.id);
             playChime();
             if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-              new Notification('Chronoa', {
+              new Notification('BXR+', {
                 body: `Timer complete: ${engine.title || 'Timer'}`,
                 icon: '/apple-icon.png'
               });
