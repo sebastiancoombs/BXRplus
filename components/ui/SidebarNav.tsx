@@ -6,7 +6,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useUiStore } from "@/store/uiStore";
 import { supabase } from "@/lib/supabase";
-import { Home, CheckSquare, BarChart2, PanelLeftClose, PanelLeft, FileText, CalendarDays, User, Activity, Users } from "lucide-react";
+import { Home, CheckSquare, BarChart2, PanelLeftClose, PanelLeft, FileText, ClipboardPenLine, CalendarDays, User, Activity, Users } from "lucide-react";
 import { AiOutlineFall } from "react-icons/ai";
 import { useShellAccess } from "@/hooks/useShellAccess";
 
@@ -76,6 +76,7 @@ export default function SidebarNav() {
     { name: "Behavior Zone", href: "/behavior-zone", icon: Activity },
     { name: "Tasks", href: "/tasks", icon: CheckSquare },
     { name: "Notes", href: "/notes", icon: FileText },
+    { name: "Session Notes", href: "/session-notes", icon: ClipboardPenLine },
     { name: "Calendar", href: "/calendar", icon: CalendarDays },
     { name: "Analytics", href: "/analytics", icon: BarChart2 },
   ].filter((item) => !behaviorOnly || item.href === "/behavior-zone");
@@ -83,6 +84,7 @@ export default function SidebarNav() {
   const mobileNavItems =[
     { name: "Tasks", href: "/tasks", icon: CheckSquare },
     { name: "Notes", href: "/notes", icon: FileText },
+    { name: "Session Notes", href: "/session-notes", icon: ClipboardPenLine },
     { name: "Home", href: "/home", icon: AiOutlineFall, isLogo: true },
     { name: "Behavior Zone", href: "/behavior-zone", icon: Activity },
     { name: "Calendar", href: "/calendar", icon: CalendarDays },

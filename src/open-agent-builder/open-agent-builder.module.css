@@ -1,0 +1,528 @@
+.builder {
+  display: grid;
+  grid-template-rows: 58px minmax(0, 1fr);
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  overflow: hidden;
+  background: #fafafa;
+  color: #18181b;
+  font-family: Arial, Helvetica, sans-serif;
+}
+
+.toolbar {
+  position: relative;
+  z-index: 20;
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  border-bottom: 1px solid #e4e4e7;
+  background: #fff;
+  padding: 0 14px;
+}
+
+.toolbarLeft,
+.toolbarActions {
+  display: flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+}
+
+.brandMark {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  place-items: center;
+  border-radius: 8px;
+  background: #fa5d19;
+  color: white;
+  font-size: 15px;
+  font-weight: 800;
+}
+
+.divider {
+  width: 1px;
+  height: 24px;
+  margin: 0 3px;
+  background: #e4e4e7;
+}
+
+.workflowName {
+  width: min(210px, 24vw);
+  border: 1px solid transparent;
+  border-radius: 7px;
+  background: transparent;
+  padding: 5px 7px;
+  color: #27272a;
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+}
+
+.workflowName:hover,
+.workflowName:focus {
+  border-color: #e4e4e7;
+  background: #fafafa;
+}
+
+.savedState {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  color: #71717a;
+  font-size: 11px;
+  white-space: nowrap;
+}
+
+.iconButton,
+.secondaryButton,
+.runButton {
+  display: inline-flex;
+  height: 34px;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  background: #fff;
+  color: #3f3f46;
+  padding: 0 11px;
+  font-size: 12px;
+  font-weight: 600;
+  transition:
+    background 120ms ease,
+    border-color 120ms ease;
+}
+
+.iconButton {
+  width: 34px;
+  padding: 0;
+}
+
+.iconButton:hover,
+.secondaryButton:hover {
+  border-color: #d4d4d8;
+  background: #f4f4f5;
+}
+
+.runButton {
+  border-color: #e74f0d;
+  background: #fa5d19;
+  color: white;
+}
+
+.runButton:hover {
+  background: #e74f0d;
+}
+
+.runButton:disabled {
+  opacity: 0.65;
+}
+
+.workspace {
+  display: flex;
+  min-width: 0;
+  min-height: 0;
+  overflow: hidden;
+}
+
+.palette {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  width: 210px;
+  flex: 0 0 210px;
+  min-height: 0;
+  flex-direction: column;
+  border-right: 1px solid #e4e4e7;
+  background: #fff;
+}
+
+.paletteHeading {
+  display: flex;
+  height: 49px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #f4f4f5;
+  padding: 0 14px;
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.paletteHeading button,
+.inspectorHeader button,
+.runToast button {
+  display: grid;
+  width: 26px;
+  height: 26px;
+  place-items: center;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: #71717a;
+}
+
+.paletteHeading button:hover,
+.inspectorHeader button:hover {
+  background: #f4f4f5;
+}
+
+.paletteScroll {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 14px 10px;
+}
+
+.category {
+  margin-bottom: 18px;
+}
+
+.category p {
+  margin: 0 5px 7px;
+  color: #a1a1aa;
+  font-size: 9px;
+  font-weight: 800;
+  letter-spacing: 0.11em;
+  text-transform: uppercase;
+}
+
+.paletteNode {
+  display: flex;
+  width: 100%;
+  height: 36px;
+  align-items: center;
+  gap: 9px;
+  border: 1px solid transparent;
+  border-radius: 8px;
+  background: transparent;
+  padding: 0 8px;
+  color: #3f3f46;
+  font-size: 12px;
+  font-weight: 500;
+  text-align: left;
+  cursor: grab;
+}
+
+.paletteNode:hover {
+  border-color: #e4e4e7;
+  background: #fafafa;
+}
+
+.paletteNode:active {
+  cursor: grabbing;
+}
+
+.paletteNode > span {
+  display: grid;
+  width: 24px;
+  height: 24px;
+  place-items: center;
+  border-radius: 6px;
+  color: white;
+}
+
+.resetButton {
+  display: flex;
+  height: 45px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border: 0;
+  border-top: 1px solid #f4f4f5;
+  background: #fff;
+  color: #71717a;
+  font-size: 11px;
+}
+
+.resetButton:hover {
+  background: #fafafa;
+  color: #3f3f46;
+}
+
+.flowCanvas {
+  position: relative;
+  min-width: 0;
+  min-height: 0;
+  flex: 1;
+  background: #fafafa;
+}
+
+.agentNode {
+  display: flex;
+  width: 190px;
+  min-height: 58px;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+  background: white;
+  padding: 10px 12px;
+  box-shadow: 0 2px 6px rgb(24 24 27 / 5%);
+}
+
+.agentNodeSelected {
+  border-color: #fa5d19;
+  box-shadow:
+    0 0 0 2px rgb(250 93 25 / 12%),
+    0 5px 16px rgb(24 24 27 / 8%);
+}
+
+.nodeIcon {
+  display: grid;
+  width: 30px;
+  height: 30px;
+  flex: 0 0 30px;
+  place-items: center;
+  border-radius: 7px;
+  color: white;
+}
+
+.nodeCopy {
+  display: flex;
+  min-width: 0;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.nodeCopy strong {
+  overflow: hidden;
+  color: #27272a;
+  font-size: 11px;
+  font-weight: 650;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.nodeCopy small {
+  overflow: hidden;
+  color: #a1a1aa;
+  font-size: 9px;
+  line-height: 1.3;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.handle {
+  width: 9px !important;
+  height: 9px !important;
+  border: 2px solid white !important;
+  background: #71717a !important;
+}
+
+.inspector {
+  position: relative;
+  z-index: 10;
+  display: flex;
+  width: 300px;
+  flex: 0 0 300px;
+  min-height: 0;
+  flex-direction: column;
+  border-left: 1px solid #e4e4e7;
+  background: #fff;
+  box-shadow: -8px 0 24px rgb(24 24 27 / 4%);
+}
+
+.inspectorHeader {
+  display: flex;
+  height: 50px;
+  flex: 0 0 auto;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid #e4e4e7;
+  padding: 0 14px;
+}
+
+.inspectorHeader > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.inspectorHeader > div > span {
+  width: 9px;
+  height: 9px;
+  border-radius: 3px;
+}
+
+.inspectorHeader strong {
+  font-size: 12px;
+}
+
+.inspectorBody {
+  min-height: 0;
+  flex: 1;
+  overflow-y: auto;
+  padding: 18px 14px;
+}
+
+.inspectorBody label {
+  display: flex;
+  margin-bottom: 16px;
+  flex-direction: column;
+  gap: 7px;
+  color: #52525b;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.inspectorBody input,
+.inspectorBody textarea {
+  width: 100%;
+  border: 1px solid #e4e4e7;
+  border-radius: 8px;
+  background: #fafafa;
+  padding: 9px 10px;
+  color: #27272a;
+  font: inherit;
+  font-size: 11px;
+  font-weight: 400;
+  line-height: 1.45;
+  outline: none;
+  resize: vertical;
+}
+
+.inspectorBody input:focus,
+.inspectorBody textarea:focus {
+  border-color: #fa5d19;
+  background: white;
+  box-shadow: 0 0 0 2px rgb(250 93 25 / 10%);
+}
+
+.inspectorFooter {
+  display: flex;
+  flex: 0 0 auto;
+  gap: 8px;
+  border-top: 1px solid #e4e4e7;
+  padding: 12px 14px;
+}
+
+.inspectorFooter button {
+  display: flex;
+  height: 32px;
+  flex: 1;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  border: 1px solid #e4e4e7;
+  border-radius: 7px;
+  background: white;
+  color: #52525b;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.inspectorFooter button:hover {
+  background: #f4f4f5;
+}
+
+.inspectorFooter .deleteButton {
+  border-color: #fecaca;
+  color: #dc2626;
+}
+
+.runToast {
+  position: absolute;
+  z-index: 30;
+  right: 16px;
+  bottom: 16px;
+  display: flex;
+  max-width: min(410px, calc(100% - 32px));
+  align-items: center;
+  gap: 8px;
+  border: 1px solid #e4e4e7;
+  border-radius: 10px;
+  background: white;
+  padding: 10px 12px;
+  box-shadow: 0 10px 28px rgb(24 24 27 / 14%);
+  color: #52525b;
+  font-size: 11px;
+}
+
+.runToast > svg {
+  flex: 0 0 auto;
+  color: #fa5d19;
+}
+
+.runToast button {
+  flex: 0 0 auto;
+}
+
+@media (max-width: 900px) {
+  .toolbar {
+    padding: 0 8px;
+  }
+
+  .savedState,
+  .secondaryButton {
+    display: none;
+  }
+
+  .workflowName {
+    width: 145px;
+  }
+
+  .palette {
+    width: 66px;
+    flex-basis: 66px;
+  }
+
+  .paletteHeading {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .paletteHeading > span,
+  .paletteHeading button,
+  .category p,
+  .paletteNode:not(:hover) {
+    font-size: 0;
+  }
+
+  .paletteScroll {
+    padding: 12px 8px;
+  }
+
+  .paletteNode {
+    justify-content: center;
+    padding: 0;
+  }
+
+  .paletteNode > span {
+    flex: 0 0 28px;
+    width: 28px;
+    height: 28px;
+  }
+
+  .resetButton {
+    font-size: 0;
+  }
+
+  .inspector {
+    position: absolute;
+    inset: 58px 0 0 auto;
+    width: min(300px, calc(100% - 66px));
+  }
+}
+
+@media (max-width: 520px) {
+  .brandMark,
+  .divider,
+  .toolbarLeft > .iconButton {
+    display: none;
+  }
+
+  .workflowName {
+    width: 132px;
+  }
+
+  .runButton {
+    padding: 0 8px;
+  }
+}
