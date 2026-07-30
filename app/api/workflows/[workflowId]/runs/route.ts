@@ -11,6 +11,7 @@ import {
   WorkflowHttpError,
   workflowErrorResponse,
 } from "@/src/open-agent-builder/server/errors";
+import { after } from "next/server";
 
 export const dynamic = "force-dynamic";
 export const maxDuration = 300;
@@ -46,9 +47,15 @@ export async function POST(request: Request, context: RouteContext) {
       workflowId,
       input: body.input,
     });
-    const result = await executeWorkflowRun({ supabase, runId: run.id });
+    after(async () => {
+      try {
+        await executeWorkflowRun({ supabase, runId: run.id });
+      } catch (error) {
+        console.error("Workflow execution failed", { runId: run.id, error });
+      }
+    });
 
-    return Response.json({ run: result }, { status: 201 });
+    return Response.json({ run }, { status: 202 });
   } catch (error) {
     return workflowErrorResponse(error);
   }

@@ -9,6 +9,10 @@ import {
 import { ApprovalRequiredError } from "./node-executors";
 import { workflowGraphSchema, type WorkflowNode } from "./schema";
 import { WorkflowHttpError } from "./errors";
+import {
+  loadWorkflowCredentials,
+  withWorkflowCredentials,
+} from "./credentials";
 
 type WorkflowRow = {
   id: string;
@@ -78,6 +82,27 @@ function errorMessage(error: unknown) {
   return error instanceof Error ? error.message : "Unknown workflow error.";
 }
 
+function assertPersistable(value: unknown, label: string) {
+  if (JSON.stringify(value).length > 1_000_000) {
+    throw new WorkflowHttpError(413, `${label} exceeds the 1 MB execution limit.`);
+  }
+}
+
+async function audit(
+  supabase: SupabaseClient,
+  run: Pick<RunRow, "id" | "workflow_id" | "owner_id">,
+  eventType: string,
+  details: Record<string, unknown> = {},
+) {
+  await supabase.from("agent_workflow_audit_events").insert({
+    owner_id: run.owner_id,
+    workflow_id: run.workflow_id,
+    run_id: run.id,
+    event_type: eventType,
+    details,
+  });
+}
+
 export async function createWorkflowRun(options: {
   supabase: SupabaseClient;
   userId: string;
@@ -86,6 +111,11 @@ export async function createWorkflowRun(options: {
   retryOf?: string;
 }) {
   await requireWorkflow(options.supabase, options.workflowId);
+  const { error: slotError } = await options.supabase.rpc(
+    "claim_agent_workflow_run_slot",
+    { workflow: options.workflowId },
+  );
+  if (slotError) throw new WorkflowHttpError(429, slotError.message);
 
   const { data, error } = await options.supabase
     .from("agent_workflow_runs")
@@ -103,6 +133,9 @@ export async function createWorkflowRun(options: {
     throw new WorkflowHttpError(400, error?.message || "Could not create run.");
   }
 
+  await audit(options.supabase, data as RunRow, "run.created", {
+    retryOf: options.retryOf || null,
+  });
   return data as RunRow;
 }
 
@@ -112,6 +145,8 @@ export async function executeWorkflowRun(options: {
 }) {
   const run = await requireRun(options.supabase, options.runId);
   const workflow = await requireWorkflow(options.supabase, run.workflow_id);
+  const executionStartedAt = Date.now();
+  let executedNodes = 0;
   const graph = workflowGraphSchema.safeParse({
     nodes: workflow.nodes,
     edges: workflow.edges,
@@ -148,6 +183,10 @@ export async function executeWorkflowRun(options: {
 
   const callbacks: GraphCallbacks = {
     onNodeStart: async (node, state) => {
+      executedNodes += 1;
+      if (executedNodes > 100 || Date.now() - executionStartedAt > 240_000) {
+        throw new WorkflowHttpError(429, "Workflow execution limit exceeded.");
+      }
       const { data: latestRun } = await options.supabase
         .from("agent_workflow_runs")
         .select("status")
@@ -177,6 +216,8 @@ export async function executeWorkflowRun(options: {
       activeRows.set(node.id, data.id);
     },
     onNodeComplete: async (node, output, state) => {
+      assertPersistable(output, "Node output");
+      assertPersistable(state, "Workflow state");
       const nodeRunId = activeRows.get(node.id);
       if (nodeRunId) {
         await options.supabase
@@ -236,13 +277,16 @@ export async function executeWorkflowRun(options: {
     .eq("id", run.id);
 
   try {
-    const result = await invokeWorkflowGraph({
-      nodes: graph.data.nodes,
-      edges: graph.data.edges,
-      input: run.input,
-      state: run.state || undefined,
-      callbacks,
-    });
+    const credentials = await loadWorkflowCredentials(options.supabase);
+    const result = await withWorkflowCredentials(credentials, () =>
+      invokeWorkflowGraph({
+        nodes: graph.data.nodes,
+        edges: graph.data.edges,
+        input: run.input,
+        state: run.state || undefined,
+        callbacks,
+      }),
+    );
 
     const { data, error } = await options.supabase
       .from("agent_workflow_runs")
@@ -258,6 +302,7 @@ export async function executeWorkflowRun(options: {
       .single();
 
     if (error || !data) throw error || new Error("Could not finish workflow run.");
+    await audit(options.supabase, run, "run.completed");
     return data;
   } catch (error) {
     if (error instanceof ApprovalRequiredError) {
@@ -276,6 +321,9 @@ export async function executeWorkflowRun(options: {
       .select("*")
       .single();
 
+    await audit(options.supabase, run, cancelled ? "run.cancelled" : "run.failed", {
+      error: errorMessage(error).slice(0, 2_000),
+    });
     if (cancelled) return data;
     throw error;
   }
@@ -325,6 +373,9 @@ export async function approveWorkflowRun(options: {
       .eq("id", run.id)
       .select("*")
       .single();
+    await audit(options.supabase, run, "approval.declined", {
+      nodeId: waitingNode.node_id,
+    });
     return data;
   }
 
@@ -370,6 +421,9 @@ export async function approveWorkflowRun(options: {
     })
     .eq("id", run.id);
 
+  await audit(options.supabase, run, "approval.approved", {
+    nodeId: waitingNode.node_id,
+  });
   return executeWorkflowRun({ supabase: options.supabase, runId: run.id });
 }
 
@@ -379,6 +433,25 @@ export async function retryWorkflowRun(options: {
   runId: string;
 }) {
   const previousRun = await requireRun(options.supabase, options.runId);
+  if (!["failed", "cancelled"].includes(previousRun.status)) {
+    throw new WorkflowHttpError(409, "Only failed or cancelled runs can be retried.");
+  }
+  const { data: relatedRuns } = await options.supabase
+    .from("agent_workflow_runs")
+    .select("id, retry_of")
+    .eq("workflow_id", previousRun.workflow_id);
+  const retries = new Map(
+    (relatedRuns || []).map((candidate) => [candidate.id, candidate.retry_of]),
+  );
+  let retryDepth = 0;
+  let ancestor = previousRun.retry_of;
+  while (ancestor) {
+    retryDepth += 1;
+    ancestor = retries.get(ancestor) || null;
+  }
+  if (retryDepth >= 3) {
+    throw new WorkflowHttpError(429, "Workflow retry limit reached.");
+  }
   const run = await createWorkflowRun({
     supabase: options.supabase,
     userId: options.userId,

@@ -14,6 +14,7 @@ import {
   type ProviderName,
 } from "./providers";
 import { WorkflowHttpError } from "./errors";
+import { workflowCredential } from "./credentials";
 
 export type ExecutionState = {
   input: unknown;
@@ -242,7 +243,7 @@ async function executeMcp(node: WorkflowNode, state: ExecutionState) {
       config.arguments && typeof config.arguments === "object"
         ? (config.arguments as Record<string, unknown>)
         : { input: state.lastOutput },
-    authorization: process.env.MCP_AUTH_TOKEN,
+    authorization: workflowCredential("mcp") || process.env.MCP_AUTH_TOKEN,
   });
 
   return { output, state: { lastOutput: output } };

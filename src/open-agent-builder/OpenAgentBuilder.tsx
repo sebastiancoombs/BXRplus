@@ -52,6 +52,7 @@ import {
   createWorkflow,
   listWorkflows,
   runWorkflow as runPersistedWorkflow,
+  streamWorkflowRun,
   updateWorkflow,
 } from "./client-api";
 import styles from "./open-agent-builder.module.css";
@@ -352,12 +353,24 @@ function Canvas() {
         id: workflowId,
         input: {},
       });
-      setRunMessage(
-        run.status === "completed"
-          ? "Workflow completed."
-          : run.status === "waiting_approval"
+      const completedRun = await streamWorkflowRun(run.id, (progress) => {
+        const activeNode = progress.agent_workflow_node_runs?.find(
+          (nodeRun) => nodeRun.status === "running",
+        );
+        setRunMessage(
+          progress.status === "waiting_approval"
             ? "Workflow is waiting for approval."
-            : run.error || `Workflow ${run.status}.`,
+            : activeNode
+              ? `Running ${activeNode.node_id}…`
+              : `Workflow ${progress.status}…`,
+        );
+      });
+      setRunMessage(
+        completedRun.status === "completed"
+          ? "Workflow completed."
+          : completedRun.status === "waiting_approval"
+            ? "Workflow is waiting for approval."
+            : completedRun.error || `Workflow ${completedRun.status}.`,
       );
     } catch (error) {
       setRunMessage(

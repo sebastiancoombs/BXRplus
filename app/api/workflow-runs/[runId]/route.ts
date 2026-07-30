@@ -56,6 +56,13 @@ export async function DELETE(request: Request, context: RouteContext) {
       })
       .eq("run_id", runId)
       .in("status", ["queued", "running", "waiting_approval"]);
+    await supabase.from("agent_workflow_audit_events").insert({
+      owner_id: data.owner_id,
+      workflow_id: data.workflow_id,
+      run_id: data.id,
+      event_type: "run.cancelled",
+      details: { source: "user" },
+    });
 
     return Response.json({ run: data });
   } catch (error) {

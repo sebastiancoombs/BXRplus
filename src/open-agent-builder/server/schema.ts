@@ -82,7 +82,15 @@ export const updateWorkflowSchema = z
   });
 
 export const runWorkflowSchema = z.object({
-  input: z.unknown().default({}),
+  input: z.unknown().default({}).refine(
+    (value) => JSON.stringify(value).length <= 250_000,
+    "Workflow input is too large.",
+  ),
+});
+
+export const workflowSecretSchema = z.object({
+  provider: z.enum(["openai", "anthropic", "groq", "firecrawl", "mcp", "e2b"]),
+  secret: z.string().trim().min(8).max(20_000),
 });
 
 export const approvalSchema = z.object({

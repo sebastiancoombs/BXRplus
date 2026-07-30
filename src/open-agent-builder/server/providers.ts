@@ -10,13 +10,15 @@ import { StreamableHTTPClientTransport } from "@modelcontextprotocol/sdk/client/
 import { Sandbox } from "@e2b/code-interpreter";
 import ky from "ky";
 import { WorkflowHttpError } from "./errors";
+import { workflowCredential, type WorkflowCredentialName } from "./credentials";
+import { assertPublicHttpUrl, safeOutboundHeaders } from "./security";
 
 export type ProviderName = "openai" | "anthropic" | "groq";
 
-function requireEnvironmentKey(name: string) {
-  const value = process.env[name];
+function requireProviderKey(provider: WorkflowCredentialName, environmentName: string) {
+  const value = workflowCredential(provider) || process.env[environmentName];
   if (!value) {
-    throw new WorkflowHttpError(503, `${name} is not configured.`);
+    throw new WorkflowHttpError(503, `${provider} credentials are not configured.`);
   }
   return value;
 }
@@ -24,20 +26,20 @@ function requireEnvironmentKey(name: string) {
 function resolveLanguageModel(provider: ProviderName, model?: string): LanguageModel {
   if (provider === "anthropic") {
     const anthropic = createAnthropic({
-      apiKey: requireEnvironmentKey("ANTHROPIC_API_KEY"),
+      apiKey: requireProviderKey("anthropic", "ANTHROPIC_API_KEY"),
     });
     return anthropic(model || "claude-haiku-4-5");
   }
 
   if (provider === "groq") {
     const groq = createGroq({
-      apiKey: requireEnvironmentKey("GROQ_API_KEY"),
+      apiKey: requireProviderKey("groq", "GROQ_API_KEY"),
     });
     return groq(model || "llama-3.3-70b-versatile");
   }
 
   const openai = createOpenAI({
-    apiKey: requireEnvironmentKey("OPENAI_API_KEY"),
+    apiKey: requireProviderKey("openai", "OPENAI_API_KEY"),
   });
   return openai(model || process.env.OPENAI_MODEL || "gpt-5-mini");
 }
@@ -65,7 +67,7 @@ export async function runLanguageModel(options: {
 
 export function createFirecrawlClient() {
   return new Firecrawl({
-    apiKey: requireEnvironmentKey("FIRECRAWL_API_KEY"),
+    apiKey: requireProviderKey("firecrawl", "FIRECRAWL_API_KEY"),
   });
 }
 
@@ -75,10 +77,7 @@ export async function callMcpTool(options: {
   arguments?: Record<string, unknown>;
   authorization?: string;
 }) {
-  const url = new URL(options.url);
-  if (!["https:", "http:"].includes(url.protocol)) {
-    throw new WorkflowHttpError(400, "MCP URL must use HTTP or HTTPS.");
-  }
+  const url = await assertPublicHttpUrl(options.url);
 
   const client = new Client(
     { name: "bxr-open-agent-builder", version: "1.0.0" },
@@ -106,7 +105,7 @@ export async function runSandboxedTransform(options: {
   input: unknown;
   language?: "js" | "ts" | "python";
 }) {
-  const apiKey = requireEnvironmentKey("E2B_API_KEY");
+  const apiKey = requireProviderKey("e2b", "E2B_API_KEY");
   const sandbox = await Sandbox.create({ apiKey, timeoutMs: 120_000 });
 
   try {
@@ -147,23 +146,40 @@ export async function runHttpRequest(options: {
   headers?: Record<string, string>;
   body?: unknown;
 }) {
-  const url = new URL(options.url);
-  if (!["https:", "http:"].includes(url.protocol)) {
-    throw new WorkflowHttpError(400, "HTTP nodes require an HTTP or HTTPS URL.");
+  let url = await assertPublicHttpUrl(options.url);
+  const method = (options.method || "GET").toUpperCase();
+  if (!["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+    throw new WorkflowHttpError(400, "HTTP method is not allowed.");
   }
 
-  const response = await ky(url, {
-    method: options.method || "GET",
-    headers: options.headers,
+  let response = await ky(url, {
+    method,
+    headers: safeOutboundHeaders(options.headers),
     json:
       options.body === undefined ||
-      ["GET", "HEAD"].includes((options.method || "GET").toUpperCase())
+      ["GET", "HEAD"].includes(method)
         ? undefined
         : options.body,
     timeout: 30_000,
     retry: { limit: 2, methods: ["get", "head", "put", "delete", "options", "trace"] },
     throwHttpErrors: false,
+    redirect: "manual",
   });
+
+  for (let redirects = 0; response.status >= 300 && response.status < 400; redirects += 1) {
+    if (redirects >= 3) throw new WorkflowHttpError(400, "Too many HTTP redirects.");
+    const location = response.headers.get("location");
+    if (!location) break;
+    url = await assertPublicHttpUrl(new URL(location, url).toString());
+    response = await ky(url, {
+      method: "GET",
+      headers: safeOutboundHeaders(options.headers),
+      timeout: 30_000,
+      retry: 0,
+      throwHttpErrors: false,
+      redirect: "manual",
+    });
+  }
 
   const contentType = response.headers.get("content-type") || "";
   const body = contentType.includes("application/json")
