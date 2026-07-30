@@ -42,6 +42,30 @@ describe("workflow graph validation", () => {
     });
     expect(parsed.success).toBe(false);
   });
+
+  it("requires approval before BXR+ clinical data reaches external nodes", () => {
+    const unsafe = workflowGraphSchema.safeParse({
+      nodes: [
+        node("data", "bxr-session-notes"),
+        node("agent", "agent"),
+      ],
+      edges: [edge("edge-1", "data", "agent")],
+    });
+    expect(unsafe.success).toBe(false);
+
+    const approved = workflowGraphSchema.safeParse({
+      nodes: [
+        node("data", "bxr-session-notes"),
+        node("approval", "user-approval"),
+        node("agent", "agent"),
+      ],
+      edges: [
+        edge("edge-1", "data", "approval"),
+        edge("edge-2", "approval", "agent"),
+      ],
+    });
+    expect(approved.success).toBe(true);
+  });
 });
 
 describe("LangGraph workflow adapter", () => {

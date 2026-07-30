@@ -11,9 +11,12 @@ export type WorkflowCredentialName =
   | "mcp"
   | "e2b";
 
-const credentialStorage = new AsyncLocalStorage<
-  Partial<Record<WorkflowCredentialName, string>>
->();
+type WorkflowExecutionContext = {
+  credentials: Partial<Record<WorkflowCredentialName, string>>;
+  supabase: SupabaseClient;
+};
+
+const executionContext = new AsyncLocalStorage<WorkflowExecutionContext>();
 
 export async function loadWorkflowCredentials(supabase: SupabaseClient) {
   const { data, error } = await supabase.rpc("get_agent_workflow_secrets");
@@ -27,11 +30,18 @@ export async function loadWorkflowCredentials(supabase: SupabaseClient) {
 }
 export function withWorkflowCredentials<T>(
   credentials: Partial<Record<WorkflowCredentialName, string>>,
+  supabase: SupabaseClient,
   operation: () => Promise<T>,
 ) {
-  return credentialStorage.run(credentials, operation);
+  return executionContext.run({ credentials, supabase }, operation);
 }
 
 export function workflowCredential(name: WorkflowCredentialName) {
-  return credentialStorage.getStore()?.[name];
+  return executionContext.getStore()?.credentials[name];
+}
+
+export function workflowSupabase() {
+  const supabase = executionContext.getStore()?.supabase;
+  if (!supabase) throw new Error("Workflow data context is unavailable.");
+  return supabase;
 }

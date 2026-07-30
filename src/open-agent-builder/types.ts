@@ -9,6 +9,9 @@ export type BuilderNodeType =
   | "extract"
   | "http"
   | "set-state"
+  | "bxr-session-notes"
+  | "bxr-reports"
+  | "bxr-session-data"
   | "note"
   | "end";
 

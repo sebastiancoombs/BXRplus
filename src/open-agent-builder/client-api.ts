@@ -54,6 +54,15 @@ export async function listWorkflows() {
     .json<{ workflows: AgentWorkflow[] }>();
 }
 
+export async function listBxrClients() {
+  const { data, error } = await supabase
+    .from("clients")
+    .select("id, name")
+    .order("name");
+  if (error) throw error;
+  return data || [];
+}
+
 export async function createWorkflow(input: {
   name: string;
   description?: string;

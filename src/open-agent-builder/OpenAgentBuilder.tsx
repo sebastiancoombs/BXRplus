@@ -50,6 +50,7 @@ import AgentNode, { nodeVisuals } from "./AgentNode";
 import type { BuilderNodeData, BuilderNodeType } from "./types";
 import {
   createWorkflow,
+  listBxrClients,
   listWorkflows,
   runWorkflow as runPersistedWorkflow,
   streamWorkflowRun,
@@ -66,6 +67,10 @@ const categories: Array<{
   { label: "Core", nodes: ["agent", "end", "note"] },
   { label: "Tools", nodes: ["mcp"] },
   { label: "Logic", nodes: ["if-else", "while", "user-approval"] },
+  {
+    label: "BXR+ Data",
+    nodes: ["bxr-session-notes", "bxr-reports", "bxr-session-data"],
+  },
   { label: "Data", nodes: ["transform", "extract", "http", "set-state"] },
 ];
 
@@ -103,6 +108,11 @@ function Canvas() {
   const workflowsQuery = useQuery({
     queryKey: ["agent-workflows"],
     queryFn: listWorkflows,
+    retry: 1,
+  });
+  const clientsQuery = useQuery({
+    queryKey: ["bxr-data-clients"],
+    queryFn: listBxrClients,
     retry: 1,
   });
   const createMutation = useMutation({
@@ -258,7 +268,16 @@ function Canvas() {
               ? "Configure instructions"
               : nodeType === "mcp"
                 ? "Connect an MCP server"
+                : nodeType === "bxr-session-notes"
+                  ? "Load RLS-scoped clinical session notes"
+                  : nodeType === "bxr-reports"
+                    ? "Load RLS-scoped session reports"
+                    : nodeType === "bxr-session-data"
+                      ? "Load goals and point/reward session events"
                 : "",
+          config: nodeType.startsWith("bxr-")
+            ? '{"clientId":"","from":"","to":"","limit":25}'
+            : undefined,
         },
       };
 
@@ -295,6 +314,20 @@ function Canvas() {
       ),
     );
     setSaved(false);
+  };
+
+  const selectedConfig = (() => {
+    try {
+      return JSON.parse(selectedNode?.data.config || "{}") as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  })();
+
+  const updateSelectedConfig = (patch: Record<string, unknown>) => {
+    updateSelectedNode({
+      config: JSON.stringify({ ...selectedConfig, ...patch }),
+    });
   };
 
   const deleteSelectedNode = () => {
@@ -632,9 +665,61 @@ function Canvas() {
                   />
                 </label>
               )}
+              {selectedNode.data.nodeType.startsWith("bxr-") && (
+                <>
+                  <label>
+                    Client
+                    <select
+                      value={String(selectedConfig.clientId || "")}
+                      onChange={(event) =>
+                        updateSelectedConfig({ clientId: event.target.value })
+                      }
+                    >
+                      <option value="">Select a client</option>
+                      {(clientsQuery.data || []).map((client) => (
+                        <option key={client.id} value={client.id}>
+                          {client.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                  <label>
+                    From date
+                    <input
+                      type="date"
+                      value={String(selectedConfig.from || "")}
+                      onChange={(event) =>
+                        updateSelectedConfig({ from: event.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    To date
+                    <input
+                      type="date"
+                      value={String(selectedConfig.to || "")}
+                      onChange={(event) =>
+                        updateSelectedConfig({ to: event.target.value })
+                      }
+                    />
+                  </label>
+                  <label>
+                    Maximum records
+                    <input
+                      type="number"
+                      min={1}
+                      max={100}
+                      value={Number(selectedConfig.limit) || 25}
+                      onChange={(event) =>
+                        updateSelectedConfig({ limit: Number(event.target.value) })
+                      }
+                    />
+                  </label>
+                </>
+              )}
               {!["start", "end", "note", "agent", "mcp"].includes(
                 selectedNode.data.nodeType,
-              ) && (
+              ) && !selectedNode.data.nodeType.startsWith("bxr-") && (
                 <label>
                   Configuration
                   <textarea
@@ -647,7 +732,11 @@ function Canvas() {
                     onChange={(event) =>
                       updateSelectedNode({ config: event.target.value })
                     }
-                    placeholder="{}"
+                    placeholder={
+                      selectedNode.data.nodeType.startsWith("bxr-")
+                        ? '{"clientId":"{{input.clientId}}","from":"2026-07-01","to":"2026-07-31","limit":25}'
+                        : "{}"
+                    }
                   />
                 </label>
               )}

@@ -278,7 +278,7 @@ export async function executeWorkflowRun(options: {
 
   try {
     const credentials = await loadWorkflowCredentials(options.supabase);
-    const result = await withWorkflowCredentials(credentials, () =>
+    const result = await withWorkflowCredentials(credentials, options.supabase, () =>
       invokeWorkflowGraph({
         nodes: graph.data.nodes,
         edges: graph.data.edges,

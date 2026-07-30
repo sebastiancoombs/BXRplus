@@ -14,7 +14,7 @@ import {
   type ProviderName,
 } from "./providers";
 import { WorkflowHttpError } from "./errors";
-import { workflowCredential } from "./credentials";
+import { workflowCredential, workflowSupabase } from "./credentials";
 
 export type ExecutionState = {
   input: unknown;
@@ -249,6 +249,122 @@ async function executeMcp(node: WorkflowNode, state: ExecutionState) {
   return { output, state: { lastOutput: output } };
 }
 
+function bxrDataFilters(node: WorkflowNode, state: ExecutionState) {
+  const config = nodeConfig(node);
+  const clientId = String(render(config.clientId, state) || "").trim();
+  if (!/^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(clientId)) {
+    throw new WorkflowHttpError(
+      400,
+      "BXR+ Data nodes require a clientId UUID, usually {{input.clientId}}.",
+    );
+  }
+  const from = String(render(config.from, state) || "").trim();
+  const to = String(render(config.to, state) || "").trim();
+  const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+  if ((from && !datePattern.test(from)) || (to && !datePattern.test(to))) {
+    throw new WorkflowHttpError(400, "BXR+ Data dates must use YYYY-MM-DD.");
+  }
+  const limit = Math.min(Math.max(Number(config.limit) || 25, 1), 100);
+  return { clientId, from, to, limit };
+}
+
+async function executeBxrData(node: WorkflowNode, state: ExecutionState) {
+  const supabase = workflowSupabase();
+  const { clientId, from, to, limit } = bxrDataFilters(node, state);
+  const nodeType = String(node.data.nodeType);
+
+  if (nodeType === "bxr-session-notes") {
+    let query = supabase
+      .from("session_notes")
+      .select(
+        "id, client_id, service_date, title, quick_notes, insurance_note, content, status, cpt_code, note_kind, setting_events, behavior_observations, interventions, client_response, plan_next_steps, created_at, updated_at",
+      )
+      .eq("client_id", clientId)
+      .is("deleted_at", null)
+      .order("service_date", { ascending: false })
+      .limit(limit);
+    if (from) query = query.gte("service_date", from);
+    if (to) query = query.lte("service_date", to);
+    const { data: notes, error } = await query;
+    if (error) throw new WorkflowHttpError(400, error.message);
+
+    const noteIds = (notes || []).map((note) => note.id);
+    const { data: goalLinks, error: goalError } = noteIds.length
+      ? await supabase
+        .from("session_note_goals")
+        .select("note_id, goal:client_goals(id, title, domain, target_text, mastery_criteria)")
+        .in("note_id", noteIds)
+      : { data: [], error: null };
+    if (goalError) throw new WorkflowHttpError(400, goalError.message);
+
+    const output = {
+      kind: "bxr-session-notes",
+      clientId,
+      filters: { from: from || null, to: to || null, limit },
+      records: (notes || []).map((note) => ({
+        ...note,
+        goals: (goalLinks || [])
+          .filter((link) => link.note_id === note.id)
+          .map((link) => link.goal),
+      })),
+    };
+    return { output, state: { lastOutput: output } };
+  }
+
+  if (nodeType === "bxr-reports") {
+    let query = supabase
+      .from("session_note_reports")
+      .select("id, client_id, service_date, title, content_html, generated_from, created_at, updated_at")
+      .eq("client_id", clientId)
+      .order("service_date", { ascending: false })
+      .limit(limit);
+    if (from) query = query.gte("service_date", from);
+    if (to) query = query.lte("service_date", to);
+    const { data, error } = await query;
+    if (error) throw new WorkflowHttpError(400, error.message);
+    const output = {
+      kind: "bxr-reports",
+      clientId,
+      filters: { from: from || null, to: to || null, limit },
+      records: data || [],
+    };
+    return { output, state: { lastOutput: output } };
+  }
+
+  let transactionQuery = supabase
+    .from("transactions")
+    .select(
+      "id, type, amount, balance_after, note, created_at, behavior:behaviors(id, name, point_value), reward:rewards(id, name, point_cost)",
+    )
+    .eq("client_id", clientId)
+    .order("created_at", { ascending: false })
+    .limit(limit);
+  if (from) transactionQuery = transactionQuery.gte("created_at", `${from}T00:00:00Z`);
+  if (to) transactionQuery = transactionQuery.lte("created_at", `${to}T23:59:59.999Z`);
+  const [transactionsResult, goalsResult] = await Promise.all([
+    transactionQuery,
+    supabase
+      .from("client_goals")
+      .select("id, title, description, domain, target_text, mastery_criteria, is_active")
+      .eq("client_id", clientId)
+      .eq("is_active", true)
+      .order("created_at", { ascending: false })
+      .limit(100),
+  ]);
+  if (transactionsResult.error) {
+    throw new WorkflowHttpError(400, transactionsResult.error.message);
+  }
+  if (goalsResult.error) throw new WorkflowHttpError(400, goalsResult.error.message);
+  const output = {
+    kind: "bxr-session-data",
+    clientId,
+    filters: { from: from || null, to: to || null, limit },
+    transactions: transactionsResult.data || [],
+    activeGoals: goalsResult.data || [],
+  };
+  return { output, state: { lastOutput: output } };
+}
+
 export async function executeWorkflowNode(
   node: WorkflowNode,
   state: ExecutionState,
@@ -276,6 +392,10 @@ export async function executeWorkflowNode(
       return executeTransform(node, state);
     case "set-state":
       return executeSetState(node, state);
+    case "bxr-session-notes":
+    case "bxr-reports":
+    case "bxr-session-data":
+      return executeBxrData(node, state);
     case "if-else": {
       const result = Boolean(jsonLogicResult(config.rule || config.condition, state));
       return {

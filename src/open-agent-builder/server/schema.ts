@@ -61,6 +61,46 @@ export const workflowGraphSchema = z
         });
       }
     }
+
+    const nodesById = new Map(nodes.map((node) => [node.id, node]));
+    const outgoing = new Map<string, string[]>();
+    for (const edge of edges) {
+      outgoing.set(edge.source, [...(outgoing.get(edge.source) || []), edge.target]);
+    }
+    const bxrNodeTypes = new Set([
+      "bxr-session-notes",
+      "bxr-reports",
+      "bxr-session-data",
+    ]);
+    const externalNodeTypes = new Set(["agent", "mcp", "extract", "firecrawl", "http"]);
+    for (const source of nodes.filter((node) => bxrNodeTypes.has(node.data.nodeType))) {
+      const queue = (outgoing.get(source.id) || []).map((id) => ({
+        id,
+        approved: false,
+      }));
+      const visited = new Set<string>();
+      while (queue.length > 0) {
+        const current = queue.shift()!;
+        const visitKey = `${current.id}:${current.approved}`;
+        if (visited.has(visitKey)) continue;
+        visited.add(visitKey);
+        const target = nodesById.get(current.id);
+        if (!target) continue;
+        const approved =
+          current.approved || target.data.nodeType === "user-approval";
+        if (!approved && externalNodeTypes.has(target.data.nodeType)) {
+          context.addIssue({
+            code: "custom",
+            message: `${source.data.nodeType} must pass through User Approval before external ${target.data.nodeType} nodes.`,
+            path: ["edges"],
+          });
+          break;
+        }
+        for (const nextId of outgoing.get(target.id) || []) {
+          queue.push({ id: nextId, approved });
+        }
+      }
+    }
   });
 
 export const createWorkflowSchema = workflowGraphSchema.extend({

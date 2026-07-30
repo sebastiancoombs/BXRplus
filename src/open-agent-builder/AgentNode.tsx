@@ -14,6 +14,7 @@ import {
   Repeat2,
   Search,
   Server,
+  Database,
   StopCircle,
 } from "lucide-react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
@@ -37,6 +38,9 @@ export const nodeVisuals: Record<BuilderNodeType, NodeVisual> = {
   extract: { icon: Search, color: "#9665ff", label: "Extract" },
   http: { icon: Server, color: "#9665ff", label: "HTTP" },
   "set-state": { icon: Braces, color: "#9665ff", label: "Set state" },
+  "bxr-session-notes": { icon: FileText, color: "#0f766e", label: "BXR+ Session Notes" },
+  "bxr-reports": { icon: FileText, color: "#0f766e", label: "BXR+ Reports" },
+  "bxr-session-data": { icon: Database, color: "#0f766e", label: "BXR+ Session Data" },
   note: { icon: FileText, color: "#a1a1aa", label: "Note" },
   end: { icon: StopCircle, color: "#14b8a6", label: "End" },
 };
